@@ -51,96 +51,56 @@
             line-height: 1.6;
         }
 
-        /* 背景装饰 */
         body::before {
             content: '';
             position: fixed;
-            top: -120px;
-            right: -120px;
-            width: 400px;
-            height: 400px;
+            top: -120px; right: -120px;
+            width: 400px; height: 400px;
             border-radius: 50%;
             border: 1px solid rgba(184, 134, 11, 0.08);
-            pointer-events: none;
-            z-index: 0;
+            pointer-events: none; z-index: 0;
         }
         body::after {
             content: '';
             position: fixed;
-            bottom: -80px;
-            left: -100px;
-            width: 300px;
-            height: 300px;
+            bottom: -80px; left: -100px;
+            width: 300px; height: 300px;
             border-radius: 50%;
             border: 1px solid rgba(139, 69, 19, 0.06);
-            pointer-events: none;
-            z-index: 0;
+            pointer-events: none; z-index: 0;
         }
 
-        /* 主容器 */
         .app-container {
             width: 100%;
             max-width: 720px;
-            position: relative;
-            z-index: 1;
+            position: relative; z-index: 1;
             display: flex;
             flex-direction: column;
             gap: 0;
         }
 
-        /* 页面切换 */
         .page {
             display: none;
             flex-direction: column;
             gap: 20px;
             animation: fadeSlideIn 0.45s ease;
         }
-        .page.active {
-            display: flex;
-        }
+        .page.active { display: flex; }
 
         @keyframes fadeSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(18px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(18px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         @keyframes popIn {
-            0% {
-                opacity: 0;
-                transform: scale(0.88);
-            }
-            60% {
-                transform: scale(1.03);
-            }
-            100% {
-                opacity: 1;
-                transform: scale(1);
-            }
+            0% { opacity: 0; transform: scale(0.88); }
+            60% { transform: scale(1.03); }
+            100% { opacity: 1; transform: scale(1); }
         }
         @keyframes pulse {
-            0%,
-            100% {
-                box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.35);
-            }
-            50% {
-                box-shadow: 0 0 0 18px rgba(192, 57, 43, 0);
-            }
-        }
-        @keyframes shimmer {
-            0% {
-                background-position: -200% 0;
-            }
-            100% {
-                background-position: 200% 0;
-            }
+            0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.35); }
+            50% { box-shadow: 0 0 0 18px rgba(192, 57, 43, 0); }
         }
 
-        /* 卡片 */
         .card {
             background: var(--card);
             border-radius: var(--radius);
@@ -150,1506 +110,763 @@
             transition: var(--transition);
             position: relative;
         }
-        .card:hover {
-            box-shadow: var(--shadow-lg);
-        }
-        .card--accent {
-            border-left: 5px solid var(--accent);
-        }
-        .card--gold {
-            border-left: 5px solid var(--gold);
-        }
+        .card:hover { box-shadow: var(--shadow-lg); }
+        .card--accent { border-left: 5px solid var(--accent); }
+        .card--gold { border-left: 5px solid var(--gold); }
         .card--highlight {
             background: linear-gradient(135deg, #fffefb 0%, #fef9f2 100%);
             border: 2px solid var(--gold-light);
             box-shadow: 0 6px 28px rgba(184, 134, 11, 0.18);
         }
 
-        /* 首页标题 */
         .hero-title {
             font-family: var(--font-heading);
-            font-size: 2.6em;
-            font-weight: 700;
+            font-size: 2.6em; font-weight: 700;
             color: var(--primary);
             text-align: center;
-            letter-spacing: 0.04em;
-            margin-bottom: 4px;
+            letter-spacing: 0.04em; margin-bottom: 4px;
             line-height: 1.3;
         }
-        .hero-title .icon {
-            display: inline-block;
-            font-size: 1.1em;
-            animation: popIn 0.6s ease;
-        }
+        .hero-title .icon { display: inline-block; font-size: 1.1em; animation: popIn 0.6s ease; }
         .hero-subtitle {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 1.05em;
-            margin-bottom: 8px;
-            font-family: var(--font-heading);
-            letter-spacing: 0.03em;
+            text-align: center; color: var(--text-muted);
+            font-size: 1.05em; margin-bottom: 8px;
+            font-family: var(--font-heading); letter-spacing: 0.03em;
         }
         .hero-desc {
-            text-align: center;
-            color: var(--text-light);
-            font-size: 0.95em;
-            background: rgba(184, 134, 11, 0.05);
-            border-radius: 20px;
-            padding: 14px 20px;
-            line-height: 1.7;
+            text-align: center; color: var(--text-light);
+            font-size: 0.95em; background: rgba(184, 134, 11, 0.05);
+            border-radius: 20px; padding: 14px 20px; line-height: 1.7;
         }
 
-        /* 按钮 */
         .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 14px 28px;
-            border-radius: 28px;
-            border: none;
-            cursor: pointer;
-            font-size: 1.05em;
-            font-weight: 600;
-            letter-spacing: 0.03em;
-            transition: var(--transition);
-            font-family: var(--font-body);
-            white-space: nowrap;
-            position: relative;
-            overflow: hidden;
-            text-decoration: none;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px 28px; border-radius: 28px; border: none; cursor: pointer;
+            font-size: 1.05em; font-weight: 600; letter-spacing: 0.03em;
+            transition: var(--transition); font-family: var(--font-body);
+            white-space: nowrap; position: relative; text-decoration: none; user-select: none;
         }
-        .btn:active {
-            transform: scale(0.96);
-        }
+        .btn:active { transform: scale(0.96); }
         .btn--primary {
-            background: var(--accent);
-            color: #fff;
-            font-size: 1.2em;
-            padding: 16px 40px;
-            border-radius: 32px;
-            letter-spacing: 0.05em;
+            background: var(--accent); color: #fff; font-size: 1.2em;
+            padding: 16px 40px; border-radius: 32px; letter-spacing: 0.05em;
             box-shadow: 0 6px 22px rgba(192, 57, 43, 0.35);
             animation: pulse 2.5s infinite;
         }
         .btn--primary:hover {
-            background: #a93226;
-            box-shadow: 0 10px 30px rgba(192, 57, 43, 0.45);
-            transform: translateY(-2px);
-            animation: none;
+            background: #a93226; box-shadow: 0 10px 30px rgba(192, 57, 43, 0.45);
+            transform: translateY(-2px); animation: none;
         }
-        .btn--primary:active {
-            animation: none;
-        }
+        .btn--primary:active { animation: none; }
         .btn--outline {
-            background: transparent;
-            border: 2px solid var(--primary);
-            color: var(--primary);
-            padding: 10px 20px;
-            font-size: 0.9em;
-            border-radius: 24px;
+            background: transparent; border: 2px solid var(--primary);
+            color: var(--primary); padding: 10px 20px; font-size: 0.9em; border-radius: 24px;
         }
-        .btn--outline:hover {
-            background: rgba(139, 69, 19, 0.06);
-            border-color: var(--primary-light);
-        }
+        .btn--outline:hover { background: rgba(139,69,19,0.06); border-color: var(--primary-light); }
         .btn--ghost {
-            background: rgba(139, 69, 19, 0.04);
-            color: var(--text-light);
-            padding: 9px 18px;
-            font-size: 0.88em;
-            border-radius: 22px;
-            border: 1px solid transparent;
+            background: rgba(139,69,19,0.04); color: var(--text-light);
+            padding: 9px 18px; font-size: 0.88em; border-radius: 22px; border: 1px solid transparent;
         }
-        .btn--ghost:hover {
-            background: rgba(139, 69, 19, 0.1);
-            border-color: var(--border);
-        }
+        .btn--ghost:hover { background: rgba(139,69,19,0.1); border-color: var(--border); }
+
         .btn--difficulty {
-            flex: 1;
-            min-width: 100px;
-            padding: 16px 18px;
-            border-radius: var(--radius-sm);
-            font-weight: 700;
-            font-size: 1em;
-            letter-spacing: 0.04em;
-            border: 2px solid transparent;
-            transition: var(--transition);
-            font-family: var(--font-heading);
+            flex: 1; min-width: 100px; padding: 16px 18px; border-radius: var(--radius-sm);
+            font-weight: 700; font-size: 1em; border: 2px solid transparent;
+            transition: var(--transition); font-family: var(--font-heading);
         }
-        .btn--difficulty.btn--basic {
-            background: #f0faf0;
-            color: #2d6a4f;
-            border-color: #b7d7c5;
-        }
-        .btn--difficulty.btn--basic:hover {
-            background: #d8f0e0;
-            border-color: #6aaf8a;
-            box-shadow: 0 4px 16px rgba(45, 106, 79, 0.2);
-            transform: translateY(-3px);
-        }
-        .btn--difficulty.btn--intermediate {
-            background: #fef9ee;
-            color: #8b6914;
-            border-color: #e0d0a0;
-        }
-        .btn--difficulty.btn--intermediate:hover {
-            background: #fdf3d6;
-            border-color: #c9a84c;
-            box-shadow: 0 4px 16px rgba(139, 105, 20, 0.2);
-            transform: translateY(-3px);
-        }
-        .btn--difficulty.btn--advanced {
-            background: #fdf4f4;
-            color: #8b1a1a;
-            border-color: #dbb5b5;
-        }
-        .btn--difficulty.btn--advanced:hover {
-            background: #fce8e8;
-            border-color: #c45a5a;
-            box-shadow: 0 4px 16px rgba(139, 26, 26, 0.2);
-            transform: translateY(-3px);
-        }
+        .btn--difficulty.btn--basic { background: #f0faf0; color: #2d6a4f; border-color: #b7d7c5; }
+        .btn--difficulty.btn--basic:hover { background: #d8f0e0; border-color: #6aaf8a; }
+        .btn--difficulty.btn--intermediate { background: #fef9ee; color: #8b6914; border-color: #e0d0a0; }
+        .btn--difficulty.btn--intermediate:hover { background: #fdf3d6; border-color: #c9a84c; }
+        .btn--difficulty.btn--advanced { background: #fdf4f4; color: #8b1a1a; border-color: #dbb5b5; }
+        .btn--difficulty.btn--advanced:hover { background: #fce8e8; border-color: #c45a5a; }
         .btn--difficulty.selected {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+            transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important;
             border-width: 3px !important;
         }
-        .btn--difficulty.btn--basic.selected {
-            border-color: #2d6a4f !important;
-            background: #c8e8d4 !important;
-        }
-        .btn--difficulty.btn--intermediate.selected {
-            border-color: #8b6914 !important;
-            background: #fcecb8 !important;
-        }
-        .btn--difficulty.btn--advanced.selected {
-            border-color: #8b1a1a !important;
-            background: #fad4d4 !important;
-        }
+        .btn--basic.selected { border-color: #2d6a4f !important; background: #c8e8d4 !important; }
+        .btn--intermediate.selected { border-color: #8b6914 !important; background: #fcecb8 !important; }
+        .btn--advanced.selected { border-color: #8b1a1a !important; background: #fad4d4 !important; }
 
-        /* 四诊按钮组 */
-        .four-diagnosis {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-        }
+        .four-diagnosis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
         @media (max-width: 500px) {
-            .four-diagnosis {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-            }
-            .hero-title {
-                font-size: 1.8em;
-            }
-            .btn--primary {
-                font-size: 1em;
-                padding: 14px 28px;
-            }
-            .card {
-                padding: 18px 16px;
-            }
-        }
-        .btn--diag {
-            padding: 16px 12px;
-            border-radius: var(--radius-sm);
-            font-weight: 700;
-            font-size: 1.05em;
-            letter-spacing: 0.05em;
-            border: 2px solid var(--border);
-            background: var(--card);
-            color: var(--primary);
-            cursor: pointer;
-            transition: var(--transition);
-            font-family: var(--font-heading);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-        }
-        .btn--diag:hover {
-            border-color: var(--primary-light);
-            box-shadow: 0 6px 20px rgba(139, 69, 19, 0.18);
-            transform: translateY(-2px);
-            background: #fffdf9;
-        }
-        .btn--diag:active {
-            transform: scale(0.94);
-        }
-        .btn--diag.explored {
-            background: #f9f5ef;
-            border-color: #c9b896;
-            color: #6b4d34;
-            cursor: default;
-            opacity: 0.75;
-        }
-        .btn--diag.explored::after {
-            content: '✓';
-            font-size: 0.75em;
-            color: #6b9e6b;
-            position: absolute;
-            top: 6px;
-            right: 10px;
-        }
-        .btn--diag .diag-icon {
-            font-size: 1.6em;
-            line-height: 1;
-        }
-        .btn--diag .diag-label {
-            font-size: 0.85em;
+            .four-diagnosis { grid-template-columns: repeat(2, 1fr); }
+            .hero-title { font-size: 1.8em; }
+            .btn--primary { font-size: 1em; padding: 14px 28px; }
+            .card { padding: 18px 16px; }
         }
 
-        /* 线索收集区 */
+        .btn--diag {
+            padding: 16px 12px; border-radius: var(--radius-sm); font-weight: 700;
+            font-size: 1.05em; border: 2px solid var(--border); background: var(--card);
+            color: var(--primary); cursor: pointer; transition: var(--transition);
+            font-family: var(--font-heading); display: flex; flex-direction: column;
+            align-items: center; gap: 6px;
+        }
+        .btn--diag:hover { border-color: var(--primary-light); box-shadow: 0 6px 20px rgba(139,69,19,0.18); transform: translateY(-2px); background: #fffdf9; }
+        .btn--diag:active { transform: scale(0.94); }
+        .btn--diag.explored { background: #f9f5ef; border-color: #c9b896; color: #6b4d34; cursor: default; opacity: 0.75; }
+        .btn--diag.explored::after { content: '✓'; font-size: 0.75em; color: #6b9e6b; position: absolute; top: 6px; right: 10px; }
+        .btn--diag .diag-icon { font-size: 1.6em; line-height: 1; }
+        .btn--diag .diag-label { font-size: 0.85em; }
+
         .clue-area {
-            background: #fdfaf5;
-            border-radius: var(--radius-sm);
-            padding: 16px 18px;
-            border: 1px dashed var(--border);
-            min-height: 60px;
-            max-height: 280px;
-            overflow-y: auto;
-            transition: var(--transition);
+            background: #fdfaf5; border-radius: var(--radius-sm); padding: 16px 18px;
+            border: 1px dashed var(--border); min-height: 60px; max-height: 280px; overflow-y: auto;
         }
         .clue-area:empty::before {
             content: '🔍 线索收集区：点击上方四诊按钮探查线索...';
-            color: #c5b5a0;
-            font-style: italic;
-            font-size: 0.9em;
-            display: block;
-            text-align: center;
-            padding: 20px 0;
+            color: #c5b5a0; font-style: italic; font-size: 0.9em;
+            display: block; text-align: center; padding: 20px 0;
         }
         .clue-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            padding: 10px 14px;
-            margin: 6px 0;
-            background: #fffefb;
-            border-radius: 8px;
-            border-left: 3px solid var(--gold);
-            animation: popIn 0.35s ease;
-            font-size: 0.93em;
-            line-height: 1.5;
+            display: flex; gap: 10px; padding: 10px 14px; margin: 6px 0;
+            background: #fffefb; border-radius: 8px; border-left: 3px solid var(--gold);
+            animation: popIn 0.35s ease; font-size: 0.93em;
         }
-        .clue-item .clue-tag {
-            flex-shrink: 0;
-            font-weight: 700;
-            font-size: 0.8em;
-            padding: 3px 10px;
-            border-radius: 12px;
-            background: var(--gold);
-            color: #fff;
-            letter-spacing: 0.04em;
-            white-space: nowrap;
-        }
-        .clue-item .clue-tag.tag-wang {
-            background: #5b8c5a;
-        }
-        .clue-item .clue-tag.tag-wen {
-            background: #b8860b;
-        }
-        .clue-item .clue-tag.tag-ask {
-            background: #7b5ea7;
-        }
-        .clue-item .clue-tag.tag-pulse {
-            background: #c0392b;
-        }
+        .clue-item .clue-tag { font-weight: 700; font-size: 0.8em; padding: 3px 10px; border-radius: 12px; color: #fff; }
+        .tag-wang { background: #5b8c5a; } .tag-wen { background: #b8860b; } .tag-ask { background: #7b5ea7; } .tag-pulse { background: #c0392b; }
 
-        /* 答题区 */
-        .answer-area {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
+        .answer-area { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
         .answer-area input {
-            flex: 1;
-            min-width: 140px;
-            padding: 12px 16px;
-            border-radius: 24px;
-            border: 2px solid var(--border);
-            font-size: 0.95em;
-            font-family: var(--font-body);
-            background: #fffefb;
-            transition: var(--transition);
-            outline: none;
+            flex: 1; min-width: 140px; padding: 12px 16px; border-radius: 24px;
+            border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none;
         }
-        .answer-area input:focus {
-            border-color: var(--primary-light);
-            box-shadow: 0 0 0 4px rgba(139, 69, 19, 0.07);
-        }
-        .answer-area input::placeholder {
-            color: #c5b5a0;
-        }
+        .answer-area input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(139,69,19,0.07); }
 
-        /* 弹窗 */
         .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(30, 15, 5, 0.55);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.25s ease;
-            padding: 20px;
+            position: fixed; inset: 0; background: rgba(30,15,5,0.55); z-index: 1000;
+            display: flex; align-items: center; justify-content: center;
+            animation: fadeIn 0.25s; padding: 20px;
         }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .modal {
-            background: var(--card);
-            border-radius: var(--radius);
-            padding: 28px 26px;
-            max-width: 560px;
-            width: 100%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-lg);
-            animation: popIn 0.4s ease;
-            position: relative;
-            border: 1px solid var(--border);
+            background: var(--card); border-radius: var(--radius); padding: 28px 26px;
+            max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto;
+            box-shadow: var(--shadow-lg); animation: popIn 0.4s;
+            position: relative; border: 1px solid var(--border);
         }
         .modal-close {
-            position: absolute;
-            top: 12px;
-            right: 16px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(0, 0, 0, 0.05);
-            cursor: pointer;
-            font-size: 1.2em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: var(--transition);
-            color: var(--text-muted);
+            position: absolute; top: 12px; right: 16px; width: 36px; height: 36px;
+            border-radius: 50%; border: none; background: rgba(0,0,0,0.05);
+            cursor: pointer; font-size: 1.2em; display: flex; align-items: center;
+            justify-content: center; color: var(--text-muted);
         }
-        .modal-close:hover {
-            background: rgba(0, 0, 0, 0.12);
-            color: var(--text);
-        }
-        .modal h3 {
-            font-family: var(--font-heading);
-            color: var(--primary);
-            margin-bottom: 14px;
-            font-size: 1.3em;
-            letter-spacing: 0.03em;
-        }
+        .modal-close:hover { background: rgba(0,0,0,0.12); color: var(--text); }
+        .modal h3 { font-family: var(--font-heading); color: var(--primary); margin-bottom: 14px; }
 
-        /* 舌象模拟 */
-        .tongue-sim {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin: 10px 0;
-        }
-        .tongue-sim .tongue-visual {
-            width: 80px;
-            height: 110px;
-            border-radius: 40px 40px 30px 30px;
+        .tongue-sim { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin: 10px 0; }
+        .tongue-visual {
+            width: 80px; height: 110px; border-radius: 40px 40px 30px 30px;
             background: linear-gradient(180deg, #f0c8c0 30%, #e8b4b0 60%, #e0a8a0 100%);
+            border: 3px solid #d4a098; box-shadow: inset 0 0 20px rgba(180,130,120,0.3);
             position: relative;
-            border: 3px solid #d4a098;
-            box-shadow: inset 0 0 20px rgba(180, 130, 120, 0.3);
-            flex-shrink: 0;
         }
-        .tongue-sim .tongue-visual::after {
-            content: '';
-            position: absolute;
-            top: 25%;
-            left: 15%;
-            width: 70%;
-            height: 45%;
-            background: rgba(220, 195, 150, 0.55);
+        .tongue-visual::after {
+            content: ''; position: absolute; top: 25%; left: 15%;
+            width: 70%; height: 45%; background: rgba(220,195,150,0.55);
             border-radius: 35px 35px 20px 20px;
-            /* 模拟腻苔 */
-            background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(200, 170, 120, 0.3) 3px, rgba(200, 170, 120, 0.3) 5px);
-        }
-        .tongue-sim .tongue-desc {
-            font-size: 0.9em;
-            color: var(--text-muted);
-            line-height: 1.5;
+            background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(200,170,120,0.3) 3px, rgba(200,170,120,0.3) 5px);
         }
 
-        /* 结果展示 */
-        .result-box {
-            padding: 20px;
-            border-radius: var(--radius-sm);
-            margin: 12px 0;
-            animation: popIn 0.4s ease;
-            line-height: 1.7;
+        .result-box { padding: 20px; border-radius: var(--radius-sm); margin: 12px 0; animation: popIn 0.4s; line-height: 1.7; }
+        .result-box.success { background: #f0faf4; border: 2px solid #6aaf8a; color: #1e4d34; }
+        .result-box.fail { background: #fef9f4; border: 2px solid #e0b060; color: #6b4d20; }
+
+        .chat-area {
+            flex: 1; overflow-y: auto; min-height: 160px; max-height: 300px;
+            background: #fdfaf5; border-radius: 12px; padding: 14px; margin-bottom: 12px;
+            border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px;
         }
-        .result-box.success {
-            background: #f0faf4;
-            border: 2px solid #6aaf8a;
-            color: #1e4d34;
+        .chat-bubble {
+            max-width: 85%; padding: 10px 14px; border-radius: 18px;
+            line-height: 1.5; font-size: 0.93em; animation: popIn 0.25s;
         }
-        .result-box.fail {
-            background: #fef9f4;
-            border: 2px solid #e0b060;
-            color: #6b4d20;
+        .chat-bubble.user { align-self: flex-end; background: #e8f0fe; color: #1a3a5c; }
+        .chat-bubble.patient { align-self: flex-start; background: #f5eee0; color: #4a3b2c; }
+        .chat-input-area { display: flex; gap: 8px; }
+        .chat-input-area input {
+            flex: 1; padding: 12px 16px; border-radius: 24px;
+            border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none;
         }
-        .result-box h4 {
-            font-family: var(--font-heading);
-            margin-bottom: 8px;
-            letter-spacing: 0.03em;
+        .chat-input-area button {
+            padding: 10px 20px; border-radius: 24px; background: var(--primary);
+            color: #fff; border: none; cursor: pointer; font-weight: 600;
         }
 
-        /* 问诊问题列表 */
-        .inquiry-questions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .inquiry-questions .q-btn {
-            padding: 10px 16px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: #fffefb;
-            cursor: pointer;
-            transition: var(--transition);
-            font-size: 0.9em;
-            font-family: var(--font-body);
-        }
-        .inquiry-questions .q-btn:hover {
-            background: #fdf6ed;
-            border-color: var(--gold-light);
-        }
-        .inquiry-questions .q-btn.asked {
-            background: #f5f0e8;
-            color: #b0a090;
-            cursor: default;
-            border-color: #e0d5c5;
-            text-decoration: line-through;
-        }
-
-        /* 版权 */
         .copyright {
-            position: fixed;
-            bottom: 14px;
-            right: 20px;
-            font-size: 0.8em;
-            color: #b5a595;
-            letter-spacing: 0.06em;
-            z-index: 999;
-            font-family: var(--font-heading);
-            pointer-events: none;
-            background: rgba(253, 248, 243, 0.7);
-            padding: 4px 10px;
-            border-radius: 12px;
-            backdrop-filter: blur(4px);
+            position: fixed; bottom: 14px; right: 20px;
+            font-size: 0.8em; color: #b5a595; letter-spacing: 0.06em;
+            z-index: 999; font-family: var(--font-heading); pointer-events: none;
+            background: rgba(253,248,243,0.7); padding: 4px 10px;
+            border-radius: 12px; backdrop-filter: blur(4px);
         }
-
-        /* 顶部导航 */
-        .top-nav {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 4px;
-        }
+        .top-nav { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 4px; }
         .top-nav .nav-link {
-            font-size: 0.85em;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 6px 14px;
-            border-radius: 16px;
-            transition: var(--transition);
-            font-family: var(--font-heading);
-            letter-spacing: 0.03em;
-            border: 1px solid transparent;
-            background: transparent;
+            font-size: 0.85em; color: var(--text-muted); cursor: pointer;
+            padding: 6px 14px; border-radius: 16px; font-family: var(--font-heading);
+            border: 1px solid transparent; background: transparent;
         }
-        .top-nav .nav-link:hover {
-            color: var(--primary);
-            background: rgba(139, 69, 19, 0.05);
-            border-color: var(--border);
-        }
-        .top-nav .nav-link.nav-active {
-            color: var(--accent);
-            font-weight: 700;
-            background: rgba(192, 57, 43, 0.06);
-            border-color: rgba(192, 57, 43, 0.2);
-        }
-
-        /* 分隔线 */
-        .divider {
-            border: none;
-            border-top: 1px solid var(--border);
-            margin: 4px 0;
-            opacity: 0.6;
-        }
-
-        /* 滚动条 */
-        ::-webkit-scrollbar {
-            width: 5px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #d5c8b8;
-            border-radius: 10px;
-        }
+        .top-nav .nav-link:hover { color: var(--primary); background: rgba(139,69,19,0.05); }
+        .top-nav .nav-link.nav-active { color: var(--accent); font-weight: 700; background: rgba(192,57,43,0.06); border-color: rgba(192,57,43,0.2); }
     </style>
 </head>
 <body>
+<div class="copyright">© wuruilin</div>
+<div class="app-container" id="appContainer">
 
-    <!-- 版权信息 - 每页右下角 -->
-    <div class="copyright">© wuruilin</div>
-
-    <!-- 主容器 -->
-    <div class="app-container" id="appContainer">
-
-        <!-- ==================== 页面1：首页 ==================== -->
-        <div class="page active" id="pageHome">
-            <div class="card card--accent" style="text-align:center;">
-                <div class="hero-title">
-                    <span class="icon">🏥</span> 中医辨证推演馆
-                </div>
-                <div class="hero-subtitle">—— 海龟汤式 · 四诊探案 ——</div>
-                <div class="hero-desc">
-                    模拟门诊看病，如同海龟汤解谜。<br>
-                    仅凭<strong>主诉</strong>，通过<strong>望、闻、问、切</strong>四诊探寻线索，<br>
-                    逐步推理，完成辨证论治。
-                </div>
-            </div>
-            <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
-                <button class="btn btn--primary" onclick="startChallenge()">
-                    🎯 开始闯关
-                </button>
-                <button class="btn btn--outline" onclick="openCaseBank()">
-                    📚 病例题库
-                </button>
-                <button class="btn btn--ghost" onclick="openRecords()">
-                    📝 学习记录
-                </button>
-            </div>
-            <div style="text-align:center;color:var(--text-muted);font-size:0.82em;margin-top:4px;">
-                适合中医备考 · 记忆辨证思路 · 趣味互动学习
+    <div class="page active" id="pageHome">
+        <div class="card card--accent" style="text-align:center;">
+            <div class="hero-title"><span class="icon">🏥</span> 中医辨证推演馆</div>
+            <div class="hero-subtitle">—— 海龟汤式 · 四诊探案 ——</div>
+            <div class="hero-desc">
+                模拟门诊看病，如同海龟汤解谜。<br>
+                仅凭<strong>主诉</strong>，通过<strong>望、闻、问、切</strong>四诊探寻线索，逐步推理，完成辨证论治。
             </div>
         </div>
-
-        <!-- ==================== 页面2：核心互动页 ==================== -->
-        <div class="page" id="pageGame">
-            <!-- 难度选择 -->
-            <div class="card" style="padding:16px 20px;">
-                <div style="font-weight:700;color:var(--text-light);margin-bottom:10px;font-family:var(--font-heading);letter-spacing:0.03em;text-align:center;">
-                    📋 选择难度
-                </div>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;" id="difficultyBtns">
-                    <button class="btn btn--difficulty btn--basic" data-diff="basic" onclick="selectDifficulty('basic', this)">
-                        🌱 基础<br><small>（大一）</small>
-                    </button>
-                    <button class="btn btn--difficulty btn--intermediate" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">
-                        📖 进阶<br><small>（内外妇儿）</small>
-                    </button>
-                    <button class="btn btn--difficulty btn--advanced" data-diff="advanced" onclick="selectDifficulty('advanced', this)">
-                        🎓 考研病例
-                    </button>
-                </div>
-            </div>
-
-            <!-- 病例主诉展示区 -->
-            <div class="card card--highlight" id="chiefComplaintCard" style="display:none;">
-                <div style="font-family:var(--font-heading);font-weight:700;font-size:1.1em;color:var(--accent);letter-spacing:0.04em;">
-                    🩺 病例主诉（谜面）
-                </div>
-                <div id="chiefComplaintText" style="margin-top:8px;font-size:1em;line-height:1.7;color:var(--text);"></div>
-                <div style="font-size:0.78em;color:var(--text-muted);margin-top:6px;">
-                    ⚡ 请通过下方四诊按钮主动探查线索
-                </div>
-            </div>
-
-            <!-- 四诊按钮 -->
-            <div class="four-diagnosis" id="fourDiagBtns" style="display:none;">
-                <button class="btn btn--diag" id="btnWang" onclick="exploreDiag('inspection')">
-                    <span class="diag-icon">👁️</span>
-                    <span class="diag-label">望 诊</span>
-                </button>
-                <button class="btn btn--diag" id="btnWen" onclick="exploreDiag('auscultation')">
-                    <span class="diag-icon">👂</span>
-                    <span class="diag-label">闻 诊</span>
-                </button>
-                <button class="btn btn--diag" id="btnAsk" onclick="exploreDiag('inquiry')">
-                    <span class="diag-icon">💬</span>
-                    <span class="diag-label">问 诊</span>
-                </button>
-                <button class="btn btn--diag" id="btnPulse" onclick="exploreDiag('pulse')">
-                    <span class="diag-icon">🫀</span>
-                    <span class="diag-label">切 脉</span>
-                </button>
-            </div>
-
-            <!-- 线索收集区 -->
-            <div class="card" id="clueCollectionCard" style="display:none;">
-                <div style="font-weight:700;color:var(--text-light);margin-bottom:8px;font-family:var(--font-heading);letter-spacing:0.03em;">
-                    📋 线索收集区
-                </div>
-                <div class="clue-area" id="clueArea"></div>
-            </div>
-
-            <!-- 答题区 -->
-            <div class="card" id="answerCard" style="display:none;">
-                <div style="font-weight:700;color:var(--text-light);margin-bottom:10px;font-family:var(--font-heading);letter-spacing:0.03em;">
-                    ✍️ 提交辨证
-                </div>
-                <div class="answer-area" id="answerArea">
-                    <input type="text" id="inputSyndrome" placeholder="证型（如：风热犯肺津伤）">
-                    <input type="text" id="inputDisease" placeholder="病名（如：咳嗽）">
-                    <button class="btn btn--primary" style="padding:12px 22px;font-size:0.95em;animation:none;" onclick="submitAnswer()">
-                        提交答案
-                    </button>
-                </div>
-                <div id="answerFeedback" style="margin-top:10px;"></div>
-                <div id="fullAnalysisArea" style="margin-top:8px;"></div>
-            </div>
-
-            <!-- 操作按钮 -->
-            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;" id="gameExtraBtns" style="display:none;">
-                <button class="btn btn--outline" onclick="resetCurrentCase()">🔄 重新探查</button>
-                <button class="btn btn--ghost" onclick="goHome()">🏠 返回首页</button>
-            </div>
-        </div>
-
-        <!-- ==================== 页面3：关于我们 ==================== -->
-        <div class="page" id="pageAbout">
-            <div class="card card--gold" style="text-align:center;">
-                <div style="font-family:var(--font-heading);font-size:1.6em;color:var(--primary);letter-spacing:0.04em;">
-                    📖 关于本站
-                </div>
-                <div style="margin-top:16px;line-height:1.8;color:var(--text-light);">
-                    <strong>中医辨证推演馆</strong> 是一款<strong>中医趣味学习工具</strong>。<br><br>
-                    灵感来源于「海龟汤」解谜游戏：<br>
-                    仅给出<strong>病例主诉</strong>（谜面），<br>
-                    学习者需主动运用<strong>望、闻、问、切</strong>四诊，<br>
-                    逐步收集线索，推理出<strong>证型与病名</strong>。<br><br>
-                    适合<strong>中医备考、记忆辨证思路</strong>，<br>
-                    在趣味互动中提升临床推理能力。<br><br>
-                    <span style="color:var(--accent);font-weight:700;">@wuruilin</span>
-                </div>
-            </div>
-            <div style="text-align:center;">
-                <button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ==================== 弹窗：问诊问题选择 ==================== -->
-    <div class="modal-overlay" id="inquiryModal" style="display:none;">
-        <div class="modal">
-            <button class="modal-close" onclick="closeInquiryModal()">✕</button>
-            <h3>💬 问诊 — 请选择想了解的问题</h3>
-            <div class="inquiry-questions" id="inquiryQuestionList"></div>
-            <div id="inquiryAnswerDisplay" style="margin-top:12px;padding:10px;background:#fdfaf5;border-radius:8px;display:none;"></div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <button class="btn btn--primary" onclick="startChallenge()">🎯 开始闯关</button>
+            <button class="btn btn--outline" onclick="openCaseBank()">📚 病例题库</button>
+            <button class="btn btn--ghost" onclick="openRecords()">📝 学习记录</button>
         </div>
     </div>
 
-    <!-- ==================== 弹窗：望诊舌象 ==================== -->
-    <div class="modal-overlay" id="inspectionModal" style="display:none;">
-        <div class="modal">
-            <button class="modal-close" onclick="closeInspectionModal()">✕</button>
-            <h3>👁️ 望诊 — 舌象观察</h3>
-            <div class="tongue-sim">
-                <div class="tongue-visual"></div>
-                <div class="tongue-desc" id="inspectionDesc">
-                    请仔细观察舌质与舌苔特征...
-                </div>
+    <div class="page" id="pageGame">
+        <div class="card" style="padding:16px 20px;">
+            <div style="font-weight:700;color:var(--text-light);text-align:center;">📋 选择难度</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;" id="difficultyBtns">
+                <button class="btn btn--difficulty btn--basic" data-diff="basic" onclick="selectDifficulty('basic', this)">🌱 基础<br><small>（大一）</small></button>
+                <button class="btn btn--difficulty btn--intermediate" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">📖 进阶<br><small>（内外妇儿）</small></button>
+                <button class="btn btn--difficulty btn--advanced" data-diff="advanced" onclick="selectDifficulty('advanced', this)">🎓 考研病例</button>
             </div>
-            <div style="text-align:center;margin-top:8px;color:var(--text-muted);font-size:0.85em;">
-                ⚡ 线索已自动记录到收集区
+        </div>
+        <div class="card card--highlight" id="chiefComplaintCard" style="display:none;">
+            <div style="font-weight:700;color:var(--accent);">🩺 病例主诉（谜面）</div>
+            <div id="chiefComplaintText" style="margin-top:8px;"></div>
+            <div style="font-size:0.78em;color:var(--text-muted);margin-top:6px;">⚡ 请通过下方四诊按钮主动探查线索</div>
+        </div>
+        <div class="four-diagnosis" id="fourDiagBtns" style="display:none;">
+            <button class="btn btn--diag" id="btnWang" onclick="exploreDiag('inspection')"><span class="diag-icon">👁️</span><span class="diag-label">望 诊</span></button>
+            <button class="btn btn--diag" id="btnWen" onclick="exploreDiag('auscultation')"><span class="diag-icon">👂</span><span class="diag-label">闻 诊</span></button>
+            <button class="btn btn--diag" id="btnAsk" onclick="exploreDiag('inquiry')"><span class="diag-icon">💬</span><span class="diag-label">问 诊</span></button>
+            <button class="btn btn--diag" id="btnPulse" onclick="exploreDiag('pulse')"><span class="diag-icon">🫀</span><span class="diag-label">切 脉</span></button>
+        </div>
+        <div class="card" id="clueCollectionCard" style="display:none;">
+            <div style="font-weight:700;color:var(--text-light);">📋 线索收集区</div>
+            <div class="clue-area" id="clueArea"></div>
+        </div>
+        <div class="card" id="answerCard" style="display:none;">
+            <div style="font-weight:700;color:var(--text-light);">✍️ 提交辨证</div>
+            <div class="answer-area">
+                <input type="text" id="inputSyndrome" placeholder="证型">
+                <input type="text" id="inputDisease" placeholder="病名">
+                <button class="btn btn--primary" style="padding:12px 22px;font-size:0.95em;animation:none;" onclick="submitAnswer()">提交答案</button>
             </div>
-            <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;font-size:0.9em;" onclick="closeInspectionModal()">
-                确认观察完毕
-            </button>
+            <div id="answerFeedback"></div>
+            <div id="fullAnalysisArea"></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;" id="gameExtraBtns">
+            <button class="btn btn--outline" onclick="resetCurrentCase()">🔄 重新探查</button>
+            <button class="btn btn--ghost" onclick="goHome()">🏠 返回首页</button>
         </div>
     </div>
 
-    <!-- ==================== 弹窗：闻诊/切脉结果 ==================== -->
-    <div class="modal-overlay" id="simpleResultModal" style="display:none;">
-        <div class="modal">
-            <button class="modal-close" onclick="closeSimpleResultModal()">✕</button>
-            <h3 id="simpleResultTitle"></h3>
-            <div id="simpleResultContent" style="line-height:1.7;"></div>
-            <div style="text-align:center;margin-top:8px;color:var(--text-muted);font-size:0.85em;">
-                ⚡ 线索已自动记录到收集区
+    <div class="page" id="pageAbout">
+        <div class="card card--gold" style="text-align:center;">
+            <div style="font-size:1.6em;color:var(--primary);">📖 关于本站</div>
+            <div style="margin-top:16px;line-height:1.8;color:var(--text-light);">
+                <strong>中医辨证推演馆</strong> 是一款中医趣味学习工具。<br><br>
+                灵感来源于「海龟汤」解谜游戏，仅给出<strong>病例主诉</strong>，学习者需主动运用望闻问切，逐步收集线索，推理证型与病名。<br>
+                适合中医备考、记忆辨证思路。<br><br>
+                <span style="color:var(--accent);font-weight:700;">@wuruilin</span>
             </div>
-            <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;font-size:0.9em;" onclick="closeSimpleResultModal()">
-                知道了
-            </button>
+        </div>
+        <div style="text-align:center;"><button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="inquiryModal" style="display:none;">
+    <div class="modal" style="max-width:600px;">
+        <button class="modal-close" onclick="closeInquiryModal()">✕</button>
+        <h3>💬 问诊 — 请向患者提问</h3>
+        <div class="chat-area" id="inquiryChatArea"></div>
+        <div class="chat-input-area">
+            <input type="text" id="inquiryInput" placeholder="输入您想问的问题..." onkeydown="if(event.key==='Enter')sendInquiry()">
+            <button onclick="sendInquiry()">发送</button>
         </div>
     </div>
+</div>
 
-    <!-- ==================== 弹窗：病例题库 ==================== -->
-    <div class="modal-overlay" id="caseBankModal" style="display:none;">
-        <div class="modal" style="max-width:600px;">
-            <button class="modal-close" onclick="closeCaseBank()">✕</button>
-            <h3>📚 病例题库</h3>
-            <div id="caseBankContent"></div>
-        </div>
+<div class="modal-overlay" id="inspectionModal" style="display:none;">
+    <div class="modal">
+        <button class="modal-close" onclick="closeInspectionModal()">✕</button>
+        <h3>👁️ 望诊 — 舌象观察</h3>
+        <div class="tongue-sim"><div class="tongue-visual"></div><div class="tongue-desc" id="inspectionDesc"></div></div>
+        <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;" onclick="closeInspectionModal()">确认观察完毕</button>
     </div>
+</div>
 
-    <!-- ==================== 弹窗：学习记录 ==================== -->
-    <div class="modal-overlay" id="recordsModal" style="display:none;">
-        <div class="modal" style="max-width:600px;">
-            <button class="modal-close" onclick="closeRecords()">✕</button>
-            <h3>📝 学习记录</h3>
-            <div id="recordsContent"></div>
-        </div>
+<div class="modal-overlay" id="simpleResultModal" style="display:none;">
+    <div class="modal">
+        <button class="modal-close" onclick="closeSimpleResultModal()">✕</button>
+        <h3 id="simpleResultTitle"></h3>
+        <div id="simpleResultContent"></div>
+        <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;" onclick="closeSimpleResultModal()">知道了</button>
     </div>
+</div>
 
-    <script>
-        // ==================== 病例数据库 ====================
-        const casesDB = {
-            basic: [{
+<div class="modal-overlay" id="caseBankModal" style="display:none;">
+    <div class="modal" style="max-width:600px; max-height:80vh; overflow-y:auto;">
+        <button class="modal-close" onclick="closeCaseBank()">✕</button>
+        <h3>📚 病例题库</h3>
+        <div id="caseBankContent"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="recordsModal" style="display:none;">
+    <div class="modal" style="max-width:600px;">
+        <button class="modal-close" onclick="closeRecords()">✕</button>
+        <h3>📝 学习记录</h3>
+        <div id="recordsContent"></div>
+    </div>
+</div>
+
+<script>
+    const casesDB = {
+        basic: [
+            {
                 id: 'basic-001',
                 title: '咳嗽案（风热犯肺津伤）',
                 chiefComplaint: '陈某，男，33岁。就诊日期：2021年9月6日。\n\n咳嗽4天。',
-                fullChiefComplaint: '陈某，男，33岁。就诊日期：2021年9月6日。咳嗽4天。',
                 clues: {
-                    inspection: {
-                        displayTitle: '舌象观察',
-                        displayContent: '舌质淡红，苔腻淡黄。面色如常，无明显异常。',
-                        tongueDesc: '舌质淡红，苔腻淡黄。舌体无明显胖大或瘦小，舌苔偏腻，颜色淡黄。',
-                        textSummary: '舌质淡红，苔腻淡黄'
-                    },
-                    auscultation: {
-                        displayTitle: '闻诊结果',
-                        displayContent: '咳嗽声重浊有力，咯痰声明显，痰音黄稠。无喘息哮鸣音，无异常体味。',
-                        textSummary: '咳嗽声重浊，咯脓黄痰，无喘息'
-                    },
+                    inspection: { displayTitle:'舌象观察', displayContent:'舌质淡红，苔腻淡黄。', tongueDesc:'舌质淡红，苔腻淡黄。', textSummary:'舌质淡红，苔腻淡黄' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'咳嗽声重浊有力，咯痰声明显，痰音黄稠。', textSummary:'咳嗽声重浊，咯脓黄痰' },
                     inquiry: {
                         questions: [
-                            { q: '口渴情况', a: '口干，夜间加重，喜饮温水' },
-                            { q: '大便情况', a: '大便干结，2-3天一解，排便费力' },
-                            { q: '汗出情况', a: '无汗出，不恶寒' },
-                            { q: '饮食与嗳气', a: '时常嗳气，饭后尤明显，食欲尚可' },
-                            { q: '鼻涕情况', a: '白天鼻塞，流黄涕，夜间鼻塞加重' },
+                            { q:'口渴情况', a:'口干，夜间加重，喜饮温水', keywords:['口渴','口干','喝水'] },
+                            { q:'大便情况', a:'大便干结，2-3天一解', keywords:['大便','便秘','干结'] },
+                            { q:'汗出情况', a:'无汗出，不恶寒', keywords:['出汗','汗','恶寒','怕冷'] },
+                            { q:'饮食与嗳气', a:'时常嗳气，饭后明显', keywords:['嗳气','打嗝','食欲'] },
+                            { q:'鼻涕情况', a:'白天鼻塞，流黄涕', keywords:['鼻涕','鼻塞','流涕'] },
                         ],
                     },
-                    pulse: {
-                        displayTitle: '切脉结果',
-                        displayContent: '脉左浮，稍数，按之有力。右脉略弦。',
-                        textSummary: '脉左浮，稍数'
-                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉左浮，稍数。', textSummary:'脉左浮，稍数' },
                 },
-                correctAnswer: {
-                    disease: '咳嗽',
-                    syndrome: '风热犯肺津伤',
-                    westernDiagnosis: '上呼吸道感染',
-                },
+                correctAnswer: { disease:'咳嗽', syndrome:'风热犯肺津伤', westernDiagnosis:'上呼吸道感染' },
                 fullAnalysis: {
-                    disease: '咳嗽',
-                    syndrome: '风热犯肺津伤',
-                    westernDiagnosis: '上呼吸道感染',
-                    pathogenesis: '患者咽喉干痒、咳嗽、咯脓黄涕等为风热犯肺兼有津伤化燥之象。风热之邪侵袭肺卫，肺失宣降，故咳嗽；热邪灼津，咽喉失润则干痒；大便干结，2-3天一解，为津伤化燥的佐证。夜间12-2点为肝经当令，肝火旺时咳嗽加重，提示木火刑金。',
-                    prescription: '桑菊饮合沙参麦冬汤加减：\n桑叶10g、菊花10g、杏仁10g、连翘12g、薄荷6g（后下）、桔梗8g、芦根20g、沙参15g、麦冬12g、天花粉10g、甘草6g。\n水煎服，日一剂，分两次服。',
-                    knowledgePoints: [
-                        '风热犯肺证：咳嗽频剧，咯痰黄稠，咽干痛，舌红苔薄黄，脉浮数。',
-                        '津伤化燥：口干咽燥，大便干结，舌苔干燥。',
-                        '木火刑金：肝火旺盛影响肺的宣降功能，夜间咳嗽加重。',
-                        '桑菊饮为治疗风热咳嗽的代表方，沙参麦冬汤滋养肺阴。',
-                    ],
+                    disease:'咳嗽', syndrome:'风热犯肺津伤', westernDiagnosis:'上呼吸道感染',
+                    pathogenesis:'风热犯肺，津伤化燥。肺失宣降而咳，咽喉干痒；大便干结为津伤佐证。',
+                    prescription:'桑菊饮合沙参麦冬汤加减。',
+                    knowledgePoints:['风热犯肺证：咳嗽频剧，咯痰黄稠，咽干痛，舌红苔薄黄。','津伤化燥：口干咽燥，大便干结。']
+                }
+            },
+            {
+                id: 'basic-002',
+                title: '肺痈案（痰热壅肺）',
+                chiefComplaint: '陈某，男，87岁。就诊日期：2021年5月8日。\n\n持续低热咳嗽二月余。',
+                clues: {
+                    inspection: { displayTitle:'舌象观察', displayContent:'舌质暗红，苔黄腻。面色少华。', tongueDesc:'舌质暗红，苔黄腻，舌下脉络稍迂曲。', textSummary:'舌质暗红，苔黄腻' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'咳嗽声低怯，声音沙哑，咯痰声。', textSummary:'咳嗽声低怯，声音沙哑' },
+                    inquiry: {
+                        questions: [
+                            { q:'发热特点', a:'持续低热，午后明显，37.5℃左右', keywords:['发热','低热','体温'] },
+                            { q:'痰的情况', a:'咯黄痰，偶有咯痰带血', keywords:['痰','咯痰','带血'] },
+                            { q:'汗出', a:'少量汗出，恶风恶热交替', keywords:['汗','恶风','恶热'] },
+                            { q:'大便', a:'大便软溏，不爽', keywords:['大便','溏','软'] },
+                            { q:'全身感觉', a:'全身乏力，体重下降数月', keywords:['乏力','累','体重','消瘦'] },
+                            { q:'声音', a:'声音沙哑，说话费力', keywords:['声音','沙哑','嗓子'] },
+                        ],
+                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉弦细，重按无力。', textSummary:'脉弦细' },
                 },
-            }, ],
-            intermediate: [{
+                correctAnswer: { disease:'肺痈', syndrome:'痰热壅肺证', westernDiagnosis:'支气管扩张合并感染' },
+                fullAnalysis: {
+                    disease:'肺痈', syndrome:'痰热壅肺证',
+                    pathogenesis:'高龄久咳，痰热壅肺，肺络损伤，故咯黄痰带血。午后发热、便溏为湿热内蕴。',
+                    prescription:'千金苇茎汤合桔梗汤加减。',
+                    knowledgePoints:['肺痈以咳嗽、胸痛、发热、咯腥臭痰为特征。','痰热壅肺证：咯黄痰、舌红苔黄腻、脉滑数或弦细。']
+                }
+            },
+            {
+                id: 'basic-003',
+                title: '哮病案（痰热壅肺）',
+                chiefComplaint: '陈某，女，2岁。就诊日期：2021年8月16日。\n\n咳嗽3周。',
+                clues: {
+                    inspection: { displayTitle:'舌象观察', displayContent:'舌质稍红，苔白。咽部稍红。', tongueDesc:'舌质稍红，苔白，舌尖红点。', textSummary:'舌质稍红，苔白' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'喉间哮鸣音，咳嗽阵作，呼吸急促。', textSummary:'喉间哮鸣音，咳嗽阵作' },
+                    inquiry: {
+                        questions: [
+                            { q:'咳嗽情况', a:'干咳为主，咳甚呼吸急促，凌晨咳嗽频繁，曾呕吐', keywords:['咳嗽','干咳','夜咳','呕吐'] },
+                            { q:'痰', a:'近两天痰减少，但咳不减', keywords:['痰','有痰','无痰'] },
+                            { q:'鼻部', a:'鼻塞流涕，涕稍黄', keywords:['鼻涕','鼻塞','流涕'] },
+                            { q:'腹部', a:'时腹自痛，大便一天一解，臭秽', keywords:['肚子','腹痛','大便','臭'] },
+                            { q:'汗出', a:'汗出少', keywords:['汗','出汗'] },
+                            { q:'口臭', a:'有口臭，口气重', keywords:['口臭','口气'] },
+                        ],
+                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉滑数，指纹紫滞风关。', textSummary:'脉滑数' },
+                },
+                correctAnswer: { disease:'哮病', syndrome:'痰热壅肺证', westernDiagnosis:'急性喘息性支气管炎' },
+                fullAnalysis: {
+                    disease:'哮病', syndrome:'痰热壅肺证',
+                    pathogenesis:'小儿外感后痰热内蕴，壅阻肺气，故咳嗽、喉间哮鸣。痰热扰胃则呕吐，食积内停则口臭腹痛。',
+                    prescription:'定喘汤加减：白果、麻黄、款冬花、半夏、桑白皮、黄芩等。',
+                    knowledgePoints:['哮病以发作性喉间哮鸣、呼吸急促为特征。','痰热壅肺证：咳嗽气喘，痰黄稠，喉间哮鸣，舌红苔黄，脉滑数。']
+                }
+            }
+        ],
+        intermediate: [
+            {
                 id: 'inter-001',
                 title: '胃痛案（脾胃虚寒）',
                 chiefComplaint: '张某，女，45岁。就诊日期：2022年3月15日。\n\n胃脘部疼痛反复发作2月余，加重3天。',
-                fullChiefComplaint: '张某，女，45岁。就诊日期：2022年3月15日。胃脘部疼痛反复发作2月余，加重3天。',
                 clues: {
-                    inspection: {
-                        displayTitle: '舌象观察',
-                        displayContent: '舌质淡，苔白滑，舌体稍胖大，边有齿痕。面色萎黄。',
-                        tongueDesc: '舌质淡，苔白滑，舌体稍胖大，边有齿痕。',
-                        textSummary: '舌质淡，苔白滑，舌体胖大边有齿痕'
-                    },
-                    auscultation: {
-                        displayTitle: '闻诊结果',
-                        displayContent: '语声低弱，时有肠鸣音。无异常气味。',
-                        textSummary: '语声低弱，肠鸣音明显'
-                    },
+                    inspection: { displayTitle:'舌象观察', displayContent:'舌质淡，苔白滑，边有齿痕。', textSummary:'舌淡苔白滑，边有齿痕' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'语声低弱，肠鸣音。', textSummary:'语声低弱，肠鸣音' },
                     inquiry: {
                         questions: [
-                            { q: '疼痛性质', a: '胃痛隐隐，喜温喜按，得食痛减，空腹加重' },
-                            { q: '饮食情况', a: '食欲不振，食后腹胀，喜热饮' },
-                            { q: '大便情况', a: '大便溏薄，日1-2次，无脓血' },
-                            { q: '全身情况', a: '神疲乏力，手足不温，怕冷' },
+                            { q:'疼痛性质', a:'胃痛隐隐，喜温喜按，得食痛减', keywords:['疼痛','隐痛','喜按','喜温'] },
+                            { q:'饮食', a:'食欲不振，食后腹胀，喜热饮', keywords:['食欲','胃口','腹胀','喜热'] },
+                            { q:'大便', a:'大便溏薄，日1-2次', keywords:['大便','溏','稀'] },
+                            { q:'全身', a:'神疲乏力，手足不温，怕冷', keywords:['乏力','怕冷','手脚','冷'] },
                         ],
                     },
-                    pulse: {
-                        displayTitle: '切脉结果',
-                        displayContent: '脉细弱，沉取无力。',
-                        textSummary: '脉细弱，沉取无力'
-                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉细弱。', textSummary:'脉细弱' },
                 },
-                correctAnswer: {
-                    disease: '胃痛',
-                    syndrome: '脾胃虚寒证',
-                    westernDiagnosis: '慢性胃炎',
-                },
+                correctAnswer: { disease:'胃痛', syndrome:'脾胃虚寒证', westernDiagnosis:'慢性胃炎' },
                 fullAnalysis: {
-                    disease: '胃痛',
-                    syndrome: '脾胃虚寒证',
-                    westernDiagnosis: '慢性胃炎',
-                    pathogenesis: '脾胃虚寒，中阳不振，胃失温养，故胃痛隐隐、喜温喜按。得食则阳气暂充故痛减。脾虚运化失职则大便溏薄、食欲不振。阳气不足则神疲乏力、手足不温。',
-                    prescription: '黄芪建中汤合理中汤加减：\n黄芪20g、桂枝10g、白芍15g、生姜10g、大枣10g、炙甘草6g、党参15g、白术12g、干姜8g、饴糖30g（烊化）。\n水煎服，日一剂。',
-                    knowledgePoints: [
-                        '脾胃虚寒证：胃痛隐隐，喜温喜按，得食痛减，舌淡苔白，脉细弱。',
-                        '黄芪建中汤温中健脾，和胃止痛。',
-                        '理中汤温中祛寒，补气健脾。',
-                    ],
-                },
-            }, ],
-            advanced: [{
+                    disease:'胃痛', syndrome:'脾胃虚寒证',
+                    pathogenesis:'脾胃虚寒，中阳不振，胃失温养。',
+                    prescription:'黄芪建中汤合理中汤加减。',
+                    knowledgePoints:['脾胃虚寒证：胃痛隐隐，喜温喜按，得食痛减。']
+                }
+            }
+        ],
+        advanced: [
+            {
                 id: 'adv-001',
                 title: '眩晕案（痰瘀互结）',
                 chiefComplaint: '李某，男，58岁。就诊日期：2023年6月20日。\n\n头晕反复发作1年，加重伴右侧肢体麻木1周。',
-                fullChiefComplaint: '李某，男，58岁。就诊日期：2023年6月20日。头晕反复发作1年，加重伴右侧肢体麻木1周。',
                 clues: {
-                    inspection: {
-                        displayTitle: '舌象观察',
-                        displayContent: '舌暗红，边有瘀点，苔白腻。面色晦暗，口唇略紫。',
-                        tongueDesc: '舌暗红，边有瘀点，苔白腻。',
-                        textSummary: '舌暗红边有瘀点，苔白腻'
-                    },
-                    auscultation: {
-                        displayTitle: '闻诊结果',
-                        displayContent: '语声尚可，呼吸稍粗。无明显异常声音。',
-                        textSummary: '呼吸稍粗，无明显异常'
-                    },
+                    inspection: { displayTitle:'舌象观察', displayContent:'舌暗红，边有瘀点，苔白腻。', textSummary:'舌暗红边瘀点，苔白腻' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'呼吸稍粗。', textSummary:'呼吸稍粗' },
                     inquiry: {
                         questions: [
-                            { q: '头晕特点', a: '头晕目眩，头重如裹，如坐舟船，劳累后加重' },
-                            { q: '伴随症状', a: '胸闷恶心，时有痰多，右侧肢体麻木感' },
-                            { q: '饮食情况', a: '喜食肥甘厚味，体型偏胖' },
-                            { q: '二便情况', a: '大便黏滞不爽，小便尚可' },
+                            { q:'头晕特点', a:'头晕目眩，头重如裹，劳累加重', keywords:['头晕','头重','眩晕'] },
+                            { q:'伴随症状', a:'胸闷恶心，痰多，右侧肢体麻木', keywords:['胸闷','恶心','痰','麻木'] },
+                            { q:'饮食', a:'喜食肥甘厚味', keywords:['饮食','肥甘','油腻'] },
+                            { q:'二便', a:'大便黏滞不爽', keywords:['大便','黏滞'] },
                         ],
                     },
-                    pulse: {
-                        displayTitle: '切脉结果',
-                        displayContent: '脉弦滑，右脉略带涩象。',
-                        textSummary: '脉弦滑，略带涩象'
-                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉弦滑，略带涩象。', textSummary:'脉弦滑，涩' },
                 },
-                correctAnswer: {
-                    disease: '眩晕',
-                    syndrome: '痰瘀互结证',
-                    westernDiagnosis: '脑动脉供血不足（待排）',
-                },
+                correctAnswer: { disease:'眩晕', syndrome:'痰瘀互结证', westernDiagnosis:'脑动脉供血不足' },
                 fullAnalysis: {
-                    disease: '眩晕',
-                    syndrome: '痰瘀互结证',
-                    westernDiagnosis: '脑动脉供血不足（待排）',
-                    pathogenesis: '患者喜食肥甘，脾失健运，痰湿内生，上蒙清窍则头晕目眩、头重如裹。痰阻气机，血行不畅，瘀血内生，痰瘀互结，经络不通则肢体麻木。舌暗红有瘀点、苔白腻、脉弦滑为痰瘀互结之象。',
-                    prescription: '半夏白术天麻汤合桃红四物汤加减：\n半夏12g、白术15g、天麻10g、茯苓20g、陈皮10g、桃仁10g、红花8g、当归12g、川芎10g、赤芍12g、丹参15g。\n水煎服，日一剂。',
-                    knowledgePoints: [
-                        '痰瘀互结证：头晕目眩，头重，肢体麻木，舌暗有瘀点，苔腻，脉弦滑。',
-                        '半夏白术天麻汤化痰息风，健脾祛湿。',
-                        '桃红四物汤活血化瘀，通络止痛。',
-                        '痰瘀同治是治疗复杂眩晕的重要思路。',
-                    ],
-                },
-            }, ],
-        };
-
-        // ==================== 应用状态 ====================
-        let currentDifficulty = null;
-        let currentCase = null;
-        let collectedClues = []; // { tag, tagClass, content }
-        let exploredDiags = {}; // { inspection: true, auscultation: true, inquiry: [...askedIndices], pulse: true }
-        let gameStarted = false;
-
-        // ==================== 页面导航 ====================
-        function showPage(pageName) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            const target = document.getElementById('page' + pageName);
-            if (target) target.classList.add('active');
-            // 滚动到顶部
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function goHome() {
-            showPage('Home');
-            // 不重置游戏状态，保留以便用户返回
-        }
-
-        function startChallenge() {
-            showPage('Game');
-            // 重置游戏界面
-            resetGameUI();
-            document.getElementById('difficultyBtns').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function showAbout() {
-            showPage('About');
-        }
-
-        // ==================== 游戏逻辑 ====================
-        function resetGameUI() {
-            currentDifficulty = null;
-            currentCase = null;
-            collectedClues = [];
-            exploredDiags = {};
-            gameStarted = false;
-            document.getElementById('chiefComplaintCard').style.display = 'none';
-            document.getElementById('fourDiagBtns').style.display = 'none';
-            document.getElementById('clueCollectionCard').style.display = 'none';
-            document.getElementById('answerCard').style.display = 'none';
-            document.getElementById('gameExtraBtns').style.display = 'none';
-            document.getElementById('clueArea').innerHTML = '';
-            document.getElementById('answerFeedback').innerHTML = '';
-            document.getElementById('fullAnalysisArea').innerHTML = '';
-            document.getElementById('inputSyndrome').value = '';
-            document.getElementById('inputDisease').value = '';
-            // 重置难度按钮样式
-            document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove(
-                'selected'));
-            // 重置四诊按钮
-            resetDiagButtons();
-        }
-
-        function resetDiagButtons() {
-            ['btnWang', 'btnWen', 'btnAsk', 'btnPulse'].forEach(id => {
-                const btn = document.getElementById(id);
-                if (btn) btn.classList.remove('explored');
-            });
-        }
-
-        function selectDifficulty(difficulty, btnElement) {
-            // 更新选中样式
-            document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove(
-            'selected'));
-            if (btnElement) btnElement.classList.add('selected');
-
-            currentDifficulty = difficulty;
-            // 从该难度随机选择一个病例
-            const pool = casesDB[difficulty];
-            if (!pool || pool.length === 0) {
-                alert('该难度暂无病例，请选择其他难度。');
-                return;
+                    disease:'眩晕', syndrome:'痰瘀互结证',
+                    pathogenesis:'痰湿内生，上蒙清窍，痰阻气机，瘀血内生。',
+                    prescription:'半夏白术天麻汤合桃红四物汤加减。',
+                    knowledgePoints:['痰瘀互结证：头晕目眩，头重，肢体麻木，舌暗瘀点。']
+                }
             }
-            // 随机选择（如果只有一个则固定）
-            const randomIndex = Math.floor(Math.random() * pool.length);
-            currentCase = pool[randomIndex];
-            collectedClues = [];
-            exploredDiags = { inspection: false, auscultation: false, inquiry: [], pulse: false };
-            gameStarted = true;
+        ]
+    };
 
-            // 显示病例主诉
-            document.getElementById('chiefComplaintCard').style.display = 'block';
-            document.getElementById('chiefComplaintText').textContent = currentCase.chiefComplaint;
-            document.getElementById('fourDiagBtns').style.display = 'grid';
-            document.getElementById('clueCollectionCard').style.display = 'block';
-            document.getElementById('answerCard').style.display = 'block';
-            document.getElementById('gameExtraBtns').style.display = 'flex';
-            document.getElementById('clueArea').innerHTML = '';
-            document.getElementById('answerFeedback').innerHTML = '';
-            document.getElementById('fullAnalysisArea').innerHTML = '';
-            document.getElementById('inputSyndrome').value = '';
-            document.getElementById('inputDisease').value = '';
-            resetDiagButtons();
+    const genericAnswers = ["这个没什么特别的。","还好，没太注意。","有时有，有时没有。","和之前差不多。","好像没什么影响。","没感觉到什么异常。","就这样，老样子。","记不太清了。"];
 
-            // 滚动到病例主诉
-            document.getElementById('chiefComplaintCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    let currentDifficulty = null;
+    let currentCase = null;
+    let collectedClues = [];
+    let exploredDiags = {};
+    let gameStarted = false;
+    let inquiryHistory = [];
+    let askedInquiryQuestions = [];
 
-            // 动画提示
-            const card = document.getElementById('chiefComplaintCard');
-            card.style.animation = 'none';
-            card.offsetHeight;
-            card.style.animation = 'popIn 0.5s ease';
+    function getCompletedCases() {
+        return JSON.parse(localStorage.getItem('tcm_completed_cases') || '[]');
+    }
+    function markCaseCompleted(caseId) {
+        const arr = getCompletedCases();
+        if (!arr.includes(caseId)) {
+            arr.push(caseId);
+            localStorage.setItem('tcm_completed_cases', JSON.stringify(arr));
         }
+    }
 
-        function exploreDiag(diagType) {
-            if (!gameStarted || !currentCase) {
-                alert('请先在顶部选择一个难度开始闯关。');
-                return;
-            }
+    function showPage(name) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page'+name)?.classList.add('active');
+        window.scrollTo({top:0,behavior:'smooth'});
+        document.querySelectorAll('.top-nav .nav-link').forEach(l=>l.classList.remove('nav-active'));
+        const map={Home:'navHome',Game:'navGame',About:'navAbout'};
+        document.getElementById(map[name])?.classList.add('nav-active');
+    }
+    function goHome(){ showPage('Home'); }
+    function startChallenge(){ showPage('Game'); resetGameUI(); }
+    function showAbout(){ showPage('About'); }
 
-            if (diagType === 'inquiry') {
-                // 问诊：弹出问题选择弹窗
-                openInquiryModal();
-                return;
-            }
+    function resetGameUI(){
+        currentDifficulty=null; currentCase=null; collectedClues=[]; exploredDiags={}; gameStarted=false;
+        inquiryHistory=[]; askedInquiryQuestions=[];
+        document.getElementById('chiefComplaintCard').style.display='none';
+        document.getElementById('fourDiagBtns').style.display='none';
+        document.getElementById('clueCollectionCard').style.display='none';
+        document.getElementById('answerCard').style.display='none';
+        document.getElementById('gameExtraBtns').style.display='none';
+        document.getElementById('clueArea').innerHTML='';
+        document.getElementById('answerFeedback').innerHTML='';
+        document.getElementById('fullAnalysisArea').innerHTML='';
+        document.getElementById('inputSyndrome').value='';
+        document.getElementById('inputDisease').value='';
+        document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b=>b.classList.remove('selected'));
+        ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id=>document.getElementById(id)?.classList.remove('explored'));
+    }
 
-            if (diagType === 'inspection') {
-                // 望诊：弹出舌象观察弹窗
-                openInspectionModal();
-                return;
-            }
-
-            // 闻诊和切脉：检查是否已探索
-            if (exploredDiags[diagType]) {
-                alert('该诊法已探索过，请查看线索收集区。');
-                return;
-            }
-
-            // 标记为已探索
-            exploredDiags[diagType] = true;
-            markDiagButtonExplored(diagType);
-
-            // 获取线索
-            const clueData = currentCase.clues[diagType];
-            if (clueData) {
-                // 显示弹窗
-                openSimpleResultModal(clueData.displayTitle, clueData.displayContent);
-                // 添加线索
-                addClue(diagType, clueData.textSummary || clueData.displayContent);
-            }
+    function selectDifficulty(diff, btnEl){
+        document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b=>b.classList.remove('selected'));
+        btnEl.classList.add('selected');
+        currentDifficulty = diff;
+        const pool = casesDB[diff];
+        if(!pool || pool.length===0){ alert('该难度暂无病例。'); return; }
+        const completed = getCompletedCases();
+        let available = pool.filter(c => !completed.includes(c.id));
+        if(available.length === 0){
+            const newCompleted = completed.filter(id => !pool.some(c => c.id === id));
+            localStorage.setItem('tcm_completed_cases', JSON.stringify(newCompleted));
+            available = pool;
         }
+        const randomIndex = Math.floor(Math.random() * available.length);
+        currentCase = available[randomIndex];
+        collectedClues=[]; exploredDiags={inspection:false,auscultation:false,inquiry:false,pulse:false};
+        inquiryHistory=[]; askedInquiryQuestions=[]; gameStarted=true;
+        document.getElementById('chiefComplaintCard').style.display='block';
+        document.getElementById('chiefComplaintText').textContent = currentCase.chiefComplaint;
+        document.getElementById('fourDiagBtns').style.display='grid';
+        document.getElementById('clueCollectionCard').style.display='block';
+        document.getElementById('answerCard').style.display='block';
+        document.getElementById('gameExtraBtns').style.display='flex';
+        document.getElementById('clueArea').innerHTML='';
+        document.getElementById('answerFeedback').innerHTML='';
+        document.getElementById('fullAnalysisArea').innerHTML='';
+        document.getElementById('inputSyndrome').value='';
+        document.getElementById('inputDisease').value='';
+        ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id=>document.getElementById(id)?.classList.remove('explored'));
+        document.getElementById('chiefComplaintCard').scrollIntoView({behavior:'smooth',block:'center'});
+    }
 
-        function openInspectionModal() {
-            if (!currentCase) return;
-            if (exploredDiags['inspection']) {
-                alert('望诊已观察过，请查看线索收集区。');
-                return;
+    function exploreDiag(type){
+        if(!gameStarted||!currentCase){ alert('请先选择难度。'); return; }
+        if(type==='inquiry'){ openInquiryModal(); return; }
+        if(type==='inspection'){ openInspectionModal(); return; }
+        if(exploredDiags[type]){ alert('该诊法已探索过。'); return; }
+        exploredDiags[type]=true; markExplored(type);
+        const clue = currentCase.clues[type];
+        if(clue){ openSimpleResultModal(clue.displayTitle, clue.displayContent); addClue(type, clue.textSummary); }
+    }
+
+    function openInquiryModal(){
+        if(!currentCase) return;
+        document.getElementById('inquiryChatArea').innerHTML='';
+        inquiryHistory.forEach(m=>appendChat(m.role,m.text));
+        document.getElementById('inquiryInput').value='';
+        document.getElementById('inquiryModal').style.display='flex';
+        document.getElementById('inquiryInput').focus();
+    }
+    function appendChat(role,text){
+        const div=document.createElement('div');
+        div.className='chat-bubble '+(role==='user'?'user':'patient');
+        div.textContent=text;
+        document.getElementById('inquiryChatArea').appendChild(div);
+        document.getElementById('inquiryChatArea').scrollTop=document.getElementById('inquiryChatArea').scrollHeight;
+    }
+    function sendInquiry(){
+        const input=document.getElementById('inquiryInput');
+        const q=input.value.trim(); if(!q||!currentCase) return;
+        inquiryHistory.push({role:'user',text:q}); appendChat('user',q);
+        input.value='';
+        const questions=currentCase.clues.inquiry.questions;
+        let matched=-1;
+        for(let i=0;i<questions.length;i++){
+            if(questions[i].keywords.some(k=>q.includes(k))){ matched=i; break; }
+        }
+        let answer='';
+        if(matched>=0){
+            answer=questions[matched].a;
+            if(!askedInquiryQuestions.includes(matched)){
+                askedInquiryQuestions.push(matched);
+                addClue('inquiry', answer, '问诊·'+questions[matched].q);
+            } else { answer+='（这个问题刚才已经回答过了）'; }
+        } else {
+            answer=genericAnswers[Math.floor(Math.random()*genericAnswers.length)];
+        }
+        setTimeout(()=>{
+            inquiryHistory.push({role:'patient',text:answer}); appendChat('patient',answer);
+            if(askedInquiryQuestions.length>=questions.length){ exploredDiags.inquiry=true; markExplored('inquiry'); }
+        },300);
+    }
+    function closeInquiryModal(){
+        document.getElementById('inquiryModal').style.display='none';
+        if(currentCase && askedInquiryQuestions.length>=currentCase.clues.inquiry.questions.length){
+            exploredDiags.inquiry=true; markExplored('inquiry');
+        }
+    }
+
+    function openInspectionModal(){
+        if(!currentCase||exploredDiags.inspection){ alert('望诊已观察过。'); return; }
+        document.getElementById('inspectionDesc').textContent=currentCase.clues.inspection.tongueDesc;
+        document.getElementById('inspectionModal').style.display='flex';
+    }
+    function closeInspectionModal(){
+        document.getElementById('inspectionModal').style.display='none';
+        if(!exploredDiags.inspection && currentCase){
+            exploredDiags.inspection=true; markExplored('inspection');
+            addClue('inspection', currentCase.clues.inspection.textSummary);
+        }
+    }
+
+    function openSimpleResultModal(title,content){
+        document.getElementById('simpleResultTitle').textContent=title;
+        document.getElementById('simpleResultContent').textContent=content;
+        document.getElementById('simpleResultModal').style.display='flex';
+    }
+    function closeSimpleResultModal(){ document.getElementById('simpleResultModal').style.display='none'; }
+
+    function markExplored(type){
+        const map={inspection:'btnWang',auscultation:'btnWen',inquiry:'btnAsk',pulse:'btnPulse'};
+        document.getElementById(map[type])?.classList.add('explored');
+    }
+
+    function addClue(type, content, tagText){
+        const tagMap={inspection:'tag-wang',auscultation:'tag-wen',inquiry:'tag-ask',pulse:'tag-pulse'};
+        const nameMap={inspection:'望诊',auscultation:'闻诊',inquiry:'问诊',pulse:'切脉'};
+        const tag=tagText||nameMap[type];
+        if(collectedClues.some(c=>c.content===content&&c.tag===tag)) return;
+        collectedClues.push({tag, tagClass:tagMap[type], content});
+        renderClues();
+    }
+    function renderClues(){
+        const area=document.getElementById('clueArea');
+        area.innerHTML=collectedClues.map(c=>`<div class="clue-item"><span class="clue-tag ${c.tagClass}">${c.tag}</span><span>${c.content}</span></div>`).join('');
+        area.scrollTop=area.scrollHeight;
+    }
+
+    function submitAnswer(){
+        if(!gameStarted||!currentCase){ alert('请先选择难度。'); return; }
+        const syndrome=document.getElementById('inputSyndrome').value.trim();
+        const disease=document.getElementById('inputDisease').value.trim();
+        if(!syndrome&&!disease){ alert('请至少输入证型或病名。'); return; }
+        const correct=currentCase.correctAnswer;
+        const fb=document.getElementById('answerFeedback');
+        const analysis=document.getElementById('fullAnalysisArea');
+        const dOk=disease && correct.disease.includes(disease.replace(/证$/,''));
+        const sOk=syndrome && (correct.syndrome.includes('风热')&&syndrome.includes('风热')&&syndrome.includes('津伤') ||
+            correct.syndrome.includes('脾胃虚寒')&&syndrome.includes('脾胃虚寒') ||
+            correct.syndrome.includes('痰瘀互结')&&syndrome.includes('痰瘀')&&syndrome.includes('互结') ||
+            correct.syndrome.includes('痰热壅肺')&&syndrome.includes('痰热壅肺') ||
+            syndrome===correct.syndrome);
+        if(dOk&&sOk){
+            fb.innerHTML=`<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${correct.disease} · ${correct.syndrome}</p></div>`;
+            showFullAnalysis(analysis);
+            saveRecord(true);
+            markCaseCompleted(currentCase.id);
+        } else {
+            let feedbackHtml = '';
+            if(!dOk && !sOk){
+                feedbackHtml = `<div class="result-box fail"><h4>🤔 辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
+            } else {
+                const parts=[];
+                if(dOk) parts.push('✅ 病名基本正确'); else parts.push('⚠️ 病名需调整');
+                if(sOk) parts.push('✅ 证型判断准确'); else parts.push('⚠️ 证型需斟酌');
+                feedbackHtml = `<div class="result-box fail"><h4>🔍 部分正确</h4><p>${parts.join('，')}</p>`;
             }
-            const inspData = currentCase.clues.inspection;
-            document.getElementById('inspectionDesc').textContent = inspData.tongueDesc || inspData.displayContent;
-            document.getElementById('inspectionModal').style.display = 'flex';
+            feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">💡 查看答案</button></div>`;
+            fb.innerHTML = feedbackHtml;
+            analysis.innerHTML = '';
         }
+        fb.scrollIntoView({behavior:'smooth'});
+    }
 
-        function closeInspectionModal() {
-            document.getElementById('inspectionModal').style.display = 'none';
-            if (!exploredDiags['inspection'] && currentCase) {
-                exploredDiags['inspection'] = true;
-                markDiagButtonExplored('inspection');
-                const inspData = currentCase.clues.inspection;
-                addClue('inspection', inspData.textSummary || inspData.displayContent);
-            }
+    function viewAnswer(){
+        if(!currentCase) return;
+        showFullAnalysis(document.getElementById('fullAnalysisArea'));
+        markCaseCompleted(currentCase.id);
+        saveRecord(false); // 记录为查看答案
+    }
+
+    function showFullAnalysis(el){
+        const fa=currentCase.fullAnalysis;
+        el.innerHTML=`<div class="result-box success">
+            <h4>📋 完整医案解析</h4>
+            <p><strong>中医病证：</strong>${fa.disease}（${fa.syndrome}）</p>
+            <p><strong>西医诊断：</strong>${fa.westernDiagnosis}</p>
+            <hr><p><strong>病机分析：</strong>${fa.pathogenesis}</p>
+            <hr><p><strong>推荐方药：</strong>${fa.prescription}</p>
+            <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k=>`<li>${k}</li>`).join('')}</ul>
+        </div>`;
+    }
+
+    function resetCurrentCase(){
+        if(!currentCase) return;
+        if(confirm('确定重新探查吗？线索将清除。')){
+            collectedClues=[]; exploredDiags={inspection:false,auscultation:false,inquiry:false,pulse:false};
+            inquiryHistory=[]; askedInquiryQuestions=[];
+            document.getElementById('clueArea').innerHTML='';
+            document.getElementById('answerFeedback').innerHTML='';
+            document.getElementById('fullAnalysisArea').innerHTML='';
+            ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id=>document.getElementById(id)?.classList.remove('explored'));
         }
+    }
 
-        function openSimpleResultModal(title, content) {
-            document.getElementById('simpleResultTitle').textContent = title;
-            document.getElementById('simpleResultContent').textContent = content;
-            document.getElementById('simpleResultModal').style.display = 'flex';
-        }
+    function saveRecord(correct){
+        const records=JSON.parse(localStorage.getItem('tcm_learning_records')||'[]');
+        records.push({date:new Date().toLocaleString(),case:currentCase.title,difficulty:currentDifficulty,correct});
+        if(records.length>50) records.shift();
+        localStorage.setItem('tcm_learning_records',JSON.stringify(records));
+    }
 
-        function closeSimpleResultModal() {
-            document.getElementById('simpleResultModal').style.display = 'none';
-        }
+    function openRecords(){
+        const records=JSON.parse(localStorage.getItem('tcm_learning_records')||'[]');
+        const el=document.getElementById('recordsContent');
+        if(records.length===0) el.innerHTML='<p style="text-align:center;color:#b5a595;">📭 暂无学习记录</p>';
+        else el.innerHTML=records.reverse().map((r,i)=>`<div style="padding:8px;margin:4px 0;background:#fdfaf5;border-radius:8px;">${r.date} ${r.case} (${r.difficulty}) ${r.correct?'✅':'⚠️'}</div>`).join('')
+            +'<button class="btn btn--ghost" style="margin-top:10px;width:100%;" onclick="clearRecords()">🗑️ 清空记录</button>';
+        document.getElementById('recordsModal').style.display='flex';
+    }
+    function closeRecords(){ document.getElementById('recordsModal').style.display='none'; }
+    function clearRecords(){ if(confirm('清空学习记录？')){ localStorage.removeItem('tcm_learning_records'); closeRecords(); } }
 
-        function openInquiryModal() {
-            if (!currentCase) return;
-            const inquiryData = currentCase.clues.inquiry;
-            if (!inquiryData || !inquiryData.questions) return;
-
-            const askedIndices = exploredDiags['inquiry'] || [];
-            const allAsked = askedIndices.length >= inquiryData.questions.length;
-            if (allAsked) {
-                alert('问诊问题已全部询问过，请查看线索收集区。');
-                return;
-            }
-
-            // 构建问题列表
-            const listContainer = document.getElementById('inquiryQuestionList');
-            listContainer.innerHTML = '';
-            inquiryData.questions.forEach((q, index) => {
-                const btn = document.createElement('button');
-                btn.className = 'q-btn' + (askedIndices.includes(index) ? ' asked' : '');
-                btn.textContent = q.q;
-                if (!askedIndices.includes(index)) {
-                    btn.onclick = () => askQuestion(index);
+    function openCaseBank(){
+        const labels={basic:'🌱 基础（大一）',intermediate:'📖 进阶',advanced:'🎓 考研'};
+        const completedIds = getCompletedCases();
+        let html='';
+        for(const [diff,cases] of Object.entries(casesDB)){
+            html+=`<h4 style="margin-top:14px;color:var(--primary);">${labels[diff]}</h4>`;
+            cases.forEach(c=>{
+                const isCompleted = completedIds.includes(c.id);
+                let content = `<strong>${c.title}</strong><br>`;
+                content += `主诉：${c.chiefComplaint.replace(/\n/g,'<br>')}<br>`;
+                if(isCompleted){
+                    content += `<span style="color:var(--accent);font-weight:600;">✅ 已完成</span><br>`;
+                    content += `病名：${c.correctAnswer.disease} | 证型：${c.correctAnswer.syndrome}<br>`;
+                    if(c.correctAnswer.westernDiagnosis) content += `西医诊断：${c.correctAnswer.westernDiagnosis}<br>`;
                 } else {
-                    btn.textContent = q.q + '（已问）';
-                    btn.disabled = true;
+                    content += `<span style="color:var(--text-muted);">❓ 尚未完成</span>`;
                 }
-                listContainer.appendChild(btn);
+                html += `<div style="padding:10px;margin:6px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;">${content}</div>`;
             });
-
-            document.getElementById('inquiryAnswerDisplay').style.display = 'none';
-            document.getElementById('inquiryAnswerDisplay').textContent = '';
-            document.getElementById('inquiryModal').style.display = 'flex';
         }
+        document.getElementById('caseBankContent').innerHTML = html;
+        document.getElementById('caseBankModal').style.display='flex';
+    }
+    function closeCaseBank(){ document.getElementById('caseBankModal').style.display='none'; }
 
-        function askQuestion(index) {
-            if (!currentCase) return;
-            const inquiryData = currentCase.clues.inquiry;
-            if (!inquiryData || !inquiryData.questions) return;
-            const askedIndices = exploredDiags['inquiry'] || [];
-            if (askedIndices.includes(index)) return;
+    document.addEventListener('click',e=>{ if(e.target.classList.contains('modal-overlay')) e.target.style.display='none'; });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay').forEach(m=>m.style.display='none'); });
 
-            // 记录
-            askedIndices.push(index);
-            exploredDiags['inquiry'] = askedIndices;
-
-            // 显示答案
-            const answer = inquiryData.questions[index].a;
-            const displayEl = document.getElementById('inquiryAnswerDisplay');
-            displayEl.textContent = '💡 患者回答：' + answer;
-            displayEl.style.display = 'block';
-            displayEl.style.animation = 'none';
-            displayEl.offsetHeight;
-            displayEl.style.animation = 'popIn 0.3s ease';
-
-            // 添加线索
-            const tagText = '问诊·' + inquiryData.questions[index].q;
-            addClue('inquiry', answer, tagText);
-
-            // 更新问题列表
-            const allBtns = document.querySelectorAll('#inquiryQuestionList .q-btn');
-            if (allBtns[index]) {
-                allBtns[index].classList.add('asked');
-                allBtns[index].textContent = inquiryData.questions[index].q + '（已问）';
-                allBtns[index].disabled = true;
-                allBtns[index].onclick = null;
-            }
-
-            // 检查是否全部问完
-            if (askedIndices.length >= inquiryData.questions.length) {
-                markDiagButtonExplored('inquiry');
-            }
-        }
-
-        function closeInquiryModal() {
-            document.getElementById('inquiryModal').style.display = 'none';
-            // 检查是否所有问诊问题都已问完
-            if (currentCase && exploredDiags['inquiry'] && Array.isArray(exploredDiags['inquiry'])) {
-                const totalQ = currentCase.clues.inquiry.questions.length;
-                if (exploredDiags['inquiry'].length >= totalQ) {
-                    markDiagButtonExplored('inquiry');
-                }
-            }
-        }
-
-        function markDiagButtonExplored(diagType) {
-            const btnMap = {
-                'inspection': 'btnWang',
-                'auscultation': 'btnWen',
-                'inquiry': 'btnAsk',
-                'pulse': 'btnPulse',
-            };
-            const btnId = btnMap[diagType];
-            if (btnId) {
-                const btn = document.getElementById(btnId);
-                if (btn) btn.classList.add('explored');
-            }
-        }
-
-        function addClue(diagType, content, customTag) {
-            const tagClassMap = {
-                'inspection': 'tag-wang',
-                'auscultation': 'tag-wen',
-                'inquiry': 'tag-ask',
-                'pulse': 'tag-pulse',
-            };
-            const tagNameMap = {
-                'inspection': '望诊',
-                'auscultation': '闻诊',
-                'inquiry': '问诊',
-                'pulse': '切脉',
-            };
-            const tagClass = tagClassMap[diagType] || 'tag-wang';
-            const tagText = customTag || (tagNameMap[diagType] || diagType);
-
-            // 避免重复
-            const exists = collectedClues.some(c => c.content === content && c.tag === tagText);
-            if (exists) return;
-
-            collectedClues.push({ tag: tagText, tagClass, content });
-            renderClues();
-        }
-
-        function renderClues() {
-            const area = document.getElementById('clueArea');
-            area.innerHTML = collectedClues.map(c => `
-            <div class="clue-item">
-              <span class="clue-tag ${c.tagClass}">${c.tag}</span>
-              <span>${c.content}</span>
-            </div>
-          `).join('');
-            // 滚动到最新
-            area.scrollTop = area.scrollHeight;
-        }
-
-        function submitAnswer() {
-            if (!gameStarted || !currentCase) {
-                alert('请先选择难度开始闯关。');
-                return;
-            }
-            const inputSyndrome = document.getElementById('inputSyndrome').value.trim();
-            const inputDisease = document.getElementById('inputDisease').value.trim();
-
-            if (!inputSyndrome && !inputDisease) {
-                alert('请至少输入证型或病名。');
-                return;
-            }
-
-            const correct = currentCase.correctAnswer;
-            const feedbackEl = document.getElementById('answerFeedback');
-            const analysisEl = document.getElementById('fullAnalysisArea');
-
-            // 判定逻辑：包含关键词即可
-            const diseaseMatch = inputDisease && correct.disease.includes(inputDisease.replace(/证$/, ''));
-            const diseasePartial = inputDisease && (correct.disease.includes('咳嗽') && inputDisease.includes('咳嗽')) ||
-                (correct.disease.includes('胃痛') && inputDisease.includes('胃痛')) ||
-                (correct.disease.includes('眩晕') && inputDisease.includes('眩晕'));
-
-            const syndromeKeywords = correct.syndrome.replace(/证$/, '').split(/(?<=[证])|(?<=犯)|(?<=结)/).filter(k => k
-                .length >= 1);
-            // 简化：检查是否包含关键字符
-            const syndromeMatch = inputSyndrome && (
-                (correct.syndrome.includes('风热') && inputSyndrome.includes('风热') && inputSyndrome.includes('津伤')) ||
-                (correct.syndrome.includes('脾胃虚寒') && inputSyndrome.includes('脾胃虚寒')) ||
-                (correct.syndrome.includes('痰瘀互结') && inputSyndrome.includes('痰瘀') && inputSyndrome.includes('互结')) ||
-                (correct.syndrome.includes('风热犯肺') && inputSyndrome.includes('风热犯肺')) ||
-                inputSyndrome === correct.syndrome
-            );
-
-            const isDiseaseCorrect = diseaseMatch || diseasePartial;
-            const isSyndromeCorrect = syndromeMatch;
-
-            if (isDiseaseCorrect && isSyndromeCorrect) {
-                // ✅ 答对
-                feedbackEl.innerHTML = `
-              <div class="result-box success">
-                <h4>🎉 辨证正确！</h4>
-                <p>病名：<strong>${correct.disease}</strong> | 证型：<strong>${correct.syndrome}</strong></p>
-              </div>`;
-                showFullAnalysis(analysisEl);
-                // 保存学习记录
-                saveRecord(true);
-            } else if (!isDiseaseCorrect && !isSyndromeCorrect) {
-                // ❌ 都错
-                feedbackEl.innerHTML = `
-              <div class="result-box fail">
-                <h4>🤔 辨证偏差较大</h4>
-                <p>线索可能不足，或辨证方向需要调整。建议继续探查四诊信息，或重新审视已收集的线索。</p>
-                <p style="font-size:0.85em;color:#8b6914;">💡 提示：注意四诊合参，综合判断。</p>
-              </div>`;
-                analysisEl.innerHTML = '';
-            } else {
-                // 部分正确
-                const correctParts = [];
-                const wrongParts = [];
-                if (isDiseaseCorrect) correctParts.push('病名基本正确');
-                else wrongParts.push('病名需要调整');
-                if (isSyndromeCorrect) correctParts.push('证型判断准确');
-                else wrongParts.push('证型还需斟酌');
-                feedbackEl.innerHTML = `
-              <div class="result-box fail">
-                <h4>🔍 部分正确</h4>
-                <p>✅ ${correctParts.join('，')}</p>
-                <p>⚠️ ${wrongParts.join('，')}</p>
-                <p style="font-size:0.85em;color:#8b6914;">建议继续探查或调整思路后重新提交。</p>
-              </div>`;
-                analysisEl.innerHTML = '';
-                // 部分正确也记录
-                if (isDiseaseCorrect && isSyndromeCorrect) saveRecord(true);
-            }
-
-            feedbackEl.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function showFullAnalysis(analysisEl) {
-            const fa = currentCase.fullAnalysis;
-            analysisEl.innerHTML = `
-            <div class="result-box success" style="margin-top:8px;">
-              <h4>📋 完整医案解析</h4>
-              <p><strong>中医病证：</strong>${fa.disease}（${fa.syndrome}）</p>
-              <p><strong>西医诊断：</strong>${fa.westernDiagnosis}</p>
-              <hr style="border-color:#c8e0d0;margin:8px 0;">
-              <p><strong>病机分析：</strong><br>${fa.pathogenesis}</p>
-              <hr style="border-color:#c8e0d0;margin:8px 0;">
-              <p><strong>推荐方药：</strong><br>${fa.prescription.replace(/\n/g, '<br>')}</p>
-              <hr style="border-color:#c8e0d0;margin:8px 0;">
-              <p><strong>知识点总结：</strong></p>
-              <ul style="padding-left:20px;line-height:1.8;">
-                ${fa.knowledgePoints.map(kp => `<li>${kp}</li>`).join('')}
-              </ul>
-            </div>`;
-        }
-
-        function resetCurrentCase() {
-            if (!currentDifficulty || !currentCase) {
-                alert('请先选择难度开始闯关。');
-                return;
-            }
-            if (confirm('确定要重新探查当前病例吗？所有已收集的线索将被清除。')) {
-                collectedClues = [];
-                exploredDiags = { inspection: false, auscultation: false, inquiry: [], pulse: false };
-                document.getElementById('clueArea').innerHTML = '';
-                document.getElementById('answerFeedback').innerHTML = '';
-                document.getElementById('fullAnalysisArea').innerHTML = '';
-                document.getElementById('inputSyndrome').value = '';
-                document.getElementById('inputDisease').value = '';
-                resetDiagButtons();
-                document.getElementById('chiefComplaintCard').scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-
-        // ==================== 学习记录（localStorage） ====================
-        function saveRecord(isCorrect) {
-            const records = JSON.parse(localStorage.getItem('tcm_learning_records') || '[]');
-            records.push({
-                date: new Date().toLocaleString('zh-CN'),
-                caseTitle: currentCase.title,
-                difficulty: currentDifficulty,
-                disease: currentCase.correctAnswer.disease,
-                syndrome: currentCase.correctAnswer.syndrome,
-                correct: isCorrect,
-                cluesCount: collectedClues.length,
-            });
-            // 保留最近50条
-            if (records.length > 50) records.shift();
-            localStorage.setItem('tcm_learning_records', JSON.stringify(records));
-        }
-
-        function openRecords() {
-            const records = JSON.parse(localStorage.getItem('tcm_learning_records') || '[]');
-            const contentEl = document.getElementById('recordsContent');
-            if (records.length === 0) {
-                contentEl.innerHTML =
-                    '<p style="text-align:center;color:#b5a595;padding:30px;">📭 暂无学习记录<br>快去闯关吧！</p>';
-            } else {
-                contentEl.innerHTML = records.reverse().map((r, i) => `
-              <div style="padding:10px 14px;margin:6px 0;background:#fdfaf5;border-radius:8px;border-left:3px solid ${r.correct ? '#6aaf8a' : '#e0b060'};font-size:0.9em;">
-                <strong>#${records.length - i}</strong> ${r.date}<br>
-                病例：${r.caseTitle} | 难度：${r.difficulty}<br>
-                辨证：${r.syndrome}（${r.disease}）<br>
-                结果：${r.correct ? '✅ 正确' : '⚠️ 未完全正确'} | 收集线索：${r.cluesCount}条
-              </div>
-            `).join('');
-                contentEl.innerHTML +=
-                    '<button class="btn btn--ghost" style="margin-top:10px;width:100%;" onclick="clearRecords()">🗑️ 清空记录</button>';
-            }
-            document.getElementById('recordsModal').style.display = 'flex';
-        }
-
-        function closeRecords() {
-            document.getElementById('recordsModal').style.display = 'none';
-        }
-
-        function clearRecords() {
-            if (confirm('确定要清空所有学习记录吗？此操作不可恢复。')) {
-                localStorage.removeItem('tcm_learning_records');
-                closeRecords();
-            }
-        }
-
-        // ==================== 病例题库弹窗 ====================
-        function openCaseBank() {
-            const contentEl = document.getElementById('caseBankContent');
-            let html = '';
-            const diffLabels = { basic: '🌱 基础（大一）', intermediate: '📖 进阶（内外妇儿）', advanced: '🎓 考研病例' };
-            for (const [diff, cases] of Object.entries(casesDB)) {
-                html += `<h4 style="margin-top:14px;color:var(--primary);">${diffLabels[diff] || diff}</h4>`;
-                cases.forEach(c => {
-                    html += `
-                <div style="padding:10px 14px;margin:6px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;">
-                  <strong>${c.title}</strong><br>
-                  <span style="color:var(--text-muted);">主诉：${c.chiefComplaint.substring(0, 50)}...</span><br>
-                  <span style="font-size:0.8em;color:#b5a595;">答案：${c.correctAnswer.syndrome} / ${c.correctAnswer.disease}</span>
-                </div>`;
-                });
-            }
-            if (!html) html = '<p style="text-align:center;color:#b5a595;padding:30px;">📭 题库建设中...</p>';
-            html +=
-                '<p style="font-size:0.78em;color:#b5a595;margin-top:10px;text-align:center;">💡 点击首页"开始闯关"选择难度进行练习</p>';
-            contentEl.innerHTML = html;
-            document.getElementById('caseBankModal').style.display = 'flex';
-        }
-
-        function closeCaseBank() {
-            document.getElementById('caseBankModal').style.display = 'none';
-        }
-
-        // ==================== 全局弹窗关闭 ====================
-        // 点击遮罩关闭弹窗
-        document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal-overlay')) {
-                e.target.style.display = 'none';
-                // 检查问诊弹窗关闭时的状态
-                if (e.target.id === 'inquiryModal' && currentCase && exploredDiags['inquiry'] && Array.isArray(
-                        exploredDiags['inquiry'])) {
-                    const totalQ = currentCase.clues.inquiry.questions.length;
-                    if (exploredDiags['inquiry'].length >= totalQ) {
-                        markDiagButtonExplored('inquiry');
-                    }
-                }
-            }
-        });
-
-        // ESC关闭弹窗
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                document.querySelectorAll('.modal-overlay').forEach(m => {
-                    if (m.style.display === 'flex') m.style.display = 'none';
-                });
-                // 检查问诊状态
-                if (currentCase && exploredDiags['inquiry'] && Array.isArray(exploredDiags['inquiry'])) {
-                    const totalQ = currentCase.clues.inquiry.questions.length;
-                    if (exploredDiags['inquiry'].length >= totalQ) {
-                        markDiagButtonExplored('inquiry');
-                    }
-                }
-            }
-        });
-
-        // ==================== 顶部导航初始化 ====================
-        function initNav() {
-            // 在首页插入导航
-            const navHTML = `
-            <div class="top-nav" style="margin-bottom:8px;">
-              <span class="nav-link nav-active" onclick="goHome()" id="navHome">🏠 首页</span>
-              <span class="nav-link" onclick="startChallenge()" id="navGame">🎯 闯关</span>
-              <span class="nav-link" onclick="showAbout()" id="navAbout">📖 关于</span>
-            </div>`;
-            const appContainer = document.getElementById('appContainer');
-            const existingNav = appContainer.querySelector('.top-nav');
-            if (!existingNav) {
-                appContainer.insertAdjacentHTML('afterbegin', navHTML);
-            }
-            // 更新导航激活状态
-            updateNavActive('Home');
-        }
-
-        function updateNavActive(page) {
-            document.querySelectorAll('.top-nav .nav-link').forEach(l => l.classList.remove('nav-active'));
-            const navMap = { 'Home': 'navHome', 'Game': 'navGame', 'About': 'navAbout' };
-            const activeId = navMap[page];
-            if (activeId) {
-                const el = document.getElementById(activeId);
-                if (el) el.classList.add('nav-active');
-            }
-        }
-
-        // 重写页面切换以更新导航
-        const originalShowPage = showPage;
-        showPage = function(pageName) {
-            originalShowPage(pageName);
-            updateNavActive(pageName);
-        };
-
-        // ==================== 初始化 ====================
-        function init() {
-            initNav();
-            showPage('Home');
-            // 预加载弹窗内容
-            document.getElementById('inquiryAnswerDisplay').textContent = '';
-        }
-
-        // 启动应用
-        init();
-
-        console.log('🏥 中医辨证推演馆 - 海龟汤模式 - 已就绪');
-        console.log('📋 可用病例：基础' + casesDB.basic.length + '个 | 进阶' + casesDB.intermediate.length + '个 | 考研' + casesDB
-            .advanced.length + '个');
-        console.log('© wuruilin');
-    </script>
+    (function initNav(){
+        const nav=`<div class="top-nav"><span class="nav-link nav-active" id="navHome" onclick="goHome()">🏠 首页</span><span class="nav-link" id="navGame" onclick="startChallenge()">🎯 闯关</span><span class="nav-link" id="navAbout" onclick="showAbout()">📖 关于</span></div>`;
+        document.getElementById('appContainer').insertAdjacentHTML('afterbegin',nav);
+    })();
+    showPage('Home');
+</script>
 </body>
 </html>
