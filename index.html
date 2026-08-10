@@ -124,6 +124,7 @@
         .tongue-visual { width: 80px; height: 110px; border-radius: 40px 40px 30px 30px; background: linear-gradient(180deg, #f0c8c0 30%, #e8b4b0 60%, #e0a8a0 100%); border: 3px solid #d4a098; box-shadow: inset 0 0 20px rgba(180,130,120,0.3); position: relative; }
         .tongue-visual::after { content: ''; position: absolute; top: 25%; left: 15%; width: 70%; height: 45%; background: rgba(220,195,150,0.55); border-radius: 35px 35px 20px 20px; background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(200,170,120,0.3) 3px, rgba(200,170,120,0.3) 5px); }
         .tongue-img { width: 130px; height: 175px; border-radius: 40px 40px 30px 30px; border: 3px solid #d4a098; box-shadow: inset 0 0 20px rgba(180,130,120,0.3); object-fit: cover; background: #fdfaf5; }
+        .tongue-img-lg { width: 260px; height: 347px; border-radius: 80px 80px 55px 55px; border: 4px solid #d4a098; box-shadow: inset 0 0 24px rgba(180,130,120,0.3), 0 8px 24px rgba(139,69,19,0.14); object-fit: cover; background: #fdfaf5; }
         .tongue-desc { max-width: 220px; font-size: 0.92em; color: var(--text-light); line-height: 1.7; }
         .result-box { padding: 20px; border-radius: var(--radius-sm); margin: 12px 0; animation: popIn 0.4s; line-height: 1.7; }
         .result-box.success { background: #f0faf4; border: 2px solid #6aaf8a; color: #1e4d34; }
@@ -229,10 +230,15 @@
     </div>
 </div>
 <div class="modal-overlay" id="inspectionModal" style="display:none;">
-    <div class="modal">
+    <div class="modal" style="max-width:720px;">
         <button class="modal-close" onclick="closeInspectionModal()">✕</button>
         <h3>👁️ 望诊 — 舌象观察</h3>
-        <div class="tongue-sim"><img id="inspectionImg" class="tongue-img" alt="舌象"><div class="tongue-desc" id="inspectionDesc"></div></div>
+        <div class="tongue-sim" style="flex-direction:column;gap:14px;">
+            <img id="inspectionImg" class="tongue-img-lg" alt="舌象">
+        </div>
+        <p style="text-align:center;color:var(--text-muted);font-size:0.9em;margin:14px 6px 4px;line-height:1.7;">
+            请仔细观察舌色、舌形与舌苔特征，<br>观察完毕后在 <span style="color:var(--primary);font-weight:600;">「线索收集区」</span> 查看舌象描述。
+        </p>
         <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;" onclick="closeInspectionModal()">确认观察完毕</button>
     </div>
 </div>
@@ -269,16 +275,18 @@
         /* 图片3：基础·哮病案 舌质稍红，苔白，舌尖红点 */
         t3: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b3" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#e6a8a2"/><stop offset="100%" stop-color="#d28d87"/></radialGradient></defs><path d="M120 18 C178 18 203 80 203 152 C203 234 172 303 120 303 C68 303 37 234 37 152 C37 80 62 18 120 18 Z" fill="url(#b3)" stroke="#bb7a73" stroke-width="3"/><path d="M120 62 C167 62 184 112 184 166 C184 231 158 281 120 281 C82 281 56 231 56 166 C56 112 73 62 120 62 Z" fill="#f3eee3" opacity="0.85"/><g fill="#c0392b"><circle cx="108" cy="52" r="4"/><circle cx="126" cy="46" r="3.5"/><circle cx="138" cy="56" r="3.5"/><circle cx="118" cy="64" r="3"/><circle cx="100" cy="62" r="2.5"/></g></svg>`,
         /* 图片4：考研·张某案 舌淡胖边有齿痕，舌下络脉迂曲紫暗，苔薄滑 */
-        t4: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b4" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#edd3cc"/><stop offset="100%" stop-color="#dcb6ae"/></radialGradient></defs><path d="M120 20 C190 20 214 84 212 154 C210 226 178 304 120 304 C62 304 30 226 28 154 C26 84 50 20 120 20 Z" fill="url(#b4)" stroke="#c79a92" stroke-width="3"/><path d="M120 70 C170 70 188 118 188 168 C188 230 162 282 120 282 C78 282 52 230 52 168 C52 118 70 70 120 70 Z" fill="#f4efe6" opacity="0.5"/><g fill="#f7f2ec"><circle cx="30" cy="120" r="8"/><circle cx="32" cy="160" r="9"/><circle cx="38" cy="200" r="8"/><circle cx="210" cy="120" r="8"/><circle cx="208" cy="160" r="9"/><circle cx="202" cy="200" r="8"/></g><path d="M78 250 C90 270 104 268 108 288" stroke="#7a3f72" stroke-width="3.5" fill="none" opacity="0.85" stroke-linecap="round"/><path d="M162 250 C150 270 136 268 132 288" stroke="#7a3f72" stroke-width="3.5" fill="none" opacity="0.85" stroke-linecap="round"/></svg>`,
-        /* 图片5：进阶·沈某案 苔薄、质淡白 */
-        t5: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b5" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#f0e7e0"/><stop offset="100%" stop-color="#e3d6cc"/></radialGradient></defs><path d="M120 18 C178 18 203 80 203 152 C203 234 172 303 120 303 C68 303 37 234 37 152 C37 80 62 18 120 18 Z" fill="url(#b5)" stroke="#cdbfb4" stroke-width="3"/><path d="M120 62 C167 62 184 112 184 166 C184 231 158 281 120 281 C82 281 56 231 56 166 C56 112 73 62 120 62 Z" fill="#f6f2e9" opacity="0.55"/></svg>`
+        t4: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b4" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#edd3cc"/><stop offset="100%" stop-color="#dcb6ae"/></radialGradient></defs><path d="M120 20 C190 20 214 84 212 154 C210 226 178 304 120 304 C62 304 30 226 28 154 C26 84 50 20 120 20 Z" fill="url(#b4)" stroke="#c79a92" stroke-width="3"/><path d="M120 70 C170 70 188 118 188 168 C188 230 162 282 120 282 C78 282 52 230 52 168 C52 118 70 70 120 70 Z" fill="#f4efe6" opacity="0.5"/><g fill="#f7f2ec"><circle cx="30" cy="120" r="8"/><circle cx="32" cy="160" r="9"/><circle cx="38" cy="200" r="8"/><circle cx="210" cy="120" r="8"/><circle cx="208" cy="160" r="9"/><circle cx="202" cy="200" r="8"/></g><path d="M78 250 C90 270 104 268 108 288" stroke="#7a3f72" stroke-width="3.5" fill="none" opacity="0.85" stroke-linecap="round"/><path d="M162 250 C150 270 136 268 132 288" stroke="#7a3f72" stroke-width="3.5" fill="none" opacity="0.85" stroke-linecap="round"/></svg>`
     };
  const tongueImages = {
-    'basic-001': 'tongue/basic-001.jpg',   
+    'basic-001': 'tongue/basic-001.jpg',
     'basic-002': 'tongue/basic-002.jpg',
     'basic-003': 'tongue/basic-003.jpg',
     'adv-001': 'tongue/adv-001.jpg',
-    'inter-001': 'tongue/inter-001.jpg'
+    'inter-002': 'tongue/inter-002.jpg',
+    'inter-003': 'tongue/inter-003.jpg',
+    'adv-002': 'tongue/adv-002.jpg',
+    'adv-003': 'tongue/adv-003.jpg',
+    'adv-004': 'tongue/adv-004.jpg'
 };
     const casesDB = {
         basic: [
@@ -366,30 +374,58 @@
         ],
         intermediate: [
             {
-                id: 'inter-001',
-                title: '眩晕/高血压案（肝肾不足，阴虚及阳）',
-                chiefComplaint: '沈某，女，53岁。就诊日期：2005年9月12日（初诊）。\n\n患高血压两年余，头昏胀痛、双手足清冷，近半年来舒张压常在100mmHg左右，伴月经紊乱、阵发烘热汗出。',
-                history: '高血压病史两年余，检查属原发性，每逢冬季加重，近半年来舒张压常在100mmHg左右，一直服西药治疗，但效果不明显。',
+                id: 'inter-002',
+                title: '胃脘痛案（肝郁脾虚，湿浊中阻）',
+                chiefComplaint: '赵某，男，45岁。\n\n反复胃脘部胀满疼痛3年，加重1周。',
+                history: '既往史：否认高血压、糖尿病、心脏病等慢性病史，否认药物及食物过敏史。',
                 clues: {
-                    inspection: { displayTitle:'舌象观察', displayContent:'舌苔薄、质淡白。', tongueDesc:'舌苔薄、质淡白。', textSummary:'舌苔薄、质淡白' },
-                    auscultation: { displayTitle:'闻诊结果', displayContent:'语声尚平，未闻异常气味。', textSummary:'语声尚平，未闻异常气味' },
+                    inspection: { displayTitle:'舌象观察', displayContent:'望诊：面色萎黄，形体偏瘦，舌苔白腻，舌体胖大有齿痕。', tongueDesc:'舌苔白腻，舌体胖大有齿痕。', textSummary:'面色萎黄，形体偏瘦，舌苔白腻，舌体胖大有齿痕' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'嗳气声重浊。', textSummary:'嗳气声重浊' },
                     inquiry: {
                         questions: [
-                            { q:'高血压/血压', a:'原发性高血压两年余，冬季加重，近半年舒张压常100mmHg左右，服西药效不明显。测血压170/100mmHg，心电图正常。', keywords:['高血压','血压','舒张压','西药','原发'] },
-                            { q:'头/手足/腰膝', a:'头昏胀痛，双手足清冷不温（冬季明显），双腿足酸软、足底酸痛、腰膝酸软，左侧肢体麻木疼痛。', keywords:['头','昏','胀痛','手足','清冷','冷','腰膝','酸软','麻木','肢体'] },
-                            { q:'月经', a:'近半年来月经周期紊乱，起初40~50天，后2~3个月一次，量少色暗。', keywords:['月经','经期','量少','色暗','紊乱'] },
-                            { q:'烘热/汗出/心慌', a:'阵发性面部烘热潮红，汗出心慌。', keywords:['烘热','潮热','出汗','汗','心慌','面部','潮红','烘'] },
-                            { q:'情志/睡眠', a:'性情急躁，睡眠欠佳。', keywords:['情志','急躁','情绪','睡眠','眠','寐'] },
+                            { q:'胃脘胀痛特点', a:'胃脘部胀满疼痛，痛连两胁，情绪波动时疼痛加剧，进食后加重，纳差，食后腹胀加重。', keywords:['痛','胀','胃脘','胁','情绪','波动','进食','纳差','腹胀'] },
+                            { q:'发病与诱因', a:'3年前因饮食不规律、常熬夜加班起病；近1周因工作压力大、情绪焦虑、饮食不慎而加重。', keywords:['诱因','起病','熬夜','压力','焦虑','饮食','原因','加重'] },
+                            { q:'嗳气反酸', a:'伴有嗳气、反酸，近1周嗳气频繁。', keywords:['嗳气','反酸','打嗝'] },
+                            { q:'大便情况', a:'大便溏薄，日行2-3次。', keywords:['大便','溏','次数','腹泻','日行'] },
+                            { q:'精神体力食欲', a:'食欲不振，神疲乏力。', keywords:['食欲','食纳','乏力','神疲','精神','体力'] },
+                            { q:'诊治经过', a:'曾于当地医院就诊，胃镜提示"慢性胃炎"，服西药后症状缓解但易反复。', keywords:['治疗','胃镜','西药','医院','缓解','反复','慢性胃炎'] },
                         ],
                     },
-                    pulse: { displayTitle:'切脉结果', displayContent:'脉细。', textSummary:'脉细' },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉象弦滑。', textSummary:'脉象弦滑' },
                 },
-                correctAnswer: { disease:'眩晕', syndrome:'肝肾不足，阴虚及阳，气血失调', westernDiagnosis:'原发性高血压' },
+                correctAnswer: { disease:'胃脘痛', syndrome:'肝郁脾虚，湿浊中阻', westernDiagnosis:'慢性胃炎' },
                 fullAnalysis: {
-                    disease:'眩晕', syndrome:'肝肾不足，阴虚及阳，气血失调', westernDiagnosis:'原发性高血压',
-                    pathogenesis:'年过五旬，肝肾渐亏，阴虚及阳，阴阳失调，气血失和。清窍失养则头昏胀痛；阳虚失温则手足清冷、腰膝酸软；虚火浮越则烘热汗出、面赤心慌；冲任失调则月经紊乱。',
-                    prescription:'二仙汤合四物汤加减。',
-                    knowledgePoints:['二仙汤温肾阳、补肾阴，调冲任，主治肝肾不足、阴阳两虚（更年期/高血压病）。','四物汤养血活血，合用以调气血。']
+                    disease:'胃脘痛', syndrome:'肝郁脾虚，湿浊中阻', westernDiagnosis:'慢性胃炎',
+                    pathogenesis:'情志不遂、饮食不节，肝失疏泄，横逆犯脾，脾失健运，湿浊中阻，气机阻滞，故胃脘胀满疼痛、痛连两胁、情绪波动加重；湿浊内盛则舌苔白腻、舌体胖大齿痕；运化失常则纳差、食后腹胀、大便溏薄。',
+                    prescription:'柴胡疏肝散合参苓白术散加减。',
+                    knowledgePoints:['肝郁脾虚证：胃脘胀痛、痛连两胁、情绪诱发、脉弦。','湿浊中阻：舌苔白腻、舌体胖大齿痕、大便溏薄、身困乏力。']
+                }
+            },
+            {
+                id: 'inter-003',
+                title: '痫病案（肝郁脾虚痰盛）',
+                chiefComplaint: '周某，男，16岁。就诊日期：2010年7月13日。\n\n发作性意识丧失、四肢抽搐3年，加重2个月。',
+                history: '患者3年前受到惊吓后出现意识突然丧失、仆倒不省人事、两目上视、喉中痰鸣、口吐涎沫、四肢抽搐，醒后如常人，每次持续30秒至1分钟不等，每年发作4~5次，未予系统诊治。',
+                clues: {
+                    inspection: { displayTitle:'舌象观察', displayContent:'望诊：舌红，苔白微腻。', tongueDesc:'舌红，苔白微腻。', textSummary:'舌红，苔白微腻' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'喉中痰鸣。', textSummary:'喉中痰鸣' },
+                    inquiry: {
+                        questions: [
+                            { q:'发作表现', a:'发作性意识丧失、仆倒不省人事、两目上视、喉中痰鸣、口吐涎沫、四肢抽搐，醒后如常人，持续30秒至1分钟；发作前常有头痛而胀、胸闷。', keywords:['发作','抽搐','意识','仆倒','痰鸣','涎沫','四肢','头痛','胸闷','两目'] },
+                            { q:'发作频率', a:'3年前起每年发作4~5次；近2个月加重，每月发作2~3次。', keywords:['频率','次数','每月','每年','加重','反复'] },
+                            { q:'起病诱因', a:'3年前因受惊吓起病；平素情绪急躁。', keywords:['诱因','惊吓','起因','情绪','急躁'] },
+                            { q:'平素伴随', a:'平素情绪急躁，心烦，口苦咽干，纳差，大便干，小便黄，夜眠尚可。', keywords:['心烦','口苦','咽干','纳差','大便干','小便','睡眠','夜眠','急躁'] },
+                            { q:'辅助检查', a:'神经系统查体、脑电图、头部MRI平扫均未见明显异常。', keywords:['检查','脑电图','MRI','查体','神经','头部'] },
+                        ],
+                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉弦滑。', textSummary:'脉弦滑' },
+                },
+                correctAnswer: { disease:'痫病', syndrome:'肝郁脾虚痰盛', westernDiagnosis:'癫痫（强直-阵挛发作）' },
+                fullAnalysis: {
+                    disease:'痫病', syndrome:'肝郁脾虚痰盛', westernDiagnosis:'癫痫（强直-阵挛发作）',
+                    pathogenesis:'惊则气乱，肝郁气滞，肝风内动；脾虚生痰，痰随气逆，上蒙清窍，故发作性意识丧失、抽搐、痰鸣；肝郁化火则情绪急躁、口苦咽干；脾虚则纳差；痰热内结则大便干、小便黄；舌红苔白微腻、脉弦滑为肝郁脾虚、痰盛之象。',
+                    prescription:'柴胡疏肝散化裁。',
+                    knowledgePoints:['痫病以发作性意识丧失、抽搐、醒后如常人为特征，病机关键为肝脾肾受损、痰浊内伏、风痰上扰。','肝郁脾虚痰盛证：情绪急躁、纳差、苔白腻、脉弦滑。']
                 }
             }
         ],
@@ -419,6 +455,87 @@
                     pathogenesis:'肝郁脾虚为本，气滞湿阻为标。素体虚弱，情志不畅，嗜食生冷，肝失疏泄、脾失健运，气机郁滞，湿浊内蕴，腑气不降而便秘；久病虚实夹杂，面色黑斑、舌下络脉紫暗为瘀滞之象。',
                     prescription:'四逆散合四君子汤加减。',
                     knowledgePoints:['肝郁脾虚证：胃胀隐痛、喜按、脉弦细弱、纳差乏力。','气滞湿阻、虚实夹杂之便秘，忌久用大黄芒硝等攻下，当疏肝健脾、行气化湿。']
+                }
+            },
+            {
+                id: 'adv-002',
+                title: '真心痛案（气虚血瘀）',
+                chiefComplaint: '刘某，男，83岁。就诊时间：2018年2月27日。\n\n持续性胸痛、胸闷2小时。',
+                history: '既往史未详述（急性起病，醒后突发）。',
+                clues: {
+                    inspection: { displayTitle:'舌象观察', displayContent:'舌象特征：舌暗，苔黄腻。', tongueDesc:'舌暗，苔黄腻。', textSummary:'舌暗，苔黄腻' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'呼吸稍促，未闻异常气味。', textSummary:'呼吸稍促，未闻异常气味' },
+                    inquiry: {
+                        questions: [
+                            { q:'胸痛胸闷', a:'醒后突然出现发作性持续性胸痛、胸闷，伴汗出、烦躁不安，活动后加重。', keywords:['胸痛','胸闷','痛','闷','活动','加重'] },
+                            { q:'汗出烦躁', a:'伴汗出，烦躁不安。', keywords:['汗','汗出','烦躁','不安'] },
+                            { q:'心慌头晕咳痰', a:'无心慌，无头晕，无咳嗽、咳痰。', keywords:['心慌','头晕','咳嗽','咳痰','心慌'] },
+                            { q:'一般状况', a:'气短，乏力，活动后加重，食纳欠佳，夜休差，小便量多，大便干结。', keywords:['气短','乏力','食纳','纳差','夜休','睡眠','小便','大便','干结'] },
+                            { q:'辅助检查', a:'心电图：窦性心律，心率81次/分，II、III、aVF导联弓背样抬高。心脏B超：各心腔大小未见明显异常，EF=53%，左心室壁运动欠协调，心包腔未见明显积液。', keywords:['心电图','B超','心率','导联','EF','心腔','抬高','弓背'] },
+                        ],
+                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉沉滑。', textSummary:'脉沉滑' },
+                },
+                correctAnswer: { disease:'真心痛', syndrome:'气虚血瘀', westernDiagnosis:'冠心病，急性ST段抬高型下壁心肌梗死（Killip Ⅰ级）' },
+                fullAnalysis: {
+                    disease:'真心痛', syndrome:'气虚血瘀', westernDiagnosis:'冠心病，急性ST段抬高型下壁心肌梗死（Killip Ⅰ级）',
+                    pathogenesis:'年高正气亏虚，心气不足，运血无力，瘀血内阻，心脉闭塞，故胸痛、胸闷、汗出、气短乏力；瘀久化热则苔黄腻、大便干结；舌暗苔黄腻、脉沉滑为气虚血瘀兼夹湿热之象。',
+                    prescription:'瓜蒌15g 薤白12g 桂枝12g 黄芩12g 川芎12g 桃仁12g 红花12g 丹参9g 黄芪20g 酒大黄6g。',
+                    knowledgePoints:['真心痛相当于急性心肌梗死，属胸痹重症，以剧烈持久胸痛、汗出、肢冷为特征。','气虚血瘀证：胸痛、气短乏力、舌暗、脉沉涩或沉滑。']
+                }
+            },
+            {
+                id: 'adv-003',
+                title: '胸痹案（阳虚血瘀）',
+                chiefComplaint: '穆某，女，61岁。初诊时间：2018年3月13日。\n\n发作性胸闷、气短2周。',
+                history: '既往史未详述，2周前无明显诱因起病，曾于外院就诊。',
+                clues: {
+                    inspection: { displayTitle:'舌象观察', displayContent:'舌象特征：舌紫暗，苔少。', tongueDesc:'舌紫暗，苔少。', textSummary:'舌紫暗，苔少' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'语声尚平，未闻异常气味。', textSummary:'语声尚平，未闻异常气味' },
+                    inquiry: {
+                        questions: [
+                            { q:'胸闷气短', a:'发作性胸闷、气短，间断发作，每次持续约5分钟，可自行缓解。', keywords:['胸闷','气短','闷','发作','缓解'] },
+                            { q:'头晕及伴随', a:'伴头晕；无心慌、胸痛及放射痛，无黑矇、视物旋转，无恶心、呕吐、反酸、烧心。', keywords:['头晕','心慌','胸痛','放射','黑矇','恶心','反酸','烧心','视物'] },
+                            { q:'畏寒肢凉', a:'畏寒，四肢凉。', keywords:['畏寒','怕冷','四肢','凉','肢冷','肢凉'] },
+                            { q:'一般状况', a:'食纳可，夜休可，二便调。', keywords:['食纳','食欲','夜休','睡眠','二便','大便','小便'] },
+                            { q:'诊治检查', a:'外院心电图：窦性心律，心率76次/分，ST-T异常改变；曾服心宝丸、阿司匹林、阿托伐他汀钙片、麝香保心丸，缓解不明显。', keywords:['心电图','心率','ST-T','心宝丸','阿司匹林','他汀','治疗','缓解','检查'] },
+                        ],
+                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉涩。', textSummary:'脉涩' },
+                },
+                correctAnswer: { disease:'胸痹', syndrome:'阳虚血瘀', westernDiagnosis:'冠心病，不稳定型心绞痛，心功能Ⅰ级' },
+                fullAnalysis: {
+                    disease:'胸痹', syndrome:'阳虚血瘀', westernDiagnosis:'冠心病，不稳定型心绞痛，心功能Ⅰ级',
+                    pathogenesis:'阳气虚衰，鼓动无力，血行瘀滞，心脉痹阻，故胸闷、气短、脉涩；阳虚失温则畏寒、四肢凉；舌紫暗苔少为阳虚血瘀之象。',
+                    prescription:'瓜蒌15g 薤白12g 赤芍9g 香附9g 川芎12g 桃仁12g 红花12g 丹参9g 黄芪20g 炙甘草6g 桂枝10g。',
+                    knowledgePoints:['胸痹以胸闷、胸痛为主要表现，相当于冠心病心绞痛。','阳虚血瘀证：胸闷气短、畏寒肢冷、舌紫暗、脉涩。']
+                }
+            },
+            {
+                id: 'adv-004',
+                title: '心悸案（肝肾阴亏）',
+                chiefComplaint: '王某，女，71岁。初诊时间：2018年3月2日。\n\n发作性心慌、气短20年，再发加重2天。',
+                history: '20年前活动后出现心慌、气短，曾多次于当地医院住院对症支持治疗，出院后间断口服复方丹参滴丸（6丸 qd），病情控制较理想。',
+                clues: {
+                    inspection: { displayTitle:'舌象观察', displayContent:'舌象特征：舌红少津，苔少。', tongueDesc:'舌红少津，苔少。', textSummary:'舌红少津，苔少' },
+                    auscultation: { displayTitle:'闻诊结果', displayContent:'语声稍弱，未闻异常气味。', textSummary:'语声稍弱，未闻异常气味' },
+                    inquiry: {
+                        questions: [
+                            { q:'心慌气短', a:'活动后发作心慌、气短、乏力，每次持续约20分钟，休息后可缓解；2天前加重。', keywords:['心慌','心悸','气短','乏力','活动','休息','缓解'] },
+                            { q:'伴随症状', a:'伴头晕、耳鸣、五心烦热、腰膝酸软。', keywords:['头晕','耳鸣','五心烦热','腰膝酸软','心烦'] },
+                            { q:'睡眠', a:'夜休差。', keywords:['夜休','睡眠','失眠','寐'] },
+                            { q:'二便', a:'小便黄，大便干。', keywords:['小便','大便','干结','黄'] },
+                            { q:'检查治疗', a:'心电图示异位心律、快速心房纤颤；既往长期口服复方丹参滴丸，控制尚可。', keywords:['心电图','房颤','异位','纤颤','丹参滴丸','治疗','检查'] },
+                        ],
+                    },
+                    pulse: { displayTitle:'切脉结果', displayContent:'脉细数。', textSummary:'脉细数' },
+                },
+                correctAnswer: { disease:'心悸', syndrome:'肝肾阴亏', westernDiagnosis:'心律失常，快速型房颤' },
+                fullAnalysis: {
+                    disease:'心悸', syndrome:'肝肾阴亏', westernDiagnosis:'心律失常，快速型房颤',
+                    pathogenesis:'肝肾阴虚，虚火内动，扰动心神，故心慌、心悸、脉细数；阴虚阳亢则头晕耳鸣、五心烦热；腰为肾府，肾虚则腰膝酸软；舌红少津苔少为阴虚之象。',
+                    prescription:'当归15g 生地黄12g 沙参12g 麦冬12g 川楝子9g 知母12g 酸枣仁（炒）30g 茯苓9g 炙甘草6g 川芎10g 山茱萸12g。',
+                    knowledgePoints:['心悸相当于心律失常（如房颤），以自觉心慌不安为主症。','肝肾阴亏证：心悸、头晕耳鸣、腰膝酸软、五心烦热、舌红少津、脉细数。']
                 }
             }
         ]
@@ -552,7 +669,6 @@
     function openInspectionModal(){
         if(!currentCase){ return; }
         document.getElementById('inspectionImg').src = tongueImages[currentCase.id] || '';
-        document.getElementById('inspectionDesc').textContent = currentCase.clues.inspection.tongueDesc;
         document.getElementById('inspectionModal').style.display='flex';
     }
     function closeInspectionModal(){
