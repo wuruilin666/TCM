@@ -79,13 +79,16 @@
         .hero-desc { text-align: center; color: var(--text-light); font-size: 0.95em; background: rgba(184, 134, 11, 0.05); border-radius: 20px; padding: 14px 20px; line-height: 1.7; }
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 28px; border: none; cursor: pointer; font-size: 1.05em; font-weight: 600; letter-spacing: 0.03em; transition: var(--transition); font-family: var(--font-body); white-space: nowrap; position: relative; text-decoration: none; user-select: none; }
         .btn:active { transform: scale(0.96); }
-        .btn--primary { background: var(--accent); color: #fff; font-size: 1.2em; padding: 16px 40px; border-radius: 32px; letter-spacing: 0.05em; box-shadow: 0 6px 22px rgba(192, 57, 43, 0.35); animation: pulse 2.5s infinite; }
+        .btn--primary { background: var(--accent); color: #fff; font-size: 1.4em; padding: 18px 48px; border-radius: 36px; letter-spacing: 0.05em; box-shadow: 0 6px 22px rgba(192, 57, 43, 0.35); animation: pulse 2.5s infinite; }
         .btn--primary:hover { background: #a93226; box-shadow: 0 10px 30px rgba(192, 57, 43, 0.45); transform: translateY(-2px); animation: none; }
         .btn--primary:active { animation: none; }
-        .btn--outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 10px 20px; font-size: 0.9em; border-radius: 24px; }
+        .btn--outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 20px; font-size: 1em; border-radius: 24px; }
         .btn--outline:hover { background: rgba(139,69,19,0.06); border-color: var(--primary-light); }
-        .btn--ghost { background: rgba(139,69,19,0.04); color: var(--text-light); padding: 9px 18px; font-size: 0.88em; border-radius: 22px; border: 1px solid transparent; }
+        .btn--ghost { background: rgba(139,69,19,0.04); color: var(--text-light); padding: 12px 20px; font-size: 1em; border-radius: 24px; border: 1px solid transparent; }
         .btn--ghost:hover { background: rgba(139,69,19,0.1); border-color: var(--border); }
+        .btn--equal { flex: 1 1 0; min-width: 0; padding: 12px 16px; font-size: 1em; border-radius: 24px; justify-content: center; }
+        .home-buttons { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+        .home-secondary { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%; }
         .btn--difficulty { flex: 1; min-width: 100px; padding: 16px 18px; border-radius: var(--radius-sm); font-weight: 700; font-size: 1em; border: 2px solid transparent; transition: var(--transition); font-family: var(--font-heading); }
         .btn--difficulty.btn--basic { background: #f0faf0; color: #2d6a4f; border-color: #b7d7c5; }
         .btn--difficulty.btn--basic:hover { background: #d8f0e0; border-color: #6aaf8a; }
@@ -98,7 +101,7 @@
         .btn--intermediate.selected { border-color: #8b6914 !important; background: #fcecb8 !important; }
         .btn--advanced.selected { border-color: #8b1a1a !important; background: #fad4d4 !important; }
         .four-diagnosis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        @media (max-width: 500px) { .four-diagnosis { grid-template-columns: repeat(2, 1fr); } .hero-title { font-size: 1.8em; } .btn--primary { font-size: 1em; padding: 14px 28px; } .card { padding: 18px 16px; } }
+        @media (max-width: 500px) { .four-diagnosis { grid-template-columns: repeat(2, 1fr); } .hero-title { font-size: 1.8em; } .btn--primary { font-size: 1.2em; padding: 14px 28px; } .card { padding: 18px 16px; } .home-secondary { flex-direction: column; } .btn--equal { width: 100%; } }
         .btn--diag { padding: 16px 12px; border-radius: var(--radius-sm); font-weight: 700; font-size: 1.05em; border: 2px solid var(--border); background: var(--card); color: var(--primary); cursor: pointer; transition: var(--transition); font-family: var(--font-heading); display: flex; flex-direction: column; align-items: center; gap: 6px; }
         .btn--diag:hover { border-color: var(--primary-light); box-shadow: 0 6px 20px rgba(139,69,19,0.18); transform: translateY(-2px); background: #fffdf9; }
         .btn--diag:active { transform: scale(0.94); }
@@ -143,6 +146,36 @@
         .top-nav .nav-link.nav-active { color: var(--accent); font-weight: 700; background: rgba(192,57,43,0.06); border-color: rgba(192,57,43,0.2); }
         .case-full { font-size: 0.92em; line-height: 1.7; color: var(--text-light); }
         .case-full strong { color: var(--primary); }
+
+        /* 投稿表单样式 */
+        .submission-form { display: flex; flex-direction: column; gap: 12px; }
+        .submission-form label { font-weight: 600; color: var(--text-light); font-size: 0.9em; }
+        .submission-form input[type="text"],
+        .submission-form textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            font-size: 0.95em;
+            background: #fffefb;
+            outline: none;
+            transition: var(--transition);
+            font-family: var(--font-body);
+        }
+        .submission-form input[type="text"]:focus,
+        .submission-form textarea:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(139,69,19,0.07);
+        }
+        .submission-form textarea { min-height: 80px; resize: vertical; }
+        .submission-form .required-star { color: var(--accent); }
+        .submission-form .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .submission-form .form-row > div { flex: 1; min-width: 160px; }
+        .submission-form .file-input { border: 2px dashed var(--border); padding: 10px; border-radius: 10px; background: #fdfaf5; }
+        .submission-form .file-input input[type="file"] { width: 100%; }
+        .submission-form .btn-submit { width: 100%; padding: 14px; font-size: 1.1em; border-radius: 28px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 700; transition: var(--transition); }
+        .submission-form .btn-submit:hover { background: var(--primary-light); }
+        .submission-form .form-hint { font-size: 0.8em; color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -157,10 +190,13 @@
                 仅凭<strong>主诉</strong>，通过<strong>望、闻、问、切</strong>四诊探寻线索，逐步推理，完成辨证论治。
             </div>
         </div>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <div class="home-buttons">
             <button class="btn btn--primary" onclick="startChallenge()">🎯 开始闯关</button>
-            <button class="btn btn--outline" onclick="openCaseBank()">📚 病例题库</button>
-            <button class="btn btn--ghost" onclick="openRecords()">📝 学习记录</button>
+            <div class="home-secondary">
+                <button class="btn btn--outline btn--equal" onclick="openCaseBank()">📚 病例题库</button>
+                <button class="btn btn--ghost btn--equal" onclick="openRecords()">📝 学习记录</button>
+                <button class="btn btn--outline btn--equal" onclick="openSubmissionModal()" style="border-color: var(--gold); color: var(--gold);">📤 投稿病例</button>
+            </div>
         </div>
     </div>
     <div class="page" id="pageGame">
@@ -218,6 +254,8 @@
         <div style="text-align:center;"><button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button></div>
     </div>
 </div>
+
+<!-- 原有模态框 -->
 <div class="modal-overlay" id="inquiryModal" style="display:none;">
     <div class="modal" style="max-width:600px;">
         <button class="modal-close" onclick="closeInquiryModal()">✕</button>
@@ -264,30 +302,110 @@
         <div id="recordsContent"></div>
     </div>
 </div>
+
+<!-- 投稿模态框 -->
+<div class="modal-overlay" id="submissionModal" style="display:none;">
+    <div class="modal" style="max-width:650px; max-height:90vh; overflow-y:auto;">
+        <button class="modal-close" onclick="closeSubmissionModal()">✕</button>
+        <h3>📤 投稿病例</h3>
+        <p style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px;">
+            请填写以下病例信息，带 <span class="required-star">*</span> 为必填项。
+        </p>
+        <form id="submissionForm" class="submission-form" onsubmit="event.preventDefault(); submitCaseSubmission();">
+            <input type="hidden" name="_subject" value="新病例投稿">
+            <input type="hidden" name="_captcha" value="false">
+            <input type="hidden" name="_template" value="table">
+            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+
+            <div>
+                <label for="subChiefComplaint">主诉 <span class="required-star">*</span></label>
+                <textarea id="subChiefComplaint" name="chief_complaint" required placeholder="患者主要症状、持续时间等"></textarea>
+            </div>
+            <div>
+                <label for="subPastHistory">既往史 <span class="required-star">*</span></label>
+                <textarea id="subPastHistory" name="past_history" required placeholder="既往疾病、手术、过敏史等"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label for="subInspection">望诊 <span class="required-star">*</span></label>
+                    <textarea id="subInspection" name="inspection" required placeholder="面色、舌象、形态等"></textarea>
+                </div>
+                <div>
+                    <label for="subAuscultation">闻诊 <span class="required-star">*</span></label>
+                    <textarea id="subAuscultation" name="auscultation" required placeholder="声音、气味等"></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="subInquiry">问诊 <span class="required-star">*</span></label>
+                    <textarea id="subInquiry" name="inquiry" required placeholder="寒热、汗出、饮食、二便、睡眠等"></textarea>
+                </div>
+                <div>
+                    <label for="subPulse">切诊 <span class="required-star">*</span></label>
+                    <textarea id="subPulse" name="pulse" required placeholder="脉象、按诊等"></textarea>
+                </div>
+            </div>
+
+            <div>
+                <label for="subAnalysis">辩证分析过程 <span class="required-star">*</span></label>
+                <textarea id="subAnalysis" name="analysis" required placeholder="病机分析、辨证思路等"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label for="subSyndrome">证型 <span class="required-star">*</span></label>
+                    <input type="text" id="subSyndrome" name="syndrome" required placeholder="如：肝郁脾虚证">
+                </div>
+                <div>
+                    <label for="subDisease">病名 <span class="required-star">*</span></label>
+                    <input type="text" id="subDisease" name="disease" required placeholder="如：胃脘痛">
+                </div>
+            </div>
+
+            <div>
+                <label for="subWesternDiagnosis">西医诊断 <span class="required-star">*</span></label>
+                <input type="text" id="subWesternDiagnosis" name="western_diagnosis" required placeholder="如：慢性胃炎">
+            </div>
+
+            <div>
+                <label for="subPrescription">推荐要方 <span class="form-hint">（如有则填写）</span></label>
+                <input type="text" id="subPrescription" name="prescription" placeholder="如：柴胡疏肝散加减">
+            </div>
+
+            <div>
+                <label for="subTonguePhoto">舌象照片 <span class="form-hint">（如有则上传，大小不超过10MB）</span></label>
+                <div class="file-input">
+                    <input type="file" id="subTonguePhoto" name="tongue_photo" accept="image/*">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">📨 提交病例</button>
+            <div id="submissionFeedback" style="margin-top:10px;"></div>
+        </form>
+    </div>
+</div>
+
 <script>
     /* ===================== 舌象图（按各案舌象描述生成；可替换为真实照片） ===================== */
     function svgURI(s){ return 'data:image/svg+xml,' + encodeURIComponent(s); }
     const T = {
-        /* 图片1：基础·咳嗽案 舌质淡红，苔腻淡黄 */
         t1: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b1" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#e9b1ab"/><stop offset="100%" stop-color="#d89a93"/></radialGradient></defs><path d="M120 18 C178 18 203 80 203 152 C203 234 172 303 120 303 C68 303 37 234 37 152 C37 80 62 18 120 18 Z" fill="url(#b1)" stroke="#bf7d74" stroke-width="3"/><path d="M120 62 C167 62 184 112 184 166 C184 231 158 281 120 281 C82 281 56 231 56 166 C56 112 73 62 120 62 Z" fill="#e9dcb2" opacity="0.8"/><g fill="#d6c587" opacity="0.55"><circle cx="102" cy="145" r="4"/><circle cx="132" cy="152" r="3"/><circle cx="116" cy="178" r="4"/><circle cx="146" cy="192" r="3"/><circle cx="96" cy="202" r="3"/><circle cx="126" cy="212" r="3.5"/><circle cx="110" cy="232" r="3"/></g></svg>`,
-        /* 图片2：基础·肺痈案 舌质暗红，苔黄腻，舌下脉络稍迂曲 */
         t2: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b2" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#cf847e"/><stop offset="100%" stop-color="#b1635d"/></radialGradient></defs><path d="M120 18 C178 18 203 80 203 152 C203 234 172 303 120 303 C68 303 37 234 37 152 C37 80 62 18 120 18 Z" fill="url(#b2)" stroke="#994f49" stroke-width="3"/><path d="M120 62 C167 62 184 112 184 166 C184 231 158 281 120 281 C82 281 56 231 56 166 C56 112 73 62 120 62 Z" fill="#dcc66f" opacity="0.82"/><g fill="#c2a847" opacity="0.6"><circle cx="100" cy="150" r="4"/><circle cx="135" cy="160" r="3.5"/><circle cx="118" cy="185" r="4"/><circle cx="148" cy="200" r="3"/><circle cx="92" cy="205" r="3"/><circle cx="125" cy="218" r="3.5"/></g><path d="M74 248 C84 268 98 266 102 286" stroke="#8f5284" stroke-width="3" fill="none" opacity="0.75" stroke-linecap="round"/><path d="M166 248 C156 268 142 266 138 286" stroke="#8f5284" stroke-width="3" fill="none" opacity="0.75" stroke-linecap="round"/></svg>`,
-        /* 图片3：基础·哮病案 舌质稍红，苔白，舌尖红点 */
         t3: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b3" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#e6a8a2"/><stop offset="100%" stop-color="#d28d87"/></radialGradient></defs><path d="M120 18 C178 18 203 80 203 152 C203 234 172 303 120 303 C68 303 37 234 37 152 C37 80 62 18 120 18 Z" fill="url(#b3)" stroke="#bb7a73" stroke-width="3"/><path d="M120 62 C167 62 184 112 184 166 C184 231 158 281 120 281 C82 281 56 231 56 166 C56 112 73 62 120 62 Z" fill="#f3eee3" opacity="0.85"/><g fill="#c0392b"><circle cx="108" cy="52" r="4"/><circle cx="126" cy="46" r="3.5"/><circle cx="138" cy="56" r="3.5"/><circle cx="118" cy="64" r="3"/><circle cx="100" cy="62" r="2.5"/></g></svg>`,
-        /* 图片4：考研·张某案 舌淡胖边有齿痕，舌下络脉迂曲紫暗，苔薄滑 */
         t4: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b4" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#edd3cc"/><stop offset="100%" stop-color="#dcb6ae"/></radialGradient></defs><path d="M120 20 C190 20 214 84 212 154 C210 226 178 304 120 304 C62 304 30 226 28 154 C26 84 50 20 120 20 Z" fill="url(#b4)" stroke="#c79a92" stroke-width="3"/><path d="M120 70 C170 70 188 118 188 168 C188 230 162 282 120 282 C78 282 52 230 52 168 C52 118 70 70 120 70 Z" fill="#f4efe6" opacity="0.5"/><g fill="#f7f2ec"><circle cx="30" cy="120" r="8"/><circle cx="32" cy="160" r="9"/><circle cx="38" cy="200" r="8"/><circle cx="210" cy="120" r="8"/><circle cx="208" cy="160" r="9"/><circle cx="202" cy="200" r="8"/></g><path d="M78 250 C90 270 104 268 108 288" stroke="#7a3f72" stroke-width="3.5" fill="none" opacity="0.85" stroke-linecap="round"/><path d="M162 250 C150 270 136 268 132 288" stroke="#7a3f72" stroke-width="3.5" fill="none" opacity="0.85" stroke-linecap="round"/></svg>`
     };
- const tongueImages = {
-    'basic-001': 'tongue/basic-001.jpg',
-    'basic-002': 'tongue/basic-002.jpg',
-    'basic-003': 'tongue/basic-003.jpg',
-    'adv-001': 'tongue/adv-001.jpg',
-    'inter-002': 'tongue/inter-002.jpg',
-    'inter-003': 'tongue/inter-003.jpg',
-    'adv-002': 'tongue/adv-002.jpg',
-    'adv-003': 'tongue/adv-003.jpg',
-    'adv-004': 'tongue/adv-004.jpg'
-};
+    const tongueImages = {
+        'basic-001': 'tongue/basic-001.jpg',
+        'basic-002': 'tongue/basic-002.jpg',
+        'basic-003': 'tongue/basic-003.jpg',
+        'adv-001': 'tongue/adv-001.jpg',
+        'inter-002': 'tongue/inter-002.jpg',
+        'inter-003': 'tongue/inter-003.jpg',
+        'adv-002': 'tongue/adv-002.jpg',
+        'adv-003': 'tongue/adv-003.jpg',
+        'adv-004': 'tongue/adv-004.jpg'
+    };
     const casesDB = {
         basic: [
             {
@@ -842,6 +960,64 @@
         document.getElementById('appContainer').insertAdjacentHTML('afterbegin',nav);
     })();
     showPage('Home');
+
+    /* ===================== 投稿病例相关函数 ===================== */
+    function openSubmissionModal() {
+        document.getElementById('submissionModal').style.display = 'flex';
+        document.getElementById('submissionFeedback').innerHTML = '';
+    }
+    function closeSubmissionModal() {
+        document.getElementById('submissionModal').style.display = 'none';
+    }
+    async function submitCaseSubmission() {
+        const form = document.getElementById('submissionForm');
+        const feedback = document.getElementById('submissionFeedback');
+        
+        // 必填字段验证
+        const requiredFields = ['chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
+        for (const fieldName of requiredFields) {
+            const field = form.querySelector(`[name="${fieldName}"]`);
+            if (!field || !field.value.trim()) {
+                feedback.innerHTML = `<div class="result-box fail">请填写所有必填字段。</div>`;
+                field?.focus();
+                return;
+            }
+        }
+
+        // 文件大小验证（不超过10MB）
+        const fileInput = document.getElementById('subTonguePhoto');
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 10 * 1024 * 1024) {
+                feedback.innerHTML = `<div class="result-box fail">舌象照片大小不能超过10MB，请压缩后重新上传。</div>`;
+                return;
+            }
+        }
+        
+        feedback.innerHTML = `<div class="result-box" style="background:#fdfaf5;border:1px solid var(--border);">📨 正在提交病例，请稍候...</div>`;
+        
+        try {
+            const formData = new FormData(form);
+            const response = await fetch('https://formsubmit.co/ajax/150723873@qq.com', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success === "true" || result.success === true) {
+                feedback.innerHTML = `<div class="result-box success">✅ 病例提交成功！感谢您的投稿。</div>`;
+                form.reset();
+            } else {
+                feedback.innerHTML = `<div class="result-box fail">❌ 提交失败，请稍后重试。</div>`;
+            }
+        } catch (error) {
+            console.error('提交出错:', error);
+            feedback.innerHTML = `<div class="result-box fail">❌ 网络错误，提交失败。请检查网络后重试。</div>`;
+        }
+    }
 </script>
 </body>
 </html>
