@@ -387,7 +387,7 @@
 </div>
 
 <script>
-    /* ===================== 舌象图（按各案舌象描述生成；可替换为真实照片） ===================== */
+    /* ===================== 舌象图 ===================== */
     function svgURI(s){ return 'data:image/svg+xml,' + encodeURIComponent(s); }
     const T = {
         t1: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320"><defs><radialGradient id="b1" cx="50%" cy="36%" r="66%"><stop offset="0%" stop-color="#e9b1ab"/><stop offset="100%" stop-color="#d89a93"/></radialGradient></defs><path d="M120 18 C178 18 203 80 203 152 C203 234 172 303 120 303 C68 303 37 234 37 152 C37 80 62 18 120 18 Z" fill="url(#b1)" stroke="#bf7d74" stroke-width="3"/><path d="M120 62 C167 62 184 112 184 166 C184 231 158 281 120 281 C82 281 56 231 56 166 C56 112 73 62 120 62 Z" fill="#e9dcb2" opacity="0.8"/><g fill="#d6c587" opacity="0.55"><circle cx="102" cy="145" r="4"/><circle cx="132" cy="152" r="3"/><circle cx="116" cy="178" r="4"/><circle cx="146" cy="192" r="3"/><circle cx="96" cy="202" r="3"/><circle cx="126" cy="212" r="3.5"/><circle cx="110" cy="232" r="3"/></g></svg>`,
@@ -666,11 +666,42 @@
     let gameStarted = false;
     let inquiryHistory = [];
     let askedInquiryQuestions = [];
-    function getCompletedCases() { return JSON.parse(localStorage.getItem('tcm_completed_cases') || '[]'); }
+
+    // 安全读取 localStorage
+    function safeGetStorage(key, fallback) {
+        try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : fallback;
+        } catch (e) {
+            return fallback;
+        }
+    }
+    function safeSetStorage(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {}
+    }
+    function getCompletedCases() { return safeGetStorage('tcm_completed_cases', []); }
     function markCaseCompleted(caseId) {
         const arr = getCompletedCases();
-        if (!arr.includes(caseId)) { arr.push(caseId); localStorage.setItem('tcm_completed_cases', JSON.stringify(arr)); }
+        if (!arr.includes(caseId)) { arr.push(caseId); safeSetStorage('tcm_completed_cases', arr); }
     }
+    function saveRecord(correct) {
+        const records = safeGetStorage('tcm_learning_records', []);
+        records.push({date:new Date().toLocaleString(), case: currentCase ? currentCase.title : '未知', difficulty: currentDifficulty || '未知', correct});
+        if(records.length>50) records.shift();
+        safeSetStorage('tcm_learning_records', records);
+    }
+    function openRecords() {
+        const records = safeGetStorage('tcm_learning_records', []);
+        const el = document.getElementById('recordsContent');
+        if(records.length===0) el.innerHTML='<p style="text-align:center;color:#b5a595;">📭 暂无学习记录</p>';
+        else el.innerHTML=records.reverse().map((r,i)=>`<div style="padding:8px;margin:4px 0;background:#fdfaf5;border-radius:8px;">${r.date} ${r.case} (${r.difficulty}) ${r.correct?'✅':'⚠️'}</div>`).join('')
+            +'<button class="btn btn--ghost" style="margin-top:10px;width:100%;" onclick="clearRecords()">🗑️ 清空记录</button>';
+        document.getElementById('recordsModal').style.display='flex';
+    }
+    function clearRecords() { if(confirm('清空学习记录？')){ try { localStorage.removeItem('tcm_learning_records'); } catch(e){} closeRecords(); } }
+
     function showPage(name) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById('page'+name)?.classList.add('active');
@@ -709,7 +740,7 @@
         let available = pool.filter(c => !completed.includes(c.id));
         if(available.length === 0){
             const newCompleted = completed.filter(id => !pool.some(c => c.id === id));
-            localStorage.setItem('tcm_completed_cases', JSON.stringify(newCompleted));
+            safeSetStorage('tcm_completed_cases', newCompleted);
             available = pool;
         }
         const randomIndex = Math.floor(Math.random() * available.length);
@@ -890,22 +921,7 @@
             ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id=>document.getElementById(id)?.classList.remove('explored'));
         }
     }
-    function saveRecord(correct){
-        const records=JSON.parse(localStorage.getItem('tcm_learning_records')||'[]');
-        records.push({date:new Date().toLocaleString(),case:currentCase.title,difficulty:currentDifficulty,correct});
-        if(records.length>50) records.shift();
-        localStorage.setItem('tcm_learning_records',JSON.stringify(records));
-    }
-    function openRecords(){
-        const records=JSON.parse(localStorage.getItem('tcm_learning_records')||'[]');
-        const el=document.getElementById('recordsContent');
-        if(records.length===0) el.innerHTML='<p style="text-align:center;color:#b5a595;">📭 暂无学习记录</p>';
-        else el.innerHTML=records.reverse().map((r,i)=>`<div style="padding:8px;margin:4px 0;background:#fdfaf5;border-radius:8px;">${r.date} ${r.case} (${r.difficulty}) ${r.correct?'✅':'⚠️'}</div>`).join('')
-            +'<button class="btn btn--ghost" style="margin-top:10px;width:100%;" onclick="clearRecords()">🗑️ 清空记录</button>';
-        document.getElementById('recordsModal').style.display='flex';
-    }
     function closeRecords(){ document.getElementById('recordsModal').style.display='none'; }
-    function clearRecords(){ if(confirm('清空学习记录？')){ localStorage.removeItem('tcm_learning_records'); closeRecords(); } }
     function renderFullCase(c){
         const fa=c.fullAnalysis; const cl=c.clues;
         let html='';
@@ -973,7 +989,6 @@
         const form = document.getElementById('submissionForm');
         const feedback = document.getElementById('submissionFeedback');
         
-        // 必填字段验证
         const requiredFields = ['chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
         for (const fieldName of requiredFields) {
             const field = form.querySelector(`[name="${fieldName}"]`);
@@ -984,7 +999,6 @@
             }
         }
 
-        // 文件大小验证（不超过10MB）
         const fileInput = document.getElementById('subTonguePhoto');
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
@@ -998,7 +1012,6 @@
         
         try {
             const formData = new FormData(form);
-            // 修改后的接收邮箱
             const response = await fetch('https://formsubmit.co/ajax/1507238873@qq.com', {
                 method: 'POST',
                 body: formData,
