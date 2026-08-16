@@ -312,11 +312,10 @@
             请填写以下病例信息，带 <span class="required-star">*</span> 为必填项。
         </p>
         <form id="submissionForm" class="submission-form" action="https://formsubmit.co/1507238873@qq.com" method="POST" enctype="multipart/form-data" onsubmit="return validateSubmissionForm()">
+            <!-- 保留必要的隐藏字段，移除可能引起误判的 _captcha 和 _honey -->
             <input type="hidden" name="_subject" value="新病例投稿">
-            <input type="hidden" name="_captcha" value="false">
             <input type="hidden" name="_template" value="table">
             <input type="hidden" name="_next" id="formNext" value="">
-            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
 
             <div>
                 <label for="subChiefComplaint">主诉 <span class="required-star">*</span></label>
@@ -982,7 +981,6 @@
     function openSubmissionModal() {
         document.getElementById('submissionModal').style.display = 'flex';
         document.getElementById('submissionFeedback').innerHTML = '';
-        // 动态设置 _next 参数
         document.getElementById('formNext').value = window.location.href.split('?')[0] + '?submitted=true';
     }
     function closeSubmissionModal() {
@@ -991,7 +989,7 @@
     function validateSubmissionForm() {
         const form = document.getElementById('submissionForm');
         const feedback = document.getElementById('submissionFeedback');
-        
+
         const requiredFields = ['chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
         for (const fieldName of requiredFields) {
             const field = form.querySelector(`[name="${fieldName}"]`);
@@ -1010,7 +1008,7 @@
                 return false;
             }
         }
-        
+
         feedback.innerHTML = '';
         return true;
     }
@@ -1018,7 +1016,6 @@
     // 检查提交成功参数
     window.addEventListener('load', function() {
         if (window.location.search.includes('submitted=true')) {
-            // 清除 URL 参数
             if (history.replaceState) {
                 history.replaceState(null, '', window.location.pathname);
             }
