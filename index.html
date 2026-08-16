@@ -146,6 +146,36 @@
         .top-nav .nav-link.nav-active { color: var(--accent); font-weight: 700; background: rgba(192,57,43,0.06); border-color: rgba(192,57,43,0.2); }
         .case-full { font-size: 0.92em; line-height: 1.7; color: var(--text-light); }
         .case-full strong { color: var(--primary); }
+
+        /* 投稿表单样式 */
+        .submission-form { display: flex; flex-direction: column; gap: 12px; }
+        .submission-form label { font-weight: 600; color: var(--text-light); font-size: 0.9em; }
+        .submission-form input[type="text"],
+        .submission-form textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            font-size: 0.95em;
+            background: #fffefb;
+            outline: none;
+            transition: var(--transition);
+            font-family: var(--font-body);
+        }
+        .submission-form input[type="text"]:focus,
+        .submission-form textarea:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(139,69,19,0.07);
+        }
+        .submission-form textarea { min-height: 80px; resize: vertical; }
+        .submission-form .required-star { color: var(--accent); }
+        .submission-form .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .submission-form .form-row > div { flex: 1; min-width: 160px; }
+        .submission-form .file-input { border: 2px dashed var(--border); padding: 10px; border-radius: 10px; background: #fdfaf5; }
+        .submission-form .file-input input[type="file"] { width: 100%; }
+        .submission-form .btn-submit { width: 100%; padding: 14px; font-size: 1.1em; border-radius: 28px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 700; transition: var(--transition); }
+        .submission-form .btn-submit:hover { background: var(--primary-light); }
+        .submission-form .form-hint { font-size: 0.8em; color: var(--text-muted); }
     </style>
 </head>
 <body>
@@ -273,39 +303,87 @@
     </div>
 </div>
 
-<!-- 投稿模态框，使用 Zoho Forms 嵌入 -->
+<!-- 投稿模态框 -->
 <div class="modal-overlay" id="submissionModal" style="display:none;">
     <div class="modal" style="max-width:650px; max-height:90vh; overflow-y:auto;">
         <button class="modal-close" onclick="closeSubmissionModal()">✕</button>
         <h3>📤 投稿病例</h3>
-        <!-- Zoho Forms 嵌入代码开始 -->
-        <iframe id="ziframe_73423" aria-label="病例投稿" frameborder="0"  allow="camera;"   style="height:500px;width:99%;border:none;" src='https://forms.zohopublic.com/wuruilin1/form/TCM/formperma/2UgobY3lf3eluYX2bvZhxgTVF-3vlmdylA8LUvtLNL0?zf_enablecamera=true'></iframe>
-        <script type="text/javascript">
-        (function() {
-          try {
-            var zf_frame = document.getElementById("ziframe_73423");
-            var ifrmSrc = zf_frame.src;
-            if (!((new RegExp("[?&]referrername=")).test(ifrmSrc))) {
-                var rfr = window.location.href;
-                try { 
-                    rfr = window.self !== window.top ? 
-                        window.top.location.href : 
-                        (/^https?:\/\/[\w.-]+\.[a-zA-Z]{2,}/i.test(rfr) ? rfr : "");
-                } catch (e) {}
-                if (rfr && rfr !== "") {
-                    if (rfr.length > 1800) {
-                        var queryIndex = rfr.indexOf('?');
-                        if (queryIndex > -1) rfr = rfr.substring(0, queryIndex);
-                        if (rfr.length > 1800) rfr = rfr.substring(0, 1800);
-                    }
-                    ifrmSrc += ((ifrmSrc.indexOf('?') > 0) ? '&' : '?') + 'referrername=' + encodeURIComponent(rfr);
-                }
-            }
-            if (zf_frame.src !== ifrmSrc) zf_frame.src = ifrmSrc;
-          } catch (e) {}
-        })();
-        </script>
-        <!-- Zoho Forms 嵌入代码结束 -->
+        <p style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px;">
+            请填写以下病例信息，带 <span class="required-star">*</span> 为必填项。
+        </p>
+        <form id="submissionForm" class="submission-form" action="https://formsubmit.co/1507238873@qq.com" method="POST" enctype="multipart/form-data" onsubmit="return validateSubmissionForm()">
+            <input type="hidden" name="_subject" value="新病例投稿">
+            <input type="hidden" name="_captcha" value="false">
+            <input type="hidden" name="_template" value="table">
+            <input type="hidden" name="_next" id="formNext" value="">
+            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+
+            <div>
+                <label for="subChiefComplaint">主诉 <span class="required-star">*</span></label>
+                <textarea id="subChiefComplaint" name="chief_complaint" required placeholder="患者主要症状、持续时间等"></textarea>
+            </div>
+            <div>
+                <label for="subPastHistory">既往史 <span class="required-star">*</span></label>
+                <textarea id="subPastHistory" name="past_history" required placeholder="既往疾病、手术、过敏史等"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label for="subInspection">望诊 <span class="required-star">*</span></label>
+                    <textarea id="subInspection" name="inspection" required placeholder="面色、舌象、形态等"></textarea>
+                </div>
+                <div>
+                    <label for="subAuscultation">闻诊 <span class="required-star">*</span></label>
+                    <textarea id="subAuscultation" name="auscultation" required placeholder="声音、气味等"></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="subInquiry">问诊 <span class="required-star">*</span></label>
+                    <textarea id="subInquiry" name="inquiry" required placeholder="寒热、汗出、饮食、二便、睡眠等"></textarea>
+                </div>
+                <div>
+                    <label for="subPulse">切诊 <span class="required-star">*</span></label>
+                    <textarea id="subPulse" name="pulse" required placeholder="脉象、按诊等"></textarea>
+                </div>
+            </div>
+
+            <div>
+                <label for="subAnalysis">辩证分析过程 <span class="required-star">*</span></label>
+                <textarea id="subAnalysis" name="analysis" required placeholder="病机分析、辨证思路等"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label for="subSyndrome">证型 <span class="required-star">*</span></label>
+                    <input type="text" id="subSyndrome" name="syndrome" required placeholder="如：肝郁脾虚证">
+                </div>
+                <div>
+                    <label for="subDisease">病名 <span class="required-star">*</span></label>
+                    <input type="text" id="subDisease" name="disease" required placeholder="如：胃脘痛">
+                </div>
+            </div>
+
+            <div>
+                <label for="subWesternDiagnosis">西医诊断 <span class="required-star">*</span></label>
+                <input type="text" id="subWesternDiagnosis" name="western_diagnosis" required placeholder="如：慢性胃炎">
+            </div>
+
+            <div>
+                <label for="subPrescription">推荐要方 <span class="form-hint">（如有则填写）</span></label>
+                <input type="text" id="subPrescription" name="prescription" placeholder="如：柴胡疏肝散加减">
+            </div>
+
+            <div>
+                <label for="subTonguePhoto">舌象照片 <span class="form-hint">（如有则上传，大小不超过10MB）</span></label>
+                <div class="file-input">
+                    <input type="file" id="subTonguePhoto" name="attachment" accept="image/*">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">📨 提交病例</button>
+            <div id="submissionFeedback" style="margin-top:10px;"></div>
+        </form>
     </div>
 </div>
 
@@ -900,13 +978,54 @@
     })();
     showPage('Home');
 
-    // 投稿模态框相关（仅打开/关闭，实际表单由 Zoho Forms 处理）
+    // 投稿表单相关
     function openSubmissionModal() {
         document.getElementById('submissionModal').style.display = 'flex';
+        document.getElementById('submissionFeedback').innerHTML = '';
+        // 动态设置 _next 参数
+        document.getElementById('formNext').value = window.location.href.split('?')[0] + '?submitted=true';
     }
     function closeSubmissionModal() {
         document.getElementById('submissionModal').style.display = 'none';
     }
+    function validateSubmissionForm() {
+        const form = document.getElementById('submissionForm');
+        const feedback = document.getElementById('submissionFeedback');
+        
+        const requiredFields = ['chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
+        for (const fieldName of requiredFields) {
+            const field = form.querySelector(`[name="${fieldName}"]`);
+            if (!field || !field.value.trim()) {
+                feedback.innerHTML = `<div class="result-box fail">请填写所有必填字段。</div>`;
+                field?.focus();
+                return false;
+            }
+        }
+
+        const fileInput = document.getElementById('subTonguePhoto');
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 10 * 1024 * 1024) {
+                feedback.innerHTML = `<div class="result-box fail">舌象照片大小不能超过10MB，请压缩后重新上传。</div>`;
+                return false;
+            }
+        }
+        
+        feedback.innerHTML = '';
+        return true;
+    }
+
+    // 检查提交成功参数
+    window.addEventListener('load', function() {
+        if (window.location.search.includes('submitted=true')) {
+            // 清除 URL 参数
+            if (history.replaceState) {
+                history.replaceState(null, '', window.location.pathname);
+            }
+            openSubmissionModal();
+            document.getElementById('submissionFeedback').innerHTML = '<div class="result-box success">✅ 病例提交成功！感谢您的投稿。</div>';
+        }
+    });
 </script>
 </body>
 </html>
