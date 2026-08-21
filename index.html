@@ -767,9 +767,12 @@
         const completed = getCompletedCases();
         let available = pool.filter(c => !completed.includes(c.id));
         if(available.length === 0){
-            const newCompleted = completed.filter(id => !pool.some(c => c.id === id));
-            safeSetStorage('tcm_completed_cases', newCompleted);
-            available = pool;
+            // 所有病例均已完成，提示闯关完毕，不再重复
+            openSimpleResultModal('🎉 闯关完毕', '该难度下所有病例均已完成，无新病例可学习。您可以在病例题库中复习已完成的病例。');
+            // 清除难度选中状态
+            document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b=>b.classList.remove('selected'));
+            currentDifficulty = null;
+            return;
         }
         const randomIndex = Math.floor(Math.random() * available.length);
         currentCase = available[randomIndex];
