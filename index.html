@@ -176,6 +176,16 @@
         .submission-form .btn-submit { width: 100%; padding: 14px; font-size: 1.1em; border-radius: 28px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 700; transition: var(--transition); }
         .submission-form .btn-submit:hover { background: var(--primary-light); }
         .submission-form .form-hint { font-size: 0.8em; color: var(--text-muted); }
+
+        /* 难度选择样式 */
+        .difficulty-select { position: relative; }
+        .difficulty-select-display { padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; background: #fffefb; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: var(--transition); }
+        .difficulty-select-display:hover { border-color: var(--primary-light); }
+        .difficulty-select-display .arrow { color: var(--text-muted); font-size: 0.8em; }
+        .difficulty-options { position: absolute; top: 100%; left: 0; right: 0; background: #fffefb; border: 2px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; z-index: 10; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+        .difficulty-option { display: block; width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-family: var(--font-body); font-size: 0.95em; color: var(--text); transition: background 0.2s; }
+        .difficulty-option:hover { background: rgba(139,69,19,0.06); }
+        .difficulty-option.selected { background: rgba(139,69,19,0.1); font-weight: 600; }
     </style>
 </head>
 <body>
@@ -317,6 +327,23 @@
             <input type="hidden" name="_template" value="table">
             <input type="hidden" name="_next" id="formNext" value="">
             <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+
+            <!-- 难度选择 -->
+            <div>
+                <label>选择难度 <span class="required-star">*</span></label>
+                <div class="difficulty-select" id="difficultySelect">
+                    <div class="difficulty-select-display" onclick="toggleDifficultyOptions()">
+                        <span id="difficultyDisplay">点击选择难度</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="difficulty-options" id="difficultyOptions" style="display:none;">
+                        <button type="button" class="difficulty-option" data-value="basic" onclick="selectDifficultyOption('basic', '🌱 基础（大一）', this)">🌱 基础（大一）</button>
+                        <button type="button" class="difficulty-option" data-value="intermediate" onclick="selectDifficultyOption('intermediate', '📖 进阶（内外妇儿）', this)">📖 进阶（内外妇儿）</button>
+                        <button type="button" class="difficulty-option" data-value="advanced" onclick="selectDifficultyOption('advanced', '🎓 考研病例', this)">🎓 考研病例</button>
+                    </div>
+                </div>
+                <input type="hidden" name="difficulty" id="subDifficulty" value="">
+            </div>
 
             <div>
                 <label for="subChiefComplaint">主诉 <span class="required-star">*</span></label>
@@ -982,16 +1009,35 @@
     function openSubmissionModal() {
         document.getElementById('submissionModal').style.display = 'flex';
         document.getElementById('submissionFeedback').innerHTML = '';
-        // 动态设置 _next 参数
         document.getElementById('formNext').value = window.location.href.split('?')[0] + '?submitted=true';
+        // 重置难度选择
+        document.getElementById('difficultyDisplay').textContent = '点击选择难度';
+        document.getElementById('subDifficulty').value = '';
+        document.getElementById('difficultyOptions').style.display = 'none';
+        document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
     }
     function closeSubmissionModal() {
         document.getElementById('submissionModal').style.display = 'none';
     }
+
+    // 难度选择函数
+    function toggleDifficultyOptions() {
+        const options = document.getElementById('difficultyOptions');
+        options.style.display = options.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function selectDifficultyOption(value, label, btn) {
+        document.getElementById('difficultyDisplay').textContent = label;
+        document.getElementById('subDifficulty').value = value;
+        document.getElementById('difficultyOptions').style.display = 'none';
+        document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
     function validateSubmissionForm() {
         const form = document.getElementById('submissionForm');
         const feedback = document.getElementById('submissionFeedback');
-        
+
         const requiredFields = ['chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
         for (const fieldName of requiredFields) {
             const field = form.querySelector(`[name="${fieldName}"]`);
@@ -1002,6 +1048,13 @@
             }
         }
 
+        // 检查难度是否选择
+        const difficulty = form.querySelector('[name="difficulty"]');
+        if (!difficulty || !difficulty.value) {
+            feedback.innerHTML = `<div class="result-box fail">请选择难度。</div>`;
+            return false;
+        }
+
         const fileInput = document.getElementById('subTonguePhoto');
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
@@ -1010,7 +1063,7 @@
                 return false;
             }
         }
-        
+
         feedback.innerHTML = '';
         return true;
     }
@@ -1018,7 +1071,6 @@
     // 检查提交成功参数
     window.addEventListener('load', function() {
         if (window.location.search.includes('submitted=true')) {
-            // 清除 URL 参数
             if (history.replaceState) {
                 history.replaceState(null, '', window.location.pathname);
             }
