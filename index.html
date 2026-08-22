@@ -1,1245 +1,784 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-  <script>window.process=window.process||{env:{}};</script>
-
-  <script>(()=>{var T=Object.defineProperty;var w=(d,o,i)=>o in d?T(d,o,{enumerable:!0,configurable:!0,writable:!0,value:i}):d[o]=i;var h=(d,o,i)=>w(d,typeof o!="symbol"?o+"":o,i);const v="/console/accounts";if(typeof window<"u"&&!window.__accountsSingleFlightInstalled){window.__accountsSingleFlightInstalled=!0;const d=window.fetch.bind(window);let o=null,i=null;const p=n=>{try{const r=new URL(n,window.location.origin);return r.origin===window.location.origin&&r.pathname===v}catch{return!1}},R=async(n,r)=>{const t=await d(n,{method:"GET",credentials:"include",headers:{Accept:"application/json",...r||{}}}),e=await t.text(),a=[];return t.headers.forEach((f,c)=>{const u=c.toLowerCase();u==="content-encoding"||u==="content-length"||a.push([c,f])}),{status:t.status,statusText:t.statusText,bodyText:e,headers:a,responseURL:t.url||n}},g=(n,r)=>{const t=Date.now();return i&&t-i.ts<2e4?Promise.resolve(i.raw):o||(o=R(n,r).then(e=>(e.status>=200&&e.status<300&&(i={raw:e,ts:Date.now()}),o=null,e)).catch(e=>{throw o=null,e}),o)},y=n=>{const r=n.status===204||n.status===205||n.status===304,t=new Response(r?null:n.bodyText,{status:n.status,statusText:n.statusText,headers:n.headers});try{Object.defineProperty(t,"url",{value:n.responseURL})}catch{}return t};window.fetch=function(r,t){try{const e=(t?.method||(r instanceof Request?r.method:"GET")||"GET").toUpperCase(),a=r instanceof Request?r.url:String(r);if(e==="GET"&&p(a))return g(a).then(y)}catch{}return d(r,t)};const b=window.XMLHttpRequest;class _ extends b{constructor(){super(...arguments);h(this,"_sfMethod","");h(this,"_sfUrl","");h(this,"_sfHeaders",{});h(this,"_sfIntercept",!1);h(this,"_sfAborted",!1)}open(t,e,...a){return this._sfMethod=String(t||"").toUpperCase(),this._sfUrl=typeof e=="string"?e:e.toString(),this._sfHeaders={},this._sfAborted=!1,this._sfIntercept=this._sfMethod==="GET"&&p(this._sfUrl),super.open(t,e,...a)}setRequestHeader(t,e){this._sfIntercept&&(this._sfHeaders[t]=e);try{return super.setRequestHeader(t,e)}catch{}}abort(){if(this._sfIntercept&&!this._sfAborted){this._sfAborted=!0;const t=e=>{try{this.dispatchEvent(new Event(e))}catch{}};t("abort"),t("loadend");return}return super.abort()}send(t){if(!this._sfIntercept)return super.send(t);g(this._sfUrl,this._sfHeaders).then(e=>{this._sfAborted||this._sfDeliver(e)}).catch(()=>{this._sfAborted||this._sfDeliverError()})}_sfDeliver(t){const e={};t.headers.forEach(([s,l])=>{e[s.toLowerCase()]=l});const a=t.headers.map(([s,l])=>`${s}: ${l}`).join(`\r
-`)+`\r
-`,f=()=>{const s=this.responseType;if(s===""||s==="text")return t.bodyText;if(s==="json")try{return JSON.parse(t.bodyText)}catch{return null}return s==="arraybuffer"?new TextEncoder().encode(t.bodyText).buffer:s==="blob"?new Blob([t.bodyText]):t.bodyText},c=(s,l)=>{try{Object.defineProperty(this,s,{configurable:!0,get:l})}catch{}};c("readyState",()=>4),c("status",()=>t.status),c("statusText",()=>t.statusText),c("responseURL",()=>t.responseURL),c("responseText",()=>{const s=this.responseType;return s===""||s==="text"?t.bodyText:""}),c("response",f),this.getAllResponseHeaders=()=>a,this.getResponseHeader=s=>e[s.toLowerCase()]??null;const u=s=>{try{this.dispatchEvent(new Event(s))}catch{}};u("readystatechange"),u("load"),u("loadend")}_sfDeliverError(){try{Object.defineProperty(this,"readyState",{configurable:!0,get:()=>4}),Object.defineProperty(this,"status",{configurable:!0,get:()=>0})}catch{}const t=e=>{try{this.dispatchEvent(new Event(e))}catch{}};t("readystatechange"),t("error"),t("loadend")}}window.XMLHttpRequest=_}})();
-</script>
-
-  <meta charset="UTF-8" />
-    <link rel="modulepreload" crossorigin href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/services-4aKTYTOh.js">
-  <link rel="modulepreload" crossorigin href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/services-DFsr32nC.js">
-  <link rel="modulepreload" crossorigin href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/services-DszLHlAH.js">
-  <link rel="preload" as="image" media="(prefers-color-scheme: light)" href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/claw-welcome-light-DIM0nkzP.svg">
-<meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <!--
-    title 留中性兜底文案，不跟 og:title 同步成"邀请你加入协作"——
-    因为 <title> 会出现在所有访问 /agents/* 路径的浏览器 Tab 上（React app 启动前的几百毫秒），
-    若改成邀请语义会让普通浏览场景（首页/项目/待办）的 Tab 短暂出现邀请文案，语义错配。
-    og:title 仅外部抓取器读取（企微/微信/Slack 等 IM 卡片），改成邀请文案才是 #49388 的目标。
-  -->
-  <title>来自 WorkBuddy 项目的分享</title>
-  <link rel="icon" href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/logo.svg" />
-
-  <!--
-    社交平台分享卡片（Open Graph / Twitter Card）静态 meta。
-
-    场景：用户在分享落地页（/agents/share/:code、/agents/tasks/share/:code 等）
-    点击"复制链接"后粘贴到微信、QQ、企业微信、Telegram、Slack 等聊天里，
-    IM 客户端会请求该 URL 并按 Open Graph 协议从初始 HTML 抓取 meta，
-    渲染出 [图标 + 主标题 + 分标题] 的卡片预览。
-
-    重要约束：
-    1. 微信 / 企微等 IM 的爬虫**不执行 JavaScript**，只读静态 HTML。
-       因此 og:* 必须直接出现在 index.html 里，不能通过 React 运行时注入。
-    2. 当前为纯静态托管（无 SSR），无法按 :code 注入"具体分享名"作为
-       og:title——这部分留待后续 SSR 方案。
-    3. og:image 必须是 PNG/JPG（IM 普遍不解析 SVG），且推荐 ≥ 300×300。
-       当前指向 /assets/share-logo.png，由产品同学补齐 PNG 资源。
-    4. og:image 必须是 **https 绝对 URL**（OG 协议硬性要求，微信/企微/QQ
-       的爬虫遇到相对路径会直接忽略该字段）。这里使用 //static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f 占位符，
-       由 ci/html.sh 在部署期替换成对应环境的 CDN 绝对地址，避免绑定某一次构建
-       的 COS hash 目录。
-    5. 微信抓取有强缓存。修改图片资源后若想立刻看到效果，
-       要么换文件名，要么在 URL 末尾加 ?v=N 绕缓存。
-
-    当前静态分享卡片兜底方案：
-    - 主标题：og:title = "邀请你加入协作"（兜底文案，命中需求文档"兜底三：抓取超时/失败"）。
-      说明：纯静态 HTML 无法按 :token 动态注入项目/任务/待办的真实标题，
-      也无法注入"{昵称} 邀请你{动词}{类型}"这类动态副文案——这部分需要 SSR
-      或边缘函数 + URL 元数据编码方案，本次范围外。
-    - 分标题：og:description = "点击查看团队共享的内容 · WorkBuddy 项目"（设计稿兜底文案）。
-    - 图标：og:image 指向部署期注入的公开 PNG 资源。
-
-    注意：以下 meta 对所有页面生效（包括非分享路径）。这是有意为之——
-    主应用首页 / Agent 列表页等被分享时，同样能展示 WorkBuddy 品牌卡片，
-    避免"分享出去就是裸 URL"的体验。
-  -->
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="WorkBuddy" />
-  <meta property="og:title" content="邀请你加入协作" />
-  <meta property="og:description" content="点击查看团队共享的内容 · WorkBuddy 项目" />
-  <meta property="og:image"
-    content="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/share-logo.png?v=2" />
-  <meta property="og:image:secure_url"
-    content="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/share-logo.png?v=2" />
-  <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:width" content="560" />
-  <meta property="og:image:height" content="560" />
-  <!-- Twitter Card：Slack / 部分 IM 优先读 Twitter 字段 -->
-  <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="邀请你加入协作" />
-  <meta name="twitter:description" content="点击查看团队共享的内容 · WorkBuddy 项目" />
-  <meta name="twitter:image"
-    content="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/share-logo.png?v=2" />
-
-  <script>
-    window.RUN_ENV = 'prod';
-    window.IS_INTERNATIONAL_EDITION = '__IS_INTERNATIONAL_EDITION__';
-    window.PRODUCT_FEATURES = '{"billing":"true"}';
-    window.__toCdnUrl = (url) => {
-      const BASE_URL = '//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f';
-      return (/__.*?__$/.test(BASE_URL) ? '' : BASE_URL) + '/' + url;
-    };
-
-    // 检查是否需要显示骨架屏
-    (function () {
-      const host = location.host;
-      const pathname = location.pathname;
-      const searchParams = new URLSearchParams(location.search);
-      const hasSessionId = searchParams.has('sessionId');
-
-      // 只在 vscode-app 环境或 /agents、/app 路径下显示骨架屏
-      // 支持格式: /agents、/agents/、/agents/task/2018542616813531136
-      //         /app、/app/、/app/task/2018542616813531136
-      const AGENTS_BASE_NAMES = ['/agents', '/app'];
-      const pathnameNoTrailingSlash = pathname.replace(/\/$/, '');
-      const isAgentsTaskPath = AGENTS_BASE_NAMES.some(function (bn) {
-        return new RegExp('^' + bn + '/task/\\d+$').test(pathname);
-      });
-      const shouldShowSkeleton =
-        AGENTS_BASE_NAMES.indexOf(pathname) !== -1 ||
-        AGENTS_BASE_NAMES.indexOf(pathnameNoTrailingSlash) !== -1 ||
-        isAgentsTaskPath;
-      window.__shouldShowSkeleton = shouldShowSkeleton;
-      window.__hasSessionId = hasSessionId;
-      // 默认登录状态为未知（null），等待接口返回
-      window.__isLoggedIn = null;
-
-      // 默认 document.title 初始化
-      // 分享落地页（/agents/share/、/agents/tasks/share/、/app/share/ 等，
-      // 路径中含 "/share/"）由 React 端的 usePreviewDocumentTitle 在拿到 shareDetail
-      // 后设置为真实文件名/任务名。如果在 HTML 里硬编码默认 title，会出现
-      // "先显示 Tencent Cloud CodeBuddy → 闪一下变成文件名" 的跳变；
-      // 因此分享页保持 <title> 为空，由 React 接管；非分享页则立即填上默认标题，
-      // 避免浏览器 tab 出现空白。
-      var DEFAULT_DOC_TITLE = 'WorkBuddy';
-      // 严格匹配两类分享落地页路径前缀，避免命中未来可能出现的
-      // 路径中"恰好含 /share/"但并非分享落地页的路由（例如 /agents/settings/share/...），
-      // 那种路由不会挂载 usePreviewDocumentTitle，title 留空会导致 tab 永远空白。
-      //
-      // 覆盖 web 的两套 basename：/agents（codebuddy 域）和 /app（workbuddy 域）。
-      // 两套 basename 由 main.tsx 在运行时按 pathname 选择（见 detectBasenameFromPathname），
-      // 对应 React Router 的 share / tasks/share 路由。
-      var SHARE_PATH_PREFIXES = [
-        '/agents/share/',
-        '/agents/tasks/share/',
-        '/app/share/',
-        '/app/tasks/share/',
-      ];
-      var isSharePreviewPath = SHARE_PATH_PREFIXES.some(function (p) {
-        return pathname.indexOf(p) === 0;
-      });
-      if (!isSharePreviewPath) {
-        try {
-          document.title = DEFAULT_DOC_TITLE;
-        } catch (e) {
-          // 极端情况下（如某些受限环境）写入失败时静默忽略，不阻断后续流程。
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中医辨证推演馆 - 海龟汤模式</title>
+    <style>
+        :root {
+            --bg: #fdf8f3; --card: #fffefb; --primary: #8b4513; --primary-light: #a0522d; --accent: #c0392b; --accent-light: #e74c3c; --gold: #b8860b; --gold-light: #d4a745; --text: #3e2723; --text-light: #5d4037; --text-muted: #7b5b4e; --border: #e0d5c7; --shadow: 0 4px 20px rgba(139, 69, 19, 0.10); --shadow-lg: 0 12px 40px rgba(139, 69, 19, 0.15); --radius: 16px; --radius-sm: 10px; --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); --font-heading: 'STSong', 'Songti SC', 'Noto Serif SC', 'KaiTi', 'STKaiti', '楷体', 'SimSun', '宋体', serif; --font-body: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'Noto Sans SC', sans-serif;
         }
-      } else {
-        // 分享落地页强制使用 WorkBuddy favicon，避免与页面内绿色 logo 不一致。
-        // 主路径按现有 href 替换文件名（保留 querystring 与 CDN 前缀）；
-        // 兜底分支基于 currentHref 派生目录前缀，避免未来 favicon 改成 .ico 等
-        // 格式时塌缩成同域裸路径 /assets/workbuddy.svg（CDN 模式下会丢前缀）。
-        try {
-          var iconLink = document.querySelector('link[rel="icon"]');
-          var currentHref = iconLink && iconLink.getAttribute('href');
-          var FAVICON_PATTERN = /[^/]+\.svg(\?.*)?$/;
-          if (iconLink && currentHref && FAVICON_PATTERN.test(currentHref)) {
-            iconLink.setAttribute(
-              'href',
-              currentHref.replace(FAVICON_PATTERN, 'workbuddy.svg$1'),
-            );
-          } else if (iconLink && currentHref) {
-            // 派生 currentHref 的目录前缀（去掉末尾文件名 + 可选 querystring），
-            // 拼上 workbuddy.svg。这样 CDN 前缀、子路径都能保留。
-            var dirPrefix = currentHref.replace(/[^/]+(\?.*)?$/, '');
-            iconLink.setAttribute('href', dirPrefix + 'workbuddy.svg');
-          }
-        } catch (e) {
-          // favicon 切换失败不影响主流程
-        }
-      }
-
-      // 如果不需要显示骨架屏，直接返回
-      if (!shouldShowSkeleton) {
-        return;
-      }
-
-      // 初始化骨架屏主题 - 立即执行，在 DOM 渲染前确定主题
-      // 与 agent-ui/src/utils/theme.ts 中的 getInitialTheme() 保持一致
-      const THEME_STORAGE_KEY = 'agent-ui-theme';
-      let isLight = false;
-
-      try {
-        // 1. 优先从 localStorage 读取用户保存的主题
-        const stored = localStorage.getItem(THEME_STORAGE_KEY);
-        if (stored) {
-          const config = JSON.parse(stored);
-          if (config.followSystem) {
-            // 跟随系统
-            isLight = !window.matchMedia('(prefers-color-scheme: light)').matches;
-          } else {
-            isLight = config.theme === 'light';
-          }
-        } else {
-          // 2. 没有保存的主题，默认 light（与 agent-ui ThemeManager 默认主题 IDE Light 保持一致）
-          isLight = true;
-        }
-      } catch (e) {
-        // 出错时默认 dark
-        isLight = true;
-      }
-
-      // 保存主题状态到全局变量，供后续使用
-      window.__skeletonTheme = isLight ? 'light' : 'dark';
-
-      // 立即设置 HTML 背景色，防止闪烁
-      // 与 default-light.scss 的 --vscode-editor-background 保持一致
-      document.documentElement.style.backgroundColor = isLight ? '#ffffff' : '#181818';
-    })();
-  </script>
-
-  <!-- 骨架屏样式 - 防止白屏 -->
-  <style>
-    /* ========== 主题变量 ========== */
-    :root {
-      /* 暗色主题（默认） */
-      --skeleton-bg: #181818;
-      --skeleton-sidebar-bg: #141414;
-      --skeleton-border: rgba(255, 255, 255, 0.07);
-      --skeleton-shimmer-from: rgba(255, 255, 255, 0.04);
-      --skeleton-shimmer-to: rgba(255, 255, 255, 0.08);
-      --skeleton-card-bg: rgba(255, 255, 255, 0.04);
-      --skeleton-card-border: rgba(255, 255, 255, 0.06);
-      --skeleton-input-bg: rgba(255, 255, 255, 0.03);
-      --skeleton-input-border: rgba(255, 255, 255, 0.1);
-      --skeleton-btn-bg: rgba(255, 255, 255, 0.08);
-      --skeleton-search-bg: rgba(255, 255, 255, 0.05);
-      --skeleton-text-color: rgba(255, 255, 255, 0.6);
-    }
-
-    /* 亮色主题 - 与 default-light.scss 保持一致 */
-    .app-skeleton.light {
-      --skeleton-bg: #ffffff;
-      --skeleton-sidebar-bg: #f8f8f8;
-      --skeleton-border: #e5e5e5;
-      --skeleton-shimmer-from: rgba(0, 0, 0, 0.03);
-      --skeleton-shimmer-to: rgba(0, 0, 0, 0.08);
-      --skeleton-card-bg: rgba(0, 0, 0, 0.02);
-      --skeleton-card-border: rgba(0, 0, 0, 0.06);
-      --skeleton-input-bg: #ffffff;
-      --skeleton-input-border: #cecece;
-      --skeleton-btn-bg: rgba(0, 0, 0, 0.05);
-      --skeleton-search-bg: #ffffff;
-      --skeleton-text-color: #3b3b3b;
-    }
-
-    /* 骨架屏动画 */
-    @keyframes skeleton-shimmer {
-      0% {
-        background-position: -200% 0;
-      }
-
-      100% {
-        background-position: 200% 0;
-      }
-    }
-
-    /* 消失动画 - 平滑淡出，给真实UI足够的渲染时间 */
-    @keyframes skeleton-fade-out {
-      0% {
-        opacity: 1;
-      }
-
-      100% {
-        opacity: 0;
-      }
-    }
-
-    /* 骨架屏容器 - 默认隐藏 */
-    .app-skeleton {
-      position: fixed;
-      inset: 0;
-      display: none;
-      /* 默认隐藏，由 JS 控制显示 */
-      background: var(--skeleton-bg);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      z-index: 9999;
-      opacity: 1;
-      /* 使用 will-change 优化动画性能 */
-      will-change: opacity;
-    }
-
-    /* 显示骨架屏 */
-    .app-skeleton.show {
-      display: flex;
-    }
-
-    .app-skeleton.hidden {
-      animation: skeleton-fade-out 0.25s ease-out forwards;
-      pointer-events: none;
-    }
-
-    /* 骨架条纹效果 */
-    .skeleton-item {
-      background: linear-gradient(90deg, var(--skeleton-shimmer-from) 25%, var(--skeleton-shimmer-to) 50%, var(--skeleton-shimmer-from) 75%);
-      background-size: 200% 100%;
-      animation: skeleton-shimmer 1.5s infinite;
-      border-radius: 6px;
-    }
-
-    /* ========== 侧边栏骨架 ========== */
-    .skeleton-sidebar {
-      width: 260px;
-      min-width: 260px;
-      background: var(--skeleton-sidebar-bg, var(--skeleton-bg));
-      border-right: 1px solid var(--skeleton-border);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      height: 100%;
-    }
-
-    .skeleton-sidebar-header {
-      padding: 0 12px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    .skeleton-logo-wrapper {
-      height: 40px;
-      display: flex;
-      align-items: center;
-    }
-
-    .skeleton-logo {
-      width: 120px;
-      height: 20px;
-      border-radius: 4px;
-    }
-
-    .skeleton-search-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .skeleton-search {
-      flex: 1;
-      height: 32px;
-      border-radius: 6px;
-      background: var(--skeleton-search-bg);
-      border: 1px solid var(--skeleton-input-border);
-    }
-
-    .skeleton-filter-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 4px;
-      border: 1px solid var(--skeleton-input-border);
-      background: transparent;
-    }
-
-    .skeleton-new-task-btn {
-      height: 32px;
-      border-radius: 6px;
-      background: var(--skeleton-btn-bg);
-    }
-
-    .skeleton-sidebar-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 0 10px;
-      overflow: hidden;
-    }
-
-    /* CollapsibleSection 骨架屏列表 - 与 collapsible-section-skeleton.module.scss 保持一致 */
-    .skeleton-section-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .skeleton-section {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      margin-bottom: 8px;
-    }
-
-    .skeleton-section:last-child {
-      margin-bottom: 0;
-    }
-
-    /* CollapsibleSection header: padding 8px 0, gap 4px */
-    .skeleton-section-header {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 8px 0;
-    }
-
-    /* 标题在前 */
-    .skeleton-section-title {
-      width: 80px;
-      height: 14px;
-    }
-
-    /* Chevron icon: 12x12 */
-    .skeleton-section-chevron {
-      width: 12px;
-      height: 12px;
-      border-radius: 2px;
-    }
-
-    /* 卡片列表容器 */
-    .skeleton-card-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    /* AgentCard: padding 12px 8px, gap 8px, border-radius 6px */
-    .skeleton-card {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px 8px;
-      border-radius: 6px;
-    }
-
-    /* Card header row: min-height 20px, gap 6px */
-    .skeleton-card-header {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 20px;
-    }
-
-    /* Icon: 18x18 */
-    .skeleton-card-icon {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
-
-    /* Title: flex 1, height 14px, max-width 70% */
-    .skeleton-card-title {
-      flex: 1;
-      height: 14px;
-      max-width: 70%;
-    }
-
-    /* Time: width 24px, height 12px */
-    .skeleton-card-time {
-      width: 24px;
-      height: 12px;
-      flex-shrink: 0;
-      margin-left: auto;
-    }
-
-    /* Status: width 60px, height 12px, margin-left 24px（与图标对齐） */
-    .skeleton-card-status {
-      width: 60px;
-      height: 12px;
-      margin-left: 24px;
-    }
-
-    /* ========== 主内容区骨架 ========== */
-    .skeleton-main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      background: var(--skeleton-bg);
-    }
-
-    .skeleton-welcome {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 32px;
-      max-width: 832px;
-      width: 100%;
-    }
-
-    /* 欢迎头部 - Logo + 标题 */
-    .skeleton-welcome-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .skeleton-welcome-logo {
-      width: 72px;
-      height: 72px;
-      border-radius: 16px;
-    }
-
-    .skeleton-welcome-title {
-      width: 360px;
-      height: 38px;
-      border-radius: 6px;
-    }
-
-    /* 模式选择器骨架 - 两个卡片 */
-    .skeleton-mode-selector {
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      gap: 4px;
-      width: 100%;
-      max-width: 640px;
-      height: 189px;
-    }
-
-    .skeleton-mode-card {
-      flex: 1;
-      max-width: 340px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding-top: 0;
-      border-radius: 18px 18px 0 0;
-      background: var(--skeleton-card-bg);
-      border: 1px solid var(--skeleton-card-border);
-      border-bottom: none;
-    }
-
-    .skeleton-mode-card--active {
-      height: 189px;
-    }
-
-    .skeleton-mode-card--inactive {
-      height: 119px;
-    }
-
-    /* 模式卡片内部 - tag wrapper */
-    .skeleton-tag-wrapper {
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      width: 100%;
-      height: 99px;
-      padding-bottom: 0;
-    }
-
-    .skeleton-tag-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 280px;
-      height: 79px;
-      background: var(--skeleton-input-bg);
-      border-radius: 18px;
-    }
-
-    .skeleton-tag-btn {
-      width: 130px;
-      height: 29px;
-      border-radius: 14px;
-    }
-
-    .skeleton-tag-subtitle {
-      width: 80px;
-      height: 14px;
-    }
-
-    .skeleton-mode-desc {
-      width: 200px;
-      height: 13px;
-      margin-top: 16px;
-    }
-
-    /* 输入框区域骨架 */
-    .skeleton-input-area {
-      width: 100%;
-      max-width: 832px;
-    }
-
-    .skeleton-input-box {
-      width: 100%;
-      height: 140px;
-      border-radius: 16px;
-      background: var(--skeleton-input-bg);
-      border: 1px solid var(--skeleton-input-border);
-    }
-
-    /* 快捷操作骨架 */
-    .skeleton-quick-actions {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 16px;
-      flex-wrap: wrap;
-    }
-
-    .skeleton-quick-btn {
-      height: 32px;
-      border-radius: 16px;
-      background: var(--skeleton-search-bg);
-      border: 1px solid var(--skeleton-card-border);
-    }
-
-    /* ========== 消息列表骨架屏 ========== */
-    .skeleton-messages {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      background: var(--skeleton-bg);
-      overflow: hidden;
-    }
-
-    /* 顶部栏 */
-    .skeleton-messages-header {
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 8px;
-      border-bottom: 1px solid var(--skeleton-border);
-      flex-shrink: 0;
-    }
-
-    .skeleton-messages-header-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .skeleton-messages-title {
-      width: 180px;
-      height: 16px;
-    }
-
-    .skeleton-messages-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .skeleton-messages-action-btn {
-      width: 28px;
-      height: 28px;
-      border-radius: 4px;
-    }
-
-    /* 消息内容区域 - 居中容器 */
-    .skeleton-messages-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow: hidden;
-    }
-
-    .skeleton-messages-scroll {
-      width: 100%;
-      max-width: 832px;
-      flex: 1;
-      padding: 0 8px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    /* 消息对容器 */
-    .skeleton-message-pair {
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* 用户消息 - 右对齐气泡 */
-    .skeleton-user-message {
-      padding: 32px 16px;
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    .skeleton-user-bubble {
-      border-radius: 6px 6px 0 6px;
-      min-width: 100px;
-      max-width: 70%;
-      height: 19px;
-    }
-
-    /* 助手消息 - 左对齐，头像+内容 */
-    .skeleton-assistant-message {
-      padding: 0 12px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* 助手头像行 */
-    .skeleton-avatar-container {
-      display: flex;
-      align-items: center;
-      padding-bottom: 12px;
-      gap: 10px;
-    }
-
-    .skeleton-avatar {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .skeleton-avatar-name {
-      width: 80px;
-      height: 12px;
-    }
-
-    /* 助手消息内容 */
-    .skeleton-assistant-content {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding-bottom: 16px;
-    }
-
-    .skeleton-text-long {
-      height: 13px;
-      width: 90%;
-    }
-
-    .skeleton-text-medium {
-      height: 13px;
-      width: 70%;
-    }
-
-    .skeleton-text-short {
-      height: 13px;
-      width: 45%;
-    }
-
-    /* 底部输入框区域 */
-    .skeleton-messages-input-wrapper {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 16px 24px;
-      flex-shrink: 0;
-    }
-
-    .skeleton-messages-input {
-      width: 100%;
-      max-width: 832px;
-    }
-
-    .skeleton-messages-input-box {
-      width: 100%;
-      height: 100px;
-      border-radius: 12px;
-      background: var(--skeleton-input-bg);
-      border: 1px solid var(--skeleton-input-border);
-    }
-
-    /* ========== 空白主内容区（加载中状态） ========== */
-    .skeleton-main-empty {
-      flex: 1;
-      background: var(--skeleton-bg);
-    }
-
-    /* ========== 未登录状态 - Welcome Only 视图 ========== */
-    .skeleton-welcome-only {
-      display: none;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      background: var(--skeleton-bg);
-    }
-
-    .skeleton-welcome-only.show {
-      display: flex;
-    }
-
-    /* 顶部导航栏骨架 */
-    .skeleton-header {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      padding: 0 24px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-    }
-
-    .skeleton-header-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 1440px;
-      margin: 0 auto;
-    }
-
-    .skeleton-header-logo {
-      width: 140px;
-      height: 20px;
-      border-radius: 4px;
-    }
-
-    .skeleton-header-nav {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .skeleton-header-nav-item {
-      width: 60px;
-      height: 20px;
-      border-radius: 4px;
-    }
-
-    .skeleton-header-login-btn {
-      width: 72px;
-      height: 36px;
-      border-radius: 18px;
-    }
-
-    /* 主内容区 - 居中的 welcome */
-    .skeleton-welcome-only-main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-    }
-
-    /* 加载中状态 - 只显示背景色，隐藏所有骨架屏内容 */
-    .app-skeleton.loading .skeleton-sidebar,
-    .app-skeleton.loading .skeleton-main-empty,
-    .app-skeleton.loading .skeleton-welcome-only {
-      display: none;
-    }
-
-    /* 未登录时隐藏侧边栏，显示 welcome-only */
-    .app-skeleton.not-logged-in .skeleton-sidebar {
-      display: none;
-    }
-
-    .app-skeleton.not-logged-in .skeleton-main-empty {
-      display: none;
-    }
-
-    .app-skeleton.not-logged-in .skeleton-welcome-only {
-      display: flex;
-    }
-
-    /* ========== 移动端适配（≤768px） ========== */
-    @media (max-width: 768px) {
-
-      /* 隐藏侧边栏骨架 */
-      .skeleton-sidebar {
-        display: none !important;
-      }
-
-      /* 骨架屏容器改为垂直布局 */
-      .app-skeleton.show {
-        flex-direction: column;
-      }
-
-      /* 已登录时：显示移动端导航栏骨架 + 全宽主区域 */
-      .app-skeleton.show:not(.loading):not(.not-logged-in) .skeleton-mobile-nav {
-        display: flex !important;
-      }
-
-      /* 主区域全宽 */
-      .skeleton-main-empty {
-        flex: 1;
-      }
-
-      /* 未登录时的 welcome-only 视图适配 */
-      .skeleton-welcome-title {
-        width: 240px;
-      }
-
-      .skeleton-mode-selector {
-        flex-direction: column;
-        align-items: center;
-        height: auto;
-        gap: 8px;
-      }
-
-      .skeleton-mode-card {
-        max-width: 100%;
-        width: 100%;
-        border-radius: 18px;
-        border-bottom: 1px solid var(--skeleton-card-border);
-      }
-
-      .skeleton-mode-card--active,
-      .skeleton-mode-card--inactive {
-        height: auto;
-        min-height: 100px;
-      }
-
-      .skeleton-header-nav {
-        display: none;
-      }
-    }
-
-    /* 移动端导航栏骨架 - 默认隐藏 */
-    .skeleton-mobile-nav {
-      display: none;
-      height: 48px;
-      min-height: 48px;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 12px;
-      background: var(--skeleton-sidebar-bg);
-      flex-shrink: 0;
-    }
-
-    .skeleton-mobile-nav-btn {
-      width: 36px;
-      height: 36px;
-      border-radius: 8px;
-    }
-
-    .skeleton-mobile-nav-logo {
-      width: 120px;
-      height: 18px;
-      border-radius: 4px;
-    }
-  </style>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/modulepreload-polyfill-B5Qt9EMX.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-react-DFmySLL0.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-dompurify-B8f5uBra.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-lodash-Az1uroQj.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-ui-shared-CACp6PZl.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-katex-KfRI4Luj.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-hljs-BCMJk_m3.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-markdown-CjjTv-2Q.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-parsers-BIRjWhqO.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vite-preload-helper-PPVm8Dsz.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/genie-chat-ui-DkDa_eSe.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-zustand-CWrSiNsE.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-aegis-BozUT-cS.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-xtable-CwCDvLqO.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/shared-i18n-qRTub0SA.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/shared-account-http-BD_wa0J5.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-monaco-C-CVcjB0.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/genie-monitor-CDrUfayP.js"></script>
-  <script type="module" crossorigin src="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/main-jlX8ElbB.js"></script>
-  <link rel="stylesheet" crossorigin href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-katex-CxXMM0ke.css">
-  <link rel="stylesheet" crossorigin href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/genie-chat-ui-B-CUVN5K.css">
-  <link rel="stylesheet" crossorigin href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-xtable-BAwVyleu.css">
-  
-  <link rel="stylesheet" crossorigin href="//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/main-CSnGcibq.css">
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-body); background: var(--bg); background-image: radial-gradient(ellipse at 20% 20%, rgba(184, 134, 11, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 60%, rgba(139, 69, 19, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 50% 80%, rgba(160, 82, 45, 0.03) 0%, transparent 50%); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; line-height: 1.6; }
+        body::before { content: ''; position: fixed; top: -120px; right: -120px; width: 400px; height: 400px; border-radius: 50%; border: 1px solid rgba(184,134,11,0.08); pointer-events: none; z-index: 0; }
+        body::after { content: ''; position: fixed; bottom: -80px; left: -100px; width: 300px; height: 300px; border-radius: 50%; border: 1px solid rgba(139,69,19,0.06); pointer-events: none; z-index: 0; }
+        .app-container { width: 100%; max-width: 720px; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 0; }
+        .page { display: none; flex-direction: column; gap: 20px; animation: fadeSlideIn 0.45s ease; }
+        .page.active { display: flex; }
+        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.88); } 60% { transform: scale(1.03); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.35); } 50% { box-shadow: 0 0 0 18px rgba(192, 57, 43, 0); } }
+        .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px 30px; border: 1px solid var(--border); transition: var(--transition); position: relative; }
+        .card:hover { box-shadow: var(--shadow-lg); }
+        .card--accent { border-left: 5px solid var(--accent); }
+        .card--gold { border-left: 5px solid var(--gold); }
+        .card--highlight { background: linear-gradient(135deg, #fffefb 0%, #fef9f2 100%); border: 2px solid var(--gold-light); box-shadow: 0 6px 28px rgba(184, 134, 11, 0.18); }
+        .hero-title { font-family: var(--font-heading); font-size: 2.6em; font-weight: 700; color: var(--primary); text-align: center; letter-spacing: 0.04em; margin-bottom: 4px; line-height: 1.3; }
+        .hero-title .icon { display: inline-block; font-size: 1.1em; animation: popIn 0.6s ease; }
+        .hero-subtitle { text-align: center; color: var(--text-muted); font-size: 1.05em; margin-bottom: 8px; font-family: var(--font-heading); letter-spacing: 0.03em; }
+        .hero-desc { text-align: center; color: var(--text-light); font-size: 0.95em; background: rgba(184,134,11,0.05); border-radius: 20px; padding: 14px 20px; line-height: 1.7; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 28px; border: none; cursor: pointer; font-size: 1.05em; font-weight: 600; letter-spacing: 0.03em; transition: var(--transition); font-family: var(--font-body); white-space: nowrap; position: relative; text-decoration: none; user-select: none; }
+        .btn:active { transform: scale(0.96); }
+        .btn--primary { background: var(--accent); color: #fff; font-size: 1.4em; padding: 18px 48px; border-radius: 36px; letter-spacing: 0.05em; box-shadow: 0 6px 22px rgba(192,57,43,0.35); animation: pulse 2.5s infinite; }
+        .btn--primary:hover { background: #a93226; box-shadow: 0 10px 30px rgba(192,57,43,0.45); transform: translateY(-2px); animation: none; }
+        .btn--primary:active { animation: none; }
+        .btn--outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 20px; font-size: 1em; border-radius: 24px; }
+        .btn--outline:hover { background: rgba(139,69,19,0.06); border-color: var(--primary-light); }
+        .btn--ghost { background: rgba(139,69,19,0.04); color: var(--text-light); padding: 12px 20px; font-size: 1em; border-radius: 24px; border: 1px solid transparent; }
+        .btn--ghost:hover { background: rgba(139,69,19,0.1); border-color: var(--border); }
+        .btn--equal { flex: 1 1 0; min-width: 0; padding: 12px 16px; font-size: 1em; border-radius: 24px; justify-content: center; }
+        .home-buttons { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+        .home-secondary { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%; }
+        .btn--difficulty { flex: 1; min-width: 100px; padding: 16px 18px; border-radius: var(--radius-sm); font-weight: 700; font-size: 1em; border: 2px solid transparent; transition: var(--transition); font-family: var(--font-heading); }
+        .btn--difficulty.btn--basic { background: #f0faf0; color: #2d6a4f; border-color: #b7d7c5; }
+        .btn--difficulty.btn--basic:hover { background: #d8f0e0; border-color: #6aaf8a; }
+        .btn--difficulty.btn--intermediate { background: #fef9ee; color: #8b6914; border-color: #e0d0a0; }
+        .btn--difficulty.btn--intermediate:hover { background: #fdf3d6; border-color: #c9a84c; }
+        .btn--difficulty.btn--advanced { background: #fdf4f4; color: #8b1a1a; border-color: #dbb5b5; }
+        .btn--difficulty.btn--advanced:hover { background: #fce8e8; border-color: #c45a5a; }
+        .btn--difficulty.selected { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important; border-width: 3px !important; }
+        .btn--basic.selected { border-color: #2d6a4f !important; background: #c8e8d4 !important; }
+        .btn--intermediate.selected { border-color: #8b6914 !important; background: #fcecb8 !important; }
+        .btn--advanced.selected { border-color: #8b1a1a !important; background: #fad4d4 !important; }
+        .four-diagnosis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        @media (max-width: 500px) { .four-diagnosis { grid-template-columns: repeat(2, 1fr); } .hero-title { font-size: 1.8em; } .btn--primary { font-size: 1.2em; padding: 14px 28px; } .card { padding: 18px 16px; } .home-secondary { flex-direction: column; } .btn--equal { width: 100%; } }
+        .btn--diag { padding: 16px 12px; border-radius: var(--radius-sm); font-weight: 700; font-size: 1.05em; border: 2px solid var(--border); background: var(--card); color: var(--primary); cursor: pointer; transition: var(--transition); font-family: var(--font-heading); display: flex; flex-direction: column; align-items: center; gap: 6px; }
+        .btn--diag:hover { border-color: var(--primary-light); box-shadow: 0 6px 20px rgba(139,69,19,0.18); transform: translateY(-2px); background: #fffdf9; }
+        .btn--diag:active { transform: scale(0.94); }
+        .btn--diag.explored { background: #f9f5ef; border-color: #c9b896; color: #6b4d34; cursor: default; opacity: 0.75; }
+        .btn--diag.explored::after { content: '✓'; font-size: 0.75em; color: #6b9e6b; position: absolute; top: 6px; right: 10px; }
+        .btn--diag .diag-icon { font-size: 1.6em; line-height: 1; }
+        .btn--diag .diag-label { font-size: 0.85em; }
+        .clue-area { background: #fdfaf5; border-radius: var(--radius-sm); padding: 16px 18px; border: 1px dashed var(--border); min-height: 60px; max-height: 280px; overflow-y: auto; }
+        .clue-area:empty::before { content: '🔍 线索收集区：点击上方四诊按钮探查线索...'; color: #c5b5a0; font-style: italic; font-size: 0.9em; display: block; text-align: center; padding: 20px 0; }
+        .clue-item { display: flex; gap: 10px; padding: 10px 14px; margin: 6px 0; background: #fffefb; border-radius: 8px; border-left: 3px solid var(--gold); animation: popIn 0.35s ease; font-size: 0.93em; }
+        .clue-item .clue-tag { font-weight: 700; font-size: 0.8em; padding: 3px 10px; border-radius: 12px; color: #fff; }
+        .tag-wang { background: #5b8c5a; } .tag-wen { background: #b8860b; } .tag-ask { background: #7b5ea7; } .tag-pulse { background: #c0392b; }
+        .answer-area { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        .answer-area input { flex: 1; min-width: 140px; padding: 12px 16px; border-radius: 24px; border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none; }
+        .answer-area input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(139,69,19,0.07); }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(30,15,5,0.55); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.25s; padding: 20px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal { background: var(--card); border-radius: var(--radius); padding: 28px 26px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg); animation: popIn 0.4s; position: relative; border: 1px solid var(--border); }
+        .modal-close { position: absolute; top: 12px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.05); cursor: pointer; font-size: 1.2em; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
+        .modal-close:hover { background: rgba(0,0,0,0.12); color: var(--text); }
+        .modal h3 { font-family: var(--font-heading); color: var(--primary); margin-bottom: 14px; }
+        .tongue-sim { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin: 10px 0; align-items: center; }
+        .tongue-visual { width: 80px; height: 110px; border-radius: 40px 40px 30px 30px; background: linear-gradient(180deg, #f0c8c0 30%, #e8b4b0 60%, #e0a8a0 100%); border: 3px solid #d4a098; box-shadow: inset 0 0 20px rgba(180,130,120,0.3); position: relative; }
+        .tongue-visual::after { content: ''; position: absolute; top: 25%; left: 15%; width: 70%; height: 45%; background: rgba(220,195,150,0.55); border-radius: 35px 35px 20px 20px; background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(200,170,120,0.3) 3px, rgba(200,170,120,0.3) 5px); }
+        .tongue-img { width: 130px; height: 175px; border-radius: 40px 40px 30px 30px; border: 3px solid #d4a098; box-shadow: inset 0 0 20px rgba(180,130,120,0.3); object-fit: cover; background: #fdfaf5; }
+        .tongue-img-lg { width: 260px; height: 347px; border-radius: 80px 80px 55px 55px; border: 4px solid #d4a098; box-shadow: inset 0 0 24px rgba(180,130,120,0.3), 0 8px 24px rgba(139,69,19,0.14); object-fit: cover; background: #fdfaf5; }
+        .tongue-desc { max-width: 220px; font-size: 0.92em; color: var(--text-light); line-height: 1.7; }
+        .result-box { padding: 20px; border-radius: var(--radius-sm); margin: 12px 0; animation: popIn 0.4s; line-height: 1.7; }
+        .result-box.success { background: #f0faf4; border: 2px solid #6aaf8a; color: #1e4d34; }
+        .result-box.fail { background: #fef9f4; border: 2px solid #e0b060; color: #6b4d20; }
+        .chat-area { flex: 1; overflow-y: auto; min-height: 160px; max-height: 300px; background: #fdfaf5; border-radius: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+        .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 18px; line-height: 1.5; font-size: 0.93em; animation: popIn 0.25s; }
+        .chat-bubble.user { align-self: flex-end; background: #e8f0fe; color: #1a3a5c; }
+        .chat-bubble.patient { align-self: flex-start; background: #f5eee0; color: #4a3b2c; }
+        .chat-input-area { display: flex; gap: 8px; }
+        .chat-input-area input { flex: 1; padding: 12px 16px; border-radius: 24px; border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none; }
+        .chat-input-area button { padding: 10px 20px; border-radius: 24px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 600; }
+        .copyright { position: fixed; bottom: 14px; right: 20px; font-size: 0.8em; color: #b5a595; letter-spacing: 0.06em; z-index: 999; font-family: var(--font-heading); pointer-events: none; background: rgba(253,248,243,0.7); padding: 4px 10px; border-radius: 12px; backdrop-filter: blur(4px); }
+        .top-nav { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 4px; }
+        .top-nav .nav-link { font-size: 0.85em; color: var(--text-muted); cursor: pointer; padding: 6px 14px; border-radius: 16px; font-family: var(--font-heading); border: 1px solid transparent; background: transparent; }
+        .top-nav .nav-link:hover { color: var(--primary); background: rgba(139,69,19,0.05); }
+        .top-nav .nav-link.nav-active { color: var(--accent); font-weight: 700; background: rgba(192,57,43,0.06); border-color: rgba(192,57,43,0.2); }
+        .case-full { font-size: 0.92em; line-height: 1.7; color: var(--text-light); }
+        .case-full strong { color: var(--primary); }
+        /* 投稿表单样式 */
+        .submission-form { display: flex; flex-direction: column; gap: 12px; }
+        .submission-form label { font-weight: 600; color: var(--text-light); font-size: 0.9em; }
+        .submission-form input[type="text"], .submission-form textarea { width: 100%; padding: 10px 14px; border-radius: 10px; border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none; transition: var(--transition); font-family: var(--font-body); }
+        .submission-form input[type="text"]:focus, .submission-form textarea:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(139,69,19,0.07); }
+        .submission-form textarea { min-height: 80px; resize: vertical; }
+        .submission-form .required-star { color: var(--accent); }
+        .submission-form .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .submission-form .form-row > div { flex: 1; min-width: 160px; }
+        .submission-form .file-input { border: 2px dashed var(--border); padding: 10px; border-radius: 10px; background: #fdfaf5; }
+        .submission-form .file-input input[type="file"] { width: 100%; }
+        .submission-form .btn-submit { width: 100%; padding: 14px; font-size: 1.1em; border-radius: 28px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 700; transition: var(--transition); }
+        .submission-form .btn-submit:hover { background: var(--primary-light); }
+        .submission-form .form-hint { font-size: 0.8em; color: var(--text-muted); }
+        /* 难度选择样式 */
+        .difficulty-select { position: relative; }
+        .difficulty-select-display { padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; background: #fffefb; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: var(--transition); }
+        .difficulty-select-display:hover { border-color: var(--primary-light); }
+        .difficulty-select-display .arrow { color: var(--text-muted); font-size: 0.8em; }
+        .difficulty-options { position: absolute; top: 100%; left: 0; right: 0; background: #fffefb; border: 2px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; z-index: 10; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+        .difficulty-option { display: block; width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-family: var(--font-body); font-size: 0.95em; color: var(--text); transition: background 0.2s; }
+        .difficulty-option:hover { background: rgba(139,69,19,0.06); }
+        .difficulty-option.selected { background: rgba(139,69,19,0.1); font-weight: 600; }
+    </style>
 </head>
-
 <body>
-  <div id="root"></div>
-
-  <!-- 骨架屏 - 独立于 React 根节点，通过 JS 控制淡出 -->
-  <div class="app-skeleton" id="app-skeleton">
-    <!-- 移动端导航栏骨架（仅移动端 ≤768px 显示） -->
-    <div class="skeleton-mobile-nav" style="display:none;">
-      <div class="skeleton-item skeleton-mobile-nav-btn"></div>
-      <div class="skeleton-item skeleton-mobile-nav-logo"></div>
-      <div class="skeleton-item skeleton-mobile-nav-btn"></div>
+<div class="copyright">© wuruilin</div>
+<div class="app-container" id="appContainer">
+    <div class="page active" id="pageHome">
+        <div class="card card--accent" style="text-align:center;">
+            <div class="hero-title"><span class="icon">🏥</span> 中医辨证推演馆</div>
+            <div class="hero-subtitle">—— 海龟汤式 · 四诊探案 ——</div>
+            <div class="hero-desc">模拟门诊看病，如同海龟汤解谜。<br>仅凭<strong>主诉</strong>，通过<strong>望、闻、问、切</strong>四诊探寻线索，逐步推理，完成辨证论治。</div>
+        </div>
+        <div class="home-buttons">
+            <button class="btn btn--primary" onclick="startChallenge()">🎯 开始闯关</button>
+            <div class="home-secondary">
+                <button class="btn btn--outline btn--equal" onclick="openCaseBank()">📚 病例题库</button>
+                <button class="btn btn--ghost btn--equal" onclick="openRecords()">📝 学习记录</button>
+                <button class="btn btn--outline btn--equal" onclick="openSubmissionModal()" style="border-color: var(--gold); color: var(--gold);">📤 投稿病例</button>
+            </div>
+        </div>
     </div>
-
-    <!-- 已登录状态：侧边栏 + 空白主区域 -->
-    <!-- 侧边栏骨架 -->
-    <div class="skeleton-sidebar">
-      <div class="skeleton-sidebar-header">
-        <!-- Logo -->
-        <div class="skeleton-logo-wrapper">
-          <div class="skeleton-item skeleton-logo"></div>
+    <div class="page" id="pageGame">
+        <div class="card" style="padding:16px 20px;">
+            <div style="font-weight:700;color:var(--text-light);text-align:center;">📋 选择难度</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;" id="difficultyBtns">
+                <button class="btn btn--difficulty btn--basic" data-diff="basic" onclick="selectDifficulty('basic', this)">🌱 基础<br><small>（大一）</small></button>
+                <button class="btn btn--difficulty btn--intermediate" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">📖 进阶<br><small>（内外妇儿）</small></button>
+                <button class="btn btn--difficulty btn--advanced" data-diff="advanced" onclick="selectDifficulty('advanced', this)">🎓 考研病例</button>
+            </div>
         </div>
-        <!-- 搜索框 + 筛选按钮 -->
-        <div class="skeleton-search-row">
-          <div class="skeleton-search"></div>
-          <div class="skeleton-item skeleton-filter-btn"></div>
+        <div class="card card--highlight" id="chiefComplaintCard" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="font-weight:700;color:var(--accent);">🩺 病例主诉（谜面）</div>
+                <button class="btn btn--outline" id="historyBtn" style="display:none;padding:8px 16px;font-size:0.85em;" onclick="showHistory()">📜 病史</button>
+            </div>
+            <div id="chiefComplaintText" style="margin-top:8px;"></div>
+            <div style="font-size:0.78em;color:var(--text-muted);margin-top:6px;">⚡ 请通过下方四诊按钮主动探查线索</div>
         </div>
-        <!-- 新建任务按钮 -->
-        <div class="skeleton-item skeleton-new-task-btn"></div>
-      </div>
-
-      <div class="skeleton-sidebar-content">
-        <div class="skeleton-section-list">
-          <!-- 分组 1 -->
-          <div class="skeleton-section">
-            <!-- 分组标题骨架：标题 + 箭头 -->
-            <div class="skeleton-section-header">
-              <div class="skeleton-item skeleton-section-title"></div>
-              <div class="skeleton-item skeleton-section-chevron"></div>
-            </div>
-            <!-- 卡片骨架 -->
-            <div class="skeleton-card-list">
-              <!-- 卡片 1 -->
-              <div class="skeleton-card">
-                <div class="skeleton-card-header">
-                  <div class="skeleton-item skeleton-card-icon"></div>
-                  <div class="skeleton-item skeleton-card-title"></div>
-                  <div class="skeleton-item skeleton-card-time"></div>
-                </div>
-                <div class="skeleton-item skeleton-card-status"></div>
-              </div>
-              <!-- 卡片 2 -->
-              <div class="skeleton-card">
-                <div class="skeleton-card-header">
-                  <div class="skeleton-item skeleton-card-icon"></div>
-                  <div class="skeleton-item skeleton-card-title"></div>
-                  <div class="skeleton-item skeleton-card-time"></div>
-                </div>
-                <div class="skeleton-item skeleton-card-status"></div>
-              </div>
-              <!-- 卡片 3 -->
-              <div class="skeleton-card">
-                <div class="skeleton-card-header">
-                  <div class="skeleton-item skeleton-card-icon"></div>
-                  <div class="skeleton-item skeleton-card-title"></div>
-                  <div class="skeleton-item skeleton-card-time"></div>
-                </div>
-                <div class="skeleton-item skeleton-card-status"></div>
-              </div>
-            </div>
-          </div>
-          <!-- 分组 2 -->
-          <div class="skeleton-section">
-            <!-- 分组标题骨架：标题 + 箭头 -->
-            <div class="skeleton-section-header">
-              <div class="skeleton-item skeleton-section-title"></div>
-              <div class="skeleton-item skeleton-section-chevron"></div>
-            </div>
-            <!-- 卡片骨架 -->
-            <div class="skeleton-card-list">
-              <!-- 卡片 1 -->
-              <div class="skeleton-card">
-                <div class="skeleton-card-header">
-                  <div class="skeleton-item skeleton-card-icon"></div>
-                  <div class="skeleton-item skeleton-card-title"></div>
-                  <div class="skeleton-item skeleton-card-time"></div>
-                </div>
-                <div class="skeleton-item skeleton-card-status"></div>
-              </div>
-              <!-- 卡片 2 -->
-              <div class="skeleton-card">
-                <div class="skeleton-card-header">
-                  <div class="skeleton-item skeleton-card-icon"></div>
-                  <div class="skeleton-item skeleton-card-title"></div>
-                  <div class="skeleton-item skeleton-card-time"></div>
-                </div>
-                <div class="skeleton-item skeleton-card-status"></div>
-              </div>
-              <!-- 卡片 3 -->
-              <div class="skeleton-card">
-                <div class="skeleton-card-header">
-                  <div class="skeleton-item skeleton-card-icon"></div>
-                  <div class="skeleton-item skeleton-card-title"></div>
-                  <div class="skeleton-item skeleton-card-time"></div>
-                </div>
-                <div class="skeleton-item skeleton-card-status"></div>
-              </div>
-            </div>
-          </div>
+        <div class="four-diagnosis" id="fourDiagBtns" style="display:none;">
+            <button class="btn btn--diag" id="btnWang" onclick="exploreDiag('inspection')"><span class="diag-icon">👁️</span><span class="diag-label">望 诊</span></button>
+            <button class="btn btn--diag" id="btnWen" onclick="exploreDiag('auscultation')"><span class="diag-icon">👂</span><span class="diag-label">闻 诊</span></button>
+            <button class="btn btn--diag" id="btnAsk" onclick="exploreDiag('inquiry')"><span class="diag-icon">💬</span><span class="diag-label">问 诊</span></button>
+            <button class="btn btn--diag" id="btnPulse" onclick="exploreDiag('pulse')"><span class="diag-icon">🫀</span><span class="diag-label">切 脉</span></button>
         </div>
-      </div>
+        <!-- 其他检查按钮，基础难度隐藏，进阶/考研显示 -->
+        <button class="btn btn--outline" id="btnOtherCheck" onclick="showOtherCheck()" style="display:none; margin-top:10px; width:100%;">📋 其他检查</button>
+        <div class="card" id="clueCollectionCard" style="display:none;">
+            <div style="font-weight:700;color:var(--text-light);">📋 线索收集区</div>
+            <div class="clue-area" id="clueArea"></div>
+        </div>
+        <div class="card" id="answerCard" style="display:none;">
+            <div style="font-weight:700;color:var(--text-light);">✍️ 提交辨证</div>
+            <div class="answer-area">
+                <input type="text" id="inputSyndrome" placeholder="证型">
+                <input type="text" id="inputDisease" placeholder="病名">
+                <button class="btn btn--primary" style="padding:12px 22px;font-size:0.95em;animation:none;" onclick="submitAnswer()">提交答案</button>
+            </div>
+            <div id="answerFeedback"></div>
+            <div id="fullAnalysisArea"></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;" id="gameExtraBtns">
+            <button class="btn btn--outline" onclick="resetCurrentCase()">🔄 重新探查</button>
+            <button class="btn btn--ghost" onclick="goHome()">🏠 返回首页</button>
+        </div>
     </div>
-
-    <!-- 右侧空白区域 - 已登录时显示 -->
-    <div class="skeleton-main-empty" id="skeleton-main-empty"></div>
-
-    <!-- 未登录状态：全屏 Welcome Only 视图 -->
-    <div class="skeleton-welcome-only" id="skeleton-welcome-only">
-      <!-- 顶部导航栏骨架 -->
-      <header class="skeleton-header">
-        <div class="skeleton-header-content">
-          <!-- 左侧 Logo -->
-          <div class="skeleton-item skeleton-header-logo"></div>
-          <!-- 中间导航 -->
-          <nav class="skeleton-header-nav">
-            <div class="skeleton-item skeleton-header-nav-item"></div>
-            <div class="skeleton-item skeleton-header-nav-item" style="width: 50px;"></div>
-            <div class="skeleton-item skeleton-header-nav-item" style="width: 70px;"></div>
-            <div class="skeleton-item skeleton-header-nav-item" style="width: 55px;"></div>
-            <div class="skeleton-item skeleton-header-nav-item" style="width: 65px;"></div>
-          </nav>
-          <!-- 右侧登录按钮 -->
-          <div class="skeleton-item skeleton-header-login-btn"></div>
+    <div class="page" id="pageAbout">
+        <div class="card card--gold" style="text-align:center;">
+            <div style="font-size:1.6em;color:var(--primary);">📖 关于本站</div>
+            <div style="margin-top:16px;line-height:1.8;color:var(--text-light);">
+                <strong>中医辨证推演馆</strong> 是一款中医趣味学习工具。<br><br>
+                灵感来源于「海龟汤」解谜游戏，仅给出<strong>病例主诉</strong>，学习者需主动运用望闻问切，逐步收集线索，推理证型与病名。<br>
+                适合中医备考、记忆辨证思路。<br><br>
+                <span style="color:var(--accent);font-weight:700;">@wuruilin</span>
+            </div>
         </div>
-      </header>
-
-      <!-- 主内容区 -->
-      <main class="skeleton-welcome-only-main">
-        <div class="skeleton-welcome">
-          <!-- 欢迎头部 -->
-          <div class="skeleton-welcome-header">
-            <div class="skeleton-item skeleton-welcome-logo"></div>
-            <div class="skeleton-item skeleton-welcome-title"></div>
-          </div>
-          <!-- 模式选择器 -->
-          <div class="skeleton-mode-selector">
-            <div class="skeleton-mode-card skeleton-mode-card--active">
-              <div class="skeleton-tag-wrapper">
-                <div class="skeleton-tag-inner">
-                  <div class="skeleton-item skeleton-tag-btn"></div>
-                  <div class="skeleton-item skeleton-tag-subtitle"></div>
-                </div>
-              </div>
-              <div class="skeleton-item skeleton-mode-desc"></div>
-            </div>
-            <div class="skeleton-mode-card skeleton-mode-card--inactive">
-              <div class="skeleton-tag-wrapper">
-                <div class="skeleton-tag-inner">
-                  <div class="skeleton-item skeleton-tag-btn"></div>
-                  <div class="skeleton-item skeleton-tag-subtitle"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- 输入框 -->
-          <div class="skeleton-input-area">
-            <div class="skeleton-input-box"></div>
-            <div class="skeleton-quick-actions">
-              <div class="skeleton-item skeleton-quick-btn" style="width: 100px;"></div>
-              <div class="skeleton-item skeleton-quick-btn" style="width: 120px;"></div>
-              <div class="skeleton-item skeleton-quick-btn" style="width: 90px;"></div>
-            </div>
-          </div>
-        </div>
-      </main>
+        <div style="text-align:center;"><button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button></div>
     </div>
-  </div>
+</div>
 
-  <!-- 立即应用骨架屏主题和显示状态（同步脚本，确保在渲染前执行） -->
-  <script>
-    (function () {
-      const skeleton = document.getElementById('app-skeleton');
-      if (!skeleton) return;
+<!-- 原有模态框 -->
+<div class="modal-overlay" id="inquiryModal" style="display:none;">
+    <div class="modal" style="max-width:600px;">
+        <button class="modal-close" onclick="closeInquiryModal()">✕</button>
+        <h3>💬 问诊 — 请向患者提问</h3>
+        <div class="chat-area" id="inquiryChatArea"></div>
+        <div class="chat-input-area">
+            <input type="text" id="inquiryInput" placeholder="输入您想问的问题..." onkeydown="if(event.key==='Enter')sendInquiry()">
+            <button onclick="sendInquiry()">发送</button>
+        </div>
+    </div>
+</div>
+<div class="modal-overlay" id="inspectionModal" style="display:none;">
+    <div class="modal" style="max-width:720px;">
+        <button class="modal-close" onclick="closeInspectionModal()">✕</button>
+        <h3>👁️ 望诊 — 舌象观察</h3>
+        <div class="tongue-sim" style="flex-direction:column;gap:14px;">
+            <img id="inspectionImg" class="tongue-img-lg" alt="舌象">
+        </div>
+        <p style="text-align:center;color:var(--text-muted);font-size:0.9em;margin:14px 6px 4px;line-height:1.7;">
+            请仔细观察舌色、舌形与舌苔特征，<br>观察完毕后在 <span style="color:var(--primary);font-weight:600;">「线索收集区」</span> 查看舌象描述。
+        </p>
+        <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;" onclick="closeInspectionModal()">确认观察完毕</button>
+    </div>
+</div>
+<div class="modal-overlay" id="simpleResultModal" style="display:none;">
+    <div class="modal">
+        <button class="modal-close" onclick="closeSimpleResultModal()">✕</button>
+        <h3 id="simpleResultTitle"></h3>
+        <div id="simpleResultContent"></div>
+        <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;" onclick="closeSimpleResultModal()">知道了</button>
+    </div>
+</div>
+<div class="modal-overlay" id="caseBankModal" style="display:none;">
+    <div class="modal" style="max-width:600px; max-height:80vh; overflow-y:auto;">
+        <button class="modal-close" onclick="closeCaseBank()">✕</button>
+        <h3>📚 病例题库</h3>
+        <div id="caseBankContent"></div>
+    </div>
+</div>
+<div class="modal-overlay" id="recordsModal" style="display:none;">
+    <div class="modal" style="max-width:600px;">
+        <button class="modal-close" onclick="closeRecords()">✕</button>
+        <h3>📝 学习记录</h3>
+        <div id="recordsContent"></div>
+    </div>
+</div>
 
-      // 检查是否需要显示骨架屏
-      if (window.__shouldShowSkeleton) {
-        skeleton.classList.add('show');
-        // 添加 loading 状态 - 请求期间只显示背景色
-        skeleton.classList.add('loading');
-        // 应用主题
-        if (window.__skeletonTheme === 'light') {
-          skeleton.classList.add('light');
-        }
+<!-- 投稿模态框 -->
+<div class="modal-overlay" id="submissionModal" style="display:none;">
+    <div class="modal" style="max-width:650px; max-height:90vh; overflow-y:auto;">
+        <button class="modal-close" onclick="closeSubmissionModal()">✕</button>
+        <h3>📤 投稿病例</h3>
+        <p style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px;">
+            请填写以下病例信息，带 <span class="required-star">*</span> 为必填项。
+        </p>
+        <form id="submissionForm" class="submission-form" action="https://formsubmit.co/1507238873@qq.com" method="POST" enctype="multipart/form-data" onsubmit="return validateSubmissionForm()">
+            <input type="hidden" name="_subject" value="新病例投稿">
+            <input type="hidden" name="_captcha" value="false">
+            <input type="hidden" name="_template" value="table">
+            <input type="hidden" name="_next" id="formNext" value="">
+            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
 
-        // 调用 accounts 接口检查登录状态
-        checkLoginStatus();
-      }
+            <!-- 难度选择 -->
+            <div>
+                <label>选择难度 <span class="required-star">*</span></label>
+                <div class="difficulty-select" id="difficultySelect">
+                    <div class="difficulty-select-display" onclick="toggleDifficultyOptions()">
+                        <span id="difficultyDisplay">点击选择难度</span>
+                        <span class="arrow">▼</span>
+                    </div>
+                    <div class="difficulty-options" id="difficultyOptions" style="display:none;">
+                        <button type="button" class="difficulty-option" data-value="basic" onclick="selectDifficultyOption('basic', '🌱 基础（大一）', this)">🌱 基础（大一）</button>
+                        <button type="button" class="difficulty-option" data-value="intermediate" onclick="selectDifficultyOption('intermediate', '📖 进阶（内外妇儿）', this)">📖 进阶（内外妇儿）</button>
+                        <button type="button" class="difficulty-option" data-value="advanced" onclick="selectDifficultyOption('advanced', '🎓 考研病例', this)">🎓 考研病例</button>
+                    </div>
+                </div>
+                <input type="hidden" name="difficulty" id="subDifficulty" value="">
+            </div>
 
-      // 检查登录状态
-      function checkLoginStatus() {
-        // 构建 API URL - 使用相对路径，让浏览器自动处理域名
-        const apiUrl = '/console/accounts';
+            <div>
+                <label for="subChiefComplaint">主诉 <span class="required-star">*</span></label>
+                <textarea id="subChiefComplaint" name="chief_complaint" required placeholder="患者主要症状、持续时间等"></textarea>
+            </div>
+            <div>
+                <label for="subPastHistory">既往史 <span class="required-star">*</span></label>
+                <textarea id="subPastHistory" name="past_history" required placeholder="既往疾病、手术、过敏史等"></textarea>
+            </div>
 
-        fetch(apiUrl, {
-          method: 'GET',
-          credentials: 'include', // 携带 cookie
-          redirect: 'manual', // 不自动跟随重定向，302 表示未登录
-          headers: {
-            'Accept': 'application/json',
-          },
-        })
-          .then(function (response) {
-            if (!response.ok) {
-              // 非 200 响应视为未登录
-              return null;
-            }
-            return response.json();
-          })
-          .then(function (data) {
-            // 判断登录状态
-            // 根据返回数据判断是否已登录（假设有 data 且有 id/userId 等字段表示已登录）
-            // 统一使用 true/false，避免 0/undefined 等边界情况
-            const isLoggedIn = !!(data?.data?.accounts?.length);
-            window.__isLoggedIn = isLoggedIn;
+            <div class="form-row">
+                <div>
+                    <label for="subInspection">望诊 <span class="required-star">*</span></label>
+                    <textarea id="subInspection" name="inspection" required placeholder="面色、舌象、形态等"></textarea>
+                </div>
+                <div>
+                    <label for="subAuscultation">闻诊 <span class="required-star">*</span></label>
+                    <textarea id="subAuscultation" name="auscultation" required placeholder="声音、气味等"></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div>
+                    <label for="subInquiry">问诊 <span class="required-star">*</span></label>
+                    <textarea id="subInquiry" name="inquiry" required placeholder="寒热、汗出、饮食、二便、睡眠等"></textarea>
+                </div>
+                <div>
+                    <label for="subPulse">切诊 <span class="required-star">*</span></label>
+                    <textarea id="subPulse" name="pulse" required placeholder="脉象、按诊等"></textarea>
+                </div>
+            </div>
 
-            // 移除 loading 状态，显示对应骨架屏
-            skeleton.classList.remove('loading');
+            <div>
+                <label for="subAnalysis">辩证分析过程 <span class="required-star">*</span></label>
+                <textarea id="subAnalysis" name="analysis" required placeholder="病机分析、辨证思路等"></textarea>
+            </div>
 
-            if (!isLoggedIn) {
-              // 未登录：显示 welcome-only 视图
-              skeleton.classList.add('not-logged-in');
-            }
-            // 已登录：保持默认的侧边栏 + 空白区域
-          })
-          .catch(function (error) {
-            console.warn('[Skeleton] Failed to check login status:', error);
-            // 请求失败时，移除 loading 状态
-            skeleton.classList.remove('loading');
-            window.__isLoggedIn = false;
-            // 出错也显示未登录视图，因为很可能是未登录导致的
-            skeleton.classList.add('not-logged-in');
-          });
-      }
-    })();
-  </script>
+            <div class="form-row">
+                <div>
+                    <label for="subSyndrome">证型 <span class="required-star">*</span></label>
+                    <input type="text" id="subSyndrome" name="syndrome" required placeholder="如：肝郁脾虚证">
+                </div>
+                <div>
+                    <label for="subDisease">病名 <span class="required-star">*</span></label>
+                    <input type="text" id="subDisease" name="disease" required placeholder="如：胃脘痛">
+                </div>
+            </div>
 
+            <div>
+                <label for="subWesternDiagnosis">西医诊断 <span class="required-star">*</span></label>
+                <input type="text" id="subWesternDiagnosis" name="western_diagnosis" required placeholder="如：慢性胃炎">
+            </div>
 
-  <!-- 骨架屏淡出脚本 -->
-  <script>
-    // 平滑隐藏骨架屏（当整个应用渲染完成时触发）
-    const hideSkeleton = (delay = 0) => {
-      const skeleton = document.getElementById('app-skeleton');
+            <div>
+                <label for="subPrescription">推荐要方 <span class="form-hint">（如有则填写）</span></label>
+                <input type="text" id="subPrescription" name="prescription" placeholder="如：柴胡疏肝散加减">
+            </div>
 
-      if (skeleton && !skeleton.classList.contains('hidden')) {
-        const doHide = () => {
-          // 添加 hidden 类触发淡出动画
-          skeleton.classList.add('hidden');
+            <div>
+                <label for="subTonguePhoto">舌象照片 <span class="form-hint">（如有则上传，大小不超过10MB）</span></label>
+                <div class="file-input">
+                    <input type="file" id="subTonguePhoto" name="attachment" accept="image/*">
+                </div>
+            </div>
 
-          // 动画结束后移除 DOM
-          skeleton.addEventListener('animationend', () => {
-            skeleton.remove();
-          }, { once: true });
+            <button type="submit" class="btn-submit">📨 提交病例</button>
+            <div id="submissionFeedback" style="margin-top:10px;"></div>
+        </form>
+    </div>
+</div>
 
-          // 备用：如果 animationend 没触发，400ms 后强制移除
-          setTimeout(() => {
-            if (skeleton.parentNode) {
-              skeleton.remove();
-            }
-          }, 400);
-        };
-
-        if (delay > 0) {
-          // 使用 requestAnimationFrame 确保在下一帧执行，让真实UI先渲染
-          requestAnimationFrame(() => {
-            setTimeout(doHide, delay);
-          });
-        } else {
-          // 即使无延迟，也使用 requestAnimationFrame 确保真实UI已渲染
-          requestAnimationFrame(() => {
-            requestAnimationFrame(doHide);
-          });
-        }
-      }
+<script>
+    /* ===================== 舌象图 ===================== */
+    function svgURI(s){ return 'data:image/svg+xml,' + encodeURIComponent(s); }
+    const T = {
+        t1: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 320">...</svg>`,
+        t2: `<svg>...</svg>`,
+        t3: `<svg>...</svg>`,
+        t4: `<svg>...</svg>`,
+    };
+    const tongueImages = {
+        'basic-001': 'tongue/basic-001.jpg',
+        'basic-002': 'tongue/basic-002.jpg',
+        'basic-003': 'tongue/basic-003.jpg',
+        'basic-004': 'tongue/basic-004.jpg',
+        'inter-002': 'tongue/inter-002.jpg',
+        'inter-003': 'tongue/inter-003.jpg',
+        'inter-004': 'tongue/inter-004.jpg',
+        'inter-005': 'tongue/inter-005.jpg',
+        'adv-001': 'tongue/adv-001.jpg',
+        'adv-002': 'tongue/adv-002.jpg',
+        'adv-003': 'tongue/adv-003.jpg',
+        'adv-004': 'tongue/adv-004.jpg',
+        'adv-005': 'tongue/adv-005.jpg'
     };
 
-    // 监听应用就绪事件 - 添加短暂延迟确保侧边栏完全渲染
-    window.addEventListener('app-ready', () => hideSkeleton(50));
+    /* ===================== 病例数据库 ===================== */
+    const casesDB = {
+        basic: [
+            { id:'basic-001', title:'咳嗽案（风热犯肺津伤）', chiefComplaint:'陈某，男，33岁。就诊日期：2021年9月6日。\n\n咳嗽4天。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌质淡红，苔腻淡黄。', tongueDesc:'舌质淡红，苔腻淡黄。', textSummary:'舌质淡红，苔腻淡黄' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'咳嗽声重浊有力，咯痰声明显，痰音黄稠。', textSummary:'咳嗽声重浊，咯脓黄痰' }, inquiry:{ questions:[ {q:'口渴情况',a:'口干，夜间加重，喜饮温水',keywords:['口渴','口干','喝水']}, {q:'大便情况',a:'大便干结，2-3天一解',keywords:['大便','便秘','干结']}, {q:'汗出情况',a:'无汗出，不恶寒',keywords:['出汗','汗','恶寒','怕冷']}, {q:'饮食与嗳气',a:'时常嗳气，饭后明显',keywords:['嗳气','打嗝','食欲']}, {q:'鼻涕情况',a:'白天鼻塞，流黄涕',keywords:['鼻涕','鼻塞','流涕']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉左浮，稍数。', textSummary:'脉左浮，稍数' } }, correctAnswer:{ disease:'咳嗽', syndrome:'风热犯肺津伤', westernDiagnosis:'上呼吸道感染' }, fullAnalysis:{ disease:'咳嗽', syndrome:'风热犯肺津伤', westernDiagnosis:'上呼吸道感染', pathogenesis:'风热犯肺，津伤化燥。肺失宣降而咳，咽喉干痒；大便干结为津伤佐证。', prescription:'桑菊饮合沙参麦冬汤加减。', knowledgePoints:['风热犯肺证：咳嗽频剧，咯痰黄稠，咽干痛，舌红苔薄黄。','津伤化燥：口干咽燥，大便干结。'] }, otherCheck:null },
+            { id:'basic-002', title:'肺痈案（痰热壅肺）', chiefComplaint:'陈某，男，87岁。就诊日期：2021年5月8日。\n\n持续低热咳嗽二月余。', history:'既往史：2021年4月15日诊断为化脓性阑尾炎，入院进行手术。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌质暗红，苔黄腻。面色少华。', tongueDesc:'舌质暗红，苔黄腻，舌下脉络稍迂曲。', textSummary:'舌质暗红，苔黄腻' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'咳嗽声低怯，声音沙哑，咯痰声。', textSummary:'咳嗽声低怯，声音沙哑' }, inquiry:{ questions:[ {q:'发热特点',a:'持续低热，午后明显，37.5℃左右',keywords:['发热','低热','体温']}, {q:'痰的情况',a:'咯黄痰，偶有咯痰带血',keywords:['痰','咯痰','带血']}, {q:'汗出',a:'少量汗出，恶风恶热交替',keywords:['汗','恶风','恶热']}, {q:'大便',a:'大便软溏，不爽',keywords:['大便','溏','软']}, {q:'全身感觉',a:'全身乏力，体重下降数月',keywords:['乏力','累','体重','消瘦']}, {q:'声音',a:'声音沙哑，说话费力',keywords:['声音','沙哑','嗓子']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉弦细，重按无力。', textSummary:'脉弦细' } }, correctAnswer:{ disease:'肺痈', syndrome:'痰热壅肺证', westernDiagnosis:'支气管扩张合并感染' }, fullAnalysis:{ disease:'肺痈', syndrome:'痰热壅肺证', westernDiagnosis:'支气管扩张合并感染', pathogenesis:'高龄久咳，痰热壅肺，肺络损伤，故咯黄痰带血。午后发热、便溏为湿热内蕴。', prescription:'柴芩温胆汤加减。', knowledgePoints:['肺痈以咳嗽、胸痛、发热、咯腥臭痰为特征。','痰热壅肺证：咯黄痰、舌红苔黄腻、脉滑数或弦细。'] }, otherCheck:null },
+            { id:'basic-003', title:'哮病案（痰热壅肺）', chiefComplaint:'陈某，女，2岁。就诊日期：2021年8月16日。\n\n咳嗽3周。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌质稍红，苔白。咽部稍红。', tongueDesc:'舌质稍红，苔白，舌尖红点。', textSummary:'舌质稍红，苔白' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'喉间哮鸣音，咳嗽阵作，呼吸急促。', textSummary:'喉间哮鸣音，咳嗽阵作' }, inquiry:{ questions:[ {q:'咳嗽情况',a:'干咳为主，咳甚呼吸急促，凌晨咳嗽频繁，曾呕吐',keywords:['咳嗽','干咳','夜咳','呕吐']}, {q:'痰',a:'近两天痰减少，但咳不减',keywords:['痰','有痰','无痰']}, {q:'鼻部',a:'鼻塞流涕，涕稍黄',keywords:['鼻涕','鼻塞','流涕']}, {q:'腹部',a:'时腹自痛，大便一天一解，臭秽',keywords:['肚子','腹痛','大便','臭']}, {q:'汗出',a:'汗出少',keywords:['汗','出汗']}, {q:'口臭',a:'有口臭，口气重',keywords:['口臭','口气']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉滑数，指纹紫滞风关。', textSummary:'脉滑数' } }, correctAnswer:{ disease:'哮病', syndrome:'痰热壅肺证', westernDiagnosis:'急性喘息性支气管炎' }, fullAnalysis:{ disease:'哮病', syndrome:'痰热壅肺证', westernDiagnosis:'急性喘息性支气管炎', pathogenesis:'小儿外感后痰热内蕴，壅阻肺气，故咳嗽、喉间哮鸣。痰热扰胃则呕吐，食积内停则口臭腹痛。', prescription:'麻黄汤加石膏合小柴胡汤加减。', knowledgePoints:['哮病以发作性喉间哮鸣、呼吸急促为特征。','痰热壅肺证：咳嗽气喘，痰黄稠，喉间哮鸣，舌红苔黄，脉滑数。'] }, otherCheck:null },
+            { id:'basic-004', title:'感冒案（暑湿客表，脾胃失和）', chiefComplaint:'郑某，男，26岁，冶金研究院研究生。1998年7月13日初诊。\n\n发热、头痛伴胃肠不舒5天。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌尖红，苔薄黄腻。', tongueDesc:'舌尖红，苔薄黄腻。', textSummary:'舌尖红，苔薄黄腻' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'嗳气声频繁，语声稍重浊。', textSummary:'嗳气声频繁，语声稍重浊' }, inquiry:{ questions:[ {q:'发热情况',a:'发热，体温38.5℃，汗多，口渴喜饮',keywords:['发热','体温','汗','口渴']}, {q:'头痛情况',a:'头痛，全身困重无力',keywords:['头痛','困重','无力']}, {q:'消化情况',a:'纳呆，嗳气，胃灼热，大便溏',keywords:['纳呆','嗳气','胃灼热','大便溏']}, {q:'小便情况',a:'小便黄',keywords:['小便','黄']}, {q:'其他检查',a:'实验室检查：白细胞5.0×109/L，淋巴细胞40%，中性粒细胞55%',keywords:['实验室','白细胞','淋巴细胞','中性粒']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉细滑数。', textSummary:'脉细滑数' } }, correctAnswer:{ disease:'感冒', syndrome:'暑湿客表，脾胃失和', westernDiagnosis:'胃肠型感冒' }, fullAnalysis:{ disease:'感冒', syndrome:'暑湿客表，脾胃失和', westernDiagnosis:'胃肠型感冒', pathogenesis:'暑湿之邪客于肌表，卫气失和则发热、头痛、汗多；湿困脾胃，升降失常则纳呆、嗳气、胃灼热、大便溏；暑热伤津则口渴喜饮、小便黄；舌红苔薄黄腻、脉细滑数为暑湿内蕴之象。', prescription:'自拟方：荆芥穗6g，金银花10g，连翘10g，青蒿10g，白薇10g，藿香10g，佩兰10g，滑石18g（包），通草5g，紫苏梗6g，陈皮10g，炒枳壳10g，旋覆花10g（包）。', knowledgePoints:['暑湿感冒证：发热头痛，汗多口渴，身重困倦，脘痞纳呆，舌红苔黄腻，脉滑数。','治疗暑湿感冒，宜清暑化湿，和中降逆，方用藿香正气散或新加香薷饮加减。'] }, otherCheck:null }
+        ],
+        intermediate: [
+            { id:'inter-002', title:'胃脘痛案（肝郁脾虚，湿浊中阻）', chiefComplaint:'赵某，男，45岁。\n\n反复胃脘部胀满疼痛3年，加重1周。', history:'既往史：否认高血压、糖尿病、心脏病等慢性病史，否认药物及食物过敏史。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'望诊：面色萎黄，形体偏瘦，舌苔白腻，舌体胖大有齿痕。', tongueDesc:'舌苔白腻，舌体胖大有齿痕。', textSummary:'面色萎黄，形体偏瘦，舌苔白腻，舌体胖大有齿痕' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'嗳气声重浊。', textSummary:'嗳气声重浊' }, inquiry:{ questions:[ {q:'胃脘胀痛特点',a:'胃脘部胀满疼痛，痛连两胁，情绪波动时疼痛加剧，进食后加重，纳差，食后腹胀加重。',keywords:['痛','胀','胃脘','胁','情绪','波动','进食','纳差','腹胀']}, {q:'发病与诱因',a:'3年前因饮食不规律、常熬夜加班起病；近1周因工作压力大、情绪焦虑、饮食不慎而加重。',keywords:['诱因','起病','熬夜','压力','焦虑','饮食','原因','加重']}, {q:'嗳气反酸',a:'伴有嗳气、反酸，近1周嗳气频繁。',keywords:['嗳气','反酸','打嗝']}, {q:'大便情况',a:'大便溏薄，日行2-3次。',keywords:['大便','溏','次数','腹泻','日行']}, {q:'精神体力食欲',a:'食欲不振，神疲乏力。',keywords:['食欲','食纳','乏力','神疲','精神','体力']}, {q:'诊治经过',a:'曾于当地医院就诊，胃镜提示"慢性胃炎"，服西药后症状缓解但易反复。',keywords:['治疗','胃镜','西药','医院','缓解','反复','慢性胃炎']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉象弦滑。', textSummary:'脉象弦滑' } }, correctAnswer:{ disease:'胃脘痛', syndrome:'肝郁脾虚，湿浊中阻', westernDiagnosis:'慢性胃炎' }, fullAnalysis:{ disease:'胃脘痛', syndrome:'肝郁脾虚，湿浊中阻', westernDiagnosis:'慢性胃炎', pathogenesis:'情志不遂、饮食不节，肝失疏泄，横逆犯脾，脾失健运，湿浊中阻，气机阻滞，故胃脘胀满疼痛、痛连两胁、情绪波动加重；湿浊内盛则舌苔白腻、舌体胖大齿痕；运化失常则纳差、食后腹胀、大便溏薄。', prescription:'柴胡疏肝散合参苓白术散加减。', knowledgePoints:['肝郁脾虚证：胃脘胀痛、痛连两胁、情绪诱发、脉弦。','湿浊中阻：舌苔白腻、舌体胖大齿痕、大便溏薄、身困乏力。'] }, otherCheck:null },
+            { id:'inter-003', title:'痫病案（肝郁脾虚痰盛）', chiefComplaint:'周某，男，16岁。就诊日期：2010年7月13日。\n\n发作性意识丧失、四肢抽搐3年，加重2个月。', history:'患者3年前受到惊吓后出现意识突然丧失、仆倒不省人事、两目上视、喉中痰鸣、口吐涎沫、四肢抽搐，醒后如常人，每次持续30秒至1分钟不等，每年发作4~5次，未予系统诊治。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'望诊：舌红，苔白微腻。', tongueDesc:'舌红，苔白微腻。', textSummary:'舌红，苔白微腻' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'喉中痰鸣。', textSummary:'喉中痰鸣' }, inquiry:{ questions:[ {q:'发作表现',a:'发作性意识丧失、仆倒不省人事、两目上视、喉中痰鸣、口吐涎沫、四肢抽搐，醒后如常人，持续30秒至1分钟；发作前常有头痛而胀、胸闷。',keywords:['发作','抽搐','意识','仆倒','痰鸣','涎沫','四肢','头痛','胸闷','两目']}, {q:'发作频率',a:'3年前起每年发作4~5次；近2个月加重，每月发作2~3次。',keywords:['频率','次数','每月','每年','加重','反复']}, {q:'起病诱因',a:'3年前因受惊吓起病；平素情绪急躁。',keywords:['诱因','惊吓','起因','情绪','急躁']}, {q:'平素伴随',a:'平素情绪急躁，心烦，口苦咽干，纳差，大便干，小便黄，夜眠尚可。',keywords:['心烦','口苦','咽干','纳差','大便干','小便','睡眠','夜眠','急躁']}, {q:'辅助检查',a:'神经系统查体、脑电图、头部MRI平扫均未见明显异常。',keywords:['检查','脑电图','MRI','查体','神经','头部']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉弦滑。', textSummary:'脉弦滑' } }, correctAnswer:{ disease:'痫病', syndrome:'肝郁脾虚痰盛', westernDiagnosis:'癫痫（强直-阵挛发作）' }, fullAnalysis:{ disease:'痫病', syndrome:'肝郁脾虚痰盛', westernDiagnosis:'癫痫（强直-阵挛发作）', pathogenesis:'惊则气乱，肝郁气滞，肝风内动；脾虚生痰，痰随气逆，上蒙清窍，故发作性意识丧失、抽搐、痰鸣；肝郁化火则情绪急躁、口苦咽干；脾虚则纳差；痰热内结则大便干、小便黄；舌红苔白微腻、脉弦滑为肝郁脾虚、痰盛之象。', prescription:'柴胡疏肝散化裁。', knowledgePoints:['痫病以发作性意识丧失、抽搐、醒后如常人为特征，病机关键为肝脾肾受损、痰浊内伏、风痰上扰。','肝郁脾虚痰盛证：情绪急躁、纳差、苔白腻、脉弦滑。'] }, otherCheck:'脑电图未见明显异常。\n头部MRI平扫未见明显异常。' },
+            { id:'inter-004', title:'顽固性嗳气案（痰气交阻，湿热蕴结）', chiefComplaint:'苏某，女，54岁。初诊日期：2021年6月23日。\n\n嗳气、上腹胀40年，加重3个月。', history:'既往史：抑郁症发作3次；糖尿病7～8年；高血压15年。用药史：糖尿病服二甲双胍、格列齐特；高血压服络活喜。过敏史：无特殊。近期体重下降3.5 kg，现72 kg，身高161 cm。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'面色晦暗，舌暗红，舌中后部苔黄且较厚。', tongueDesc:'面色晦暗，舌暗红，舌中后部苔黄且较厚。', textSummary:'面色晦暗，舌暗红，舌中后部苔黄且较厚' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'嗳气频频，声音响亮，难以自行控制。', textSummary:'嗳气频频，声音响亮' }, inquiry:{ questions:[ {q:'饮食习惯',a:'平素喜食辛辣炙煿、肥甘厚腻之品。',keywords:['饮食','辛辣','肥甘','厚腻']}, {q:'食欲',a:'食欲一般。',keywords:['食欲','食纳']}, {q:'睡眠',a:'睡眠差。',keywords:['睡眠','失眠','寐']}, {q:'大便',a:'大便每日1次，成形，但稍黏马桶。',keywords:['大便','黏','马桶']}, {q:'其他不适',a:'胸闷、吐白黏痰、咽部异物感，如有物梗喉。无反酸、烧心、呃逆。',keywords:['胸闷','痰','咽部','异物感','反酸','烧心','呃逆']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉沉滑。', textSummary:'脉沉滑' } }, correctAnswer:{ disease:'顽固性嗳气', syndrome:'痰气交阻、湿热蕴结证', westernDiagnosis:'功能性消化不良；脂肪肝；慢性糜烂性胃炎；2型糖尿病；高血压；甲状腺结节' }, fullAnalysis:{ disease:'顽固性嗳气', syndrome:'痰气交阻、湿热蕴结证', westernDiagnosis:'功能性消化不良；脂肪肝；慢性糜烂性胃炎；2型糖尿病；高血压；甲状腺结节', pathogenesis:'长期情志不畅，肝气郁结；嗜食辛辣肥甘，脾胃运化失常，痰湿内生，郁久化热，湿热壅滞中焦，脾胃升降失常，胃失和降则嗳气频作；痰气阻滞则胸闷、咽中异物感、吐白黏痰。舌暗红、苔黄厚为湿热痰湿内蕴，脉沉滑为痰湿之象。', prescription:'旋覆代赭汤加减。', knowledgePoints:['顽固性嗳气属痰气交阻、湿热蕴结证，治以理气化痰、清热祛湿、降逆和胃。','旋覆代赭汤为降逆化痰、益气和胃之方，适用于胃虚痰阻气逆证。'] }, otherCheck:null },
+            { id:'inter-005', title:'绝经前后诸症案（肾精亏虚证）', chiefComplaint:'周某，女性，43岁。初诊时间：2022年4月27日。\n\n月经稀发伴烘热汗出2年，加重1周。', history:'末次月经时间：2022年2月21日，量少、色暗、无血块。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌淡略黯，苔薄白。', tongueDesc:'舌淡略黯，苔薄白。', textSummary:'舌淡略黯，苔薄白' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'未闻异常声音及气味。', textSummary:'未闻异常声音及气味' }, inquiry:{ questions:[ {q:'烘热汗出',a:'烘热汗出，阴道干涩、痒，性欲降低。',keywords:['烘热','汗出','阴道','干涩','性欲']}, {q:'下肢冷',a:'下肢冷，口淡、口苦。',keywords:['下肢冷','口淡','口苦']}, {q:'失眠',a:'失眠。',keywords:['失眠','睡眠']}, {q:'二便',a:'二便正常。',keywords:['二便','大便','小便']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉细。', textSummary:'脉细' } }, correctAnswer:{ disease:'绝经前后诸症', syndrome:'肾精亏虚证', westernDiagnosis:'绝经综合征' }, fullAnalysis:{ disease:'绝经前后诸症', syndrome:'肾精亏虚证', westernDiagnosis:'绝经综合征', pathogenesis:'肾精亏虚，肾气不足，封藏失职，冲任不固，故月经稀发量少；肾阴不足，虚火上亢则烘热汗出；精亏阴虚失润则阴道干涩、痒，性欲降低；肾阳温煦乏权则下肢冷、口淡；肾阴亏虚不能涵养心阴则失眠；舌淡略黯、脉细为肾精亏虚之征。', prescription:'二仙汤合知柏地黄丸加减。', knowledgePoints:['绝经前后诸症以肾精亏虚为本，治以补肾益精、滋阴敛汗。','二仙汤合知柏地黄丸用于肾阴阳两虚、阴虚火旺之证。'] }, otherCheck:null }
+        ],
+        advanced: [
+            { id:'adv-001', title:'胃脘痛/便秘案（肝郁脾虚，气滞湿阻）', chiefComplaint:'张某，女，52岁，湖北来凤籍。就诊时间：2025年2月22日（初诊）。\n\n反复胃脘胀满隐痛伴便秘连绵逾年，加重1周。', history:'素体虚弱，情志不畅，饮食不节（嗜食生冷），渐致胃胀隐痛、便秘艰涩，3-4日一行。长期依赖大黄、芒硝、麻仁等通便药，伴乏力、纳差。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'面色萎黄，散见黑斑（脾虚气血不荣，兼瘀滞）。舌淡胖边有齿痕（脾虚湿盛），舌下络脉迂曲紫暗（气滞血瘀），苔薄滑（湿浊内蕴）。', tongueDesc:'舌淡胖边有齿痕，舌下络脉迂曲紫暗，苔薄滑。', textSummary:'面色萎黄黑斑，舌淡胖齿痕，舌下络脉迂曲紫暗，苔薄滑' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'语声低微（气虚），偶有嗳气（胃气上逆）。', textSummary:'语声低微，偶有嗳气' }, inquiry:{ questions:[ {q:'胃脘胀痛特点',a:'胃胀隐痛，纳后及夜间加重（脾虚运化不及），痛处喜按（虚证）。',keywords:['胃','胀','痛','隐痛','喜按','夜间','纳后']}, {q:'口干口渴',a:'口干不欲饮（湿阻津不上承），寐可多梦（肝郁扰神）。',keywords:['口干','口渴','饮水','渴','多梦','寐','睡眠']}, {q:'大便便秘',a:'便秘难解，排便费力，3-4日一行，长期依赖大黄、芒硝、麻仁等通便药。',keywords:['大便','便秘','排便','通便','大黄','费力','几天一行']}, {q:'饮食纳差乏力',a:'素体虚弱，情志不畅，饮食不节（嗜食生冷），伴乏力、纳差。',keywords:['饮食','生冷','纳差','乏力','虚弱','情志','嗜食']}, {q:'面色一般情况',a:'面色萎黄，散见黑斑（脾虚气血不荣，兼瘀滞）。',keywords:['面色','黑斑','一般情况','精神']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉弦细弱（肝郁血虚），左关弦甚（肝郁气滞），右关濡大欠缓（脾虚湿困郁阻）。', textSummary:'脉弦细弱，左关弦甚，右关濡大欠缓' } }, correctAnswer:{ disease:'胃脘痛、便秘', syndrome:'肝郁脾虚，气滞湿阻（胃脘痛）；气滞湿阻，虚实夹杂（便秘）', westernDiagnosis:'功能性消化不良；慢传输型便秘' }, fullAnalysis:{ disease:'胃脘痛、便秘', syndrome:'肝郁脾虚，气滞湿阻（胃脘痛）；气滞湿阻，虚实夹杂（便秘）', westernDiagnosis:'功能性消化不良；慢传输型便秘', pathogenesis:'肝郁脾虚为本，气滞湿阻为标。素体虚弱，情志不畅，嗜食生冷，肝失疏泄、脾失健运，气机郁滞，湿浊内蕴，腑气不降而便秘；久病虚实夹杂，面色黑斑、舌下络脉紫暗为瘀滞之象。', prescription:'四逆散合四君子汤加减。', knowledgePoints:['肝郁脾虚证：胃胀隐痛、喜按、脉弦细弱、纳差乏力。','气滞湿阻、虚实夹杂之便秘，忌久用大黄芒硝等攻下，当疏肝健脾、行气化湿。'] }, otherCheck:null },
+            { id:'adv-002', title:'真心痛案（气虚血瘀）', chiefComplaint:'刘某，男，83岁。就诊时间：2018年2月27日。\n\n持续性胸痛、胸闷2小时。', history:'既往史未详述（急性起病，醒后突发）。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌象特征：舌暗，苔黄腻。', tongueDesc:'舌暗，苔黄腻。', textSummary:'舌暗，苔黄腻' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'呼吸稍促，未闻异常气味。', textSummary:'呼吸稍促，未闻异常气味' }, inquiry:{ questions:[ {q:'胸痛胸闷',a:'醒后突然出现发作性持续性胸痛、胸闷，伴汗出、烦躁不安，活动后加重。',keywords:['胸痛','胸闷','痛','闷','活动','加重']}, {q:'汗出烦躁',a:'伴汗出，烦躁不安。',keywords:['汗','汗出','烦躁','不安']}, {q:'心慌头晕咳痰',a:'无心慌，无头晕，无咳嗽、咳痰。',keywords:['心慌','头晕','咳嗽','咳痰','心慌']}, {q:'一般状况',a:'气短，乏力，活动后加重，食纳欠佳，夜休差，小便量多，大便干结。',keywords:['气短','乏力','食纳','纳差','夜休','睡眠','小便','大便','干结']}, {q:'辅助检查',a:'心电图：窦性心律，心率81次/分，II、III、aVF导联弓背样抬高。心脏B超：各心腔大小未见明显异常，EF=53%，左心室壁运动欠协调，心包腔未见明显积液。',keywords:['心电图','B超','心率','导联','EF','心腔','抬高','弓背']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉沉滑。', textSummary:'脉沉滑' } }, correctAnswer:{ disease:'真心痛', syndrome:'气虚血瘀', westernDiagnosis:'冠心病，急性ST段抬高型下壁心肌梗死（Killip Ⅰ级）' }, fullAnalysis:{ disease:'真心痛', syndrome:'气虚血瘀', westernDiagnosis:'冠心病，急性ST段抬高型下壁心肌梗死（Killip Ⅰ级）', pathogenesis:'年高正气亏虚，心气不足，运血无力，瘀血内阻，心脉闭塞，故胸痛、胸闷、汗出、气短乏力；瘀久化热则苔黄腻、大便干结；舌暗苔黄腻、脉沉滑为气虚血瘀兼夹湿热之象。', prescription:'瓜蒌15g 薤白12g 桂枝12g 黄芩12g 川芎12g 桃仁12g 红花12g 丹参9g 黄芪20g 酒大黄6g。', knowledgePoints:['真心痛相当于急性心肌梗死，属胸痹重症，以剧烈持久胸痛、汗出、肢冷为特征。','气虚血瘀证：胸痛、气短乏力、舌暗、脉沉涩或沉滑。'] }, otherCheck:'心电图示：窦性心律，心率81次/分，II、III、aVF导联弓背样抬高。\n心脏B超示：各心腔大小未见明显异常，左心室收缩功能EF=53%，左心室壁运动欠协调，心包腔未见明显积液。' },
+            { id:'adv-003', title:'胸痹案（阳虚血瘀）', chiefComplaint:'穆某，女，61岁。初诊时间：2018年3月13日。\n\n发作性胸闷、气短2周。', history:'既往史未详述，2周前无明显诱因起病，曾于外院就诊。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌象特征：舌紫暗，苔少。', tongueDesc:'舌紫暗，苔少。', textSummary:'舌紫暗，苔少' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'语声尚平，未闻异常气味。', textSummary:'语声尚平，未闻异常气味' }, inquiry:{ questions:[ {q:'胸闷气短',a:'发作性胸闷、气短，间断发作，每次持续约5分钟，可自行缓解。',keywords:['胸闷','气短','闷','发作','缓解']}, {q:'头晕及伴随',a:'伴头晕；无心慌、胸痛及放射痛，无黑矇、视物旋转，无恶心、呕吐、反酸、烧心。',keywords:['头晕','心慌','胸痛','放射','黑矇','恶心','反酸','烧心','视物']}, {q:'畏寒肢凉',a:'畏寒，四肢凉。',keywords:['畏寒','怕冷','四肢','凉','肢冷','肢凉']}, {q:'一般状况',a:'食纳可，夜休可，二便调。',keywords:['食纳','食欲','夜休','睡眠','二便','大便','小便']}, {q:'诊治检查',a:'外院心电图：窦性心律，心率76次/分，ST-T异常改变；曾服心宝丸、阿司匹林、阿托伐他汀钙片、麝香保心丸，缓解不明显。',keywords:['心电图','心率','ST-T','心宝丸','阿司匹林','他汀','治疗','缓解','检查']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉涩。', textSummary:'脉涩' } }, correctAnswer:{ disease:'胸痹', syndrome:'阳虚血瘀', westernDiagnosis:'冠心病，不稳定型心绞痛，心功能Ⅰ级' }, fullAnalysis:{ disease:'胸痹', syndrome:'阳虚血瘀', westernDiagnosis:'冠心病，不稳定型心绞痛，心功能Ⅰ级', pathogenesis:'阳气虚衰，鼓动无力，血行瘀滞，心脉痹阻，故胸闷、气短、脉涩；阳虚失温则畏寒、四肢凉；舌紫暗苔少为阳虚血瘀之象。', prescription:'瓜蒌15g 薤白12g 赤芍9g 香附9g 川芎12g 桃仁12g 红花12g 丹参9g 黄芪20g 炙甘草6g 桂枝10g。', knowledgePoints:['胸痹以胸闷、胸痛为主要表现，相当于冠心病心绞痛。','阳虚血瘀证：胸闷气短、畏寒肢冷、舌紫暗、脉涩。'] }, otherCheck:'心电图示：窦性心律，心率76次/分，ST-T异常改变。' },
+            { id:'adv-004', title:'心悸案（肝肾阴亏）', chiefComplaint:'王某，女，71岁。初诊时间：2018年3月2日。\n\n发作性心慌、气短20年，再发加重2天。', history:'20年前活动后出现心慌、气短，曾多次于当地医院住院对症支持治疗，出院后间断口服复方丹参滴丸（6丸 qd），病情控制较理想。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌象特征：舌红少津，苔少。', tongueDesc:'舌红少津，苔少。', textSummary:'舌红少津，苔少' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'语声稍弱，未闻异常气味。', textSummary:'语声稍弱，未闻异常气味' }, inquiry:{ questions:[ {q:'心慌气短',a:'活动后发作心慌、气短、乏力，每次持续约20分钟，休息后可缓解；2天前加重。',keywords:['心慌','心悸','气短','乏力','活动','休息','缓解']}, {q:'伴随症状',a:'伴头晕、耳鸣、五心烦热、腰膝酸软。',keywords:['头晕','耳鸣','五心烦热','腰膝酸软','心烦']}, {q:'睡眠',a:'夜休差。',keywords:['夜休','睡眠','失眠','寐']}, {q:'二便',a:'小便黄，大便干。',keywords:['小便','大便','干结','黄']}, {q:'检查治疗',a:'心电图示异位心律、快速心房纤颤；既往长期口服复方丹参滴丸，控制尚可。',keywords:['心电图','房颤','异位','纤颤','丹参滴丸','治疗','检查']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉细数。', textSummary:'脉细数' } }, correctAnswer:{ disease:'心悸', syndrome:'肝肾阴亏', westernDiagnosis:'心律失常，快速型房颤' }, fullAnalysis:{ disease:'心悸', syndrome:'肝肾阴亏', westernDiagnosis:'心律失常，快速型房颤', pathogenesis:'肝肾阴虚，虚火内动，扰动心神，故心慌、心悸、脉细数；阴虚阳亢则头晕耳鸣、五心烦热；腰为肾府，肾虚则腰膝酸软；舌红少津苔少为阴虚之象。', prescription:'当归15g 生地黄12g 沙参12g 麦冬12g 川楝子9g 知母12g 酸枣仁（炒）30g 茯苓9g 炙甘草6g 川芎10g 山茱萸12g。', knowledgePoints:['心悸相当于心律失常（如房颤），以自觉心慌不安为主症。','肝肾阴亏证：心悸、头晕耳鸣、腰膝酸软、五心烦热、舌红少津、脉细数。'] }, otherCheck:'心电图示：异位心律，快速心房纤颤。' },
+            { id:'adv-005', title:'心悸案（心气阴两虚兼肝郁）', chiefComplaint:'李某，女，58岁，上海人，2023年6月28日初诊。\n\n胸闷心慌5月余。', history:'2021年6月外感后心慌，服中药半年平稳后停药，2023年1月底外感后复作心慌，于瑞金医院诊断为“冠状动脉粥样硬化”，予氯吡格雷、瑞舒伐他汀。', clues:{ inspection:{ displayTitle:'舌象观察', displayContent:'舌淡暗，苔薄，边齿痕。', tongueDesc:'舌淡暗，苔薄，边齿痕。', textSummary:'舌淡暗，苔薄，边齿痕' }, auscultation:{ displayTitle:'闻诊结果', displayContent:'未闻异常。', textSummary:'未闻异常' }, inquiry:{ questions:[ {q:'心悸情况',a:'心悸阵作，晨起易作，夜间心跳感明显，无胸闷胸痛，焦虑，午后潮热，时有汗出，口干，乏力。',keywords:['心悸','心跳','焦虑','潮热','汗出','口干','乏力']}, {q:'纳寐',a:'纳寐一般，夜间因心悸转醒1~2次，可再入睡。',keywords:['纳','寐','睡眠','醒']}, {q:'二便',a:'二便调。',keywords:['二便','大便','小便']}, {q:'其他感觉',a:'自觉舌肿胀。',keywords:['舌肿胀','舌']} ] }, pulse:{ displayTitle:'切脉结果', displayContent:'脉细弦。', textSummary:'脉细弦' } }, correctAnswer:{ disease:'心悸', syndrome:'心气阴两虚证兼肝郁', westernDiagnosis:'室性期前收缩' }, fullAnalysis:{ disease:'心悸', syndrome:'心气阴两虚证兼肝郁', westernDiagnosis:'室性期前收缩', pathogenesis:'中老年女性，素体亏虚，外感后耗伤心气心阴，心失所养则心悸；肝郁不畅，气机郁滞则焦虑；气机升降失常则自觉舌肿胀。舌淡暗、边齿痕、脉细弦为气阴两虚、肝郁之象。', prescription:'炙甘草汤加减：炙甘草9g、党参15g、干姜3g、桂枝9g、麦冬9g、生地黄15g、火麻仁15g、大枣6g、阿胶珠6g、梅花6g、广郁金9g、琥珀粉9g。', knowledgePoints:['心悸气阴两虚证，治以补气养血，安神定悸，方用炙甘草汤加减。','室性期前收缩属心律失常，需结合心电图诊断。'] }, otherCheck:'体格检查：心前区无隆起，心尖搏动正常，触诊未触及震颤，未触及心包摩擦感。听诊心脏相对浊音界正常，心率80次/分，心律不齐，心尖区未闻及心包摩擦感等。触诊可及四末冷。\n\n辅助检查：24h动态心电图（6月21日瑞金医院）：平均心率80 bpm，室早2 975个，最多室早1 256次，发生于8：00，室性二联律97阵，室性三联律4阵；未见长R-R间期；ST-T未见明显异常。查血无殊，查24 h心电图（6月28日）：平均心率72 bpm，最快心率111 bpm，见于5：51，为窦性心动过速；最慢心率52 bpm，见于23：45，为窦性心动过缓；最长R-R间期1.188 s，见于2：13：15，为窦性心动过缓。房性早搏1次（其中单个1次）；间歇性T波低平。' }
+        ]
+    };
 
-    // 备用 - 如果 10 秒后还没触发，自动隐藏
-    setTimeout(() => {
-      const skeleton = document.getElementById('app-skeleton');
-      if (skeleton && !skeleton.classList.contains('hidden')) {
-        hideSkeleton(0);
-      }
-    }, 1000 * 20);
-  </script>
-<script>(function(){var c=["//static.workbuddy.cn/web/agents/621dbcae2d1e28432b63086f03330534c615129f/assets/vendor-monaco-DvmAM2Rn.css"];function l(){c.forEach(function(h){var k=document.createElement("link");k.rel="stylesheet";k.href=h;k.crossOrigin="";document.head.appendChild(k)})}if(document.readyState==="complete")l();else window.addEventListener("load",l)})()</script>
+    const genericAnswers = ["这个没什么特别的。","还好，没太注意。","有时有，有时没有。","和之前差不多。","好像没什么影响。","没感觉到什么异常。","就这样，老样子。","记不太清了。"];
+    let currentDifficulty = null;
+    let currentCase = null;
+    let collectedClues = [];
+    let exploredDiags = {};
+    let gameStarted = false;
+    let inquiryHistory = [];
+    let askedInquiryQuestions = [];
+
+    function safeGetStorage(key, fallback) {
+        try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : fallback; } catch (e) { return fallback; }
+    }
+    function safeSetStorage(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+    }
+    function getCompletedCases() { return safeGetStorage('tcm_completed_cases', []); }
+    function markCaseCompleted(caseId) {
+        const arr = getCompletedCases();
+        if (!arr.includes(caseId)) { arr.push(caseId); safeSetStorage('tcm_completed_cases', arr); }
+    }
+    function saveRecord(correct) {
+        const records = safeGetStorage('tcm_learning_records', []);
+        records.push({date:new Date().toLocaleString(), case: currentCase ? currentCase.title : '未知', difficulty: currentDifficulty || '未知', correct});
+        if(records.length>50) records.shift();
+        safeSetStorage('tcm_learning_records', records);
+    }
+    function openRecords() {
+        const records = safeGetStorage('tcm_learning_records', []);
+        const el = document.getElementById('recordsContent');
+        if(records.length===0) el.innerHTML='<p style="text-align:center;color:#b5a595;">📭 暂无学习记录</p>';
+        else el.innerHTML=records.reverse().map((r,i)=>`<div style="padding:8px;margin:4px 0;background:#fdfaf5;border-radius:8px;">${r.date} ${r.case} (${r.difficulty}) ${r.correct?'✅':'⚠️'}</div>`).join('')
+            +'<button class="btn btn--ghost" style="margin-top:10px;width:100%;" onclick="clearRecords()">🗑️ 清空记录</button>';
+        document.getElementById('recordsModal').style.display='flex';
+    }
+    function clearRecords() { if(confirm('清空学习记录？')){ try { localStorage.removeItem('tcm_learning_records'); } catch(e){} closeRecords(); } }
+
+    function showPage(name) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page'+name)?.classList.add('active');
+        window.scrollTo({top:0,behavior:'smooth'});
+        document.querySelectorAll('.top-nav .nav-link').forEach(l=>l.classList.remove('nav-active'));
+        const map={Home:'navHome',Game:'navGame',About:'navAbout'};
+        document.getElementById(map[name])?.classList.add('nav-active');
+    }
+    function goHome(){ showPage('Home'); }
+    function startChallenge(){ showPage('Game'); resetGameUI(); }
+    function showAbout(){ showPage('About'); }
+    function resetGameUI(){
+        currentDifficulty=null; currentCase=null; collectedClues=[]; exploredDiags={}; gameStarted=false;
+        inquiryHistory=[]; askedInquiryQuestions=[];
+        document.getElementById('chiefComplaintCard').style.display='none';
+        document.getElementById('fourDiagBtns').style.display='none';
+        document.getElementById('btnOtherCheck').style.display='none';
+        document.getElementById('clueCollectionCard').style.display='none';
+        document.getElementById('answerCard').style.display='none';
+        document.getElementById('gameExtraBtns').style.display='none';
+        document.getElementById('historyBtn').style.display='none';
+        document.getElementById('clueArea').innerHTML='';
+        document.getElementById('answerFeedback').innerHTML='';
+        document.getElementById('fullAnalysisArea').innerHTML='';
+        document.getElementById('inputSyndrome').value='';
+        document.getElementById('inputDisease').value='';
+        document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b=>b.classList.remove('selected'));
+        ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id=>document.getElementById(id)?.classList.remove('explored'));
+    }
+    function selectDifficulty(diff, btnEl){
+        document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b=>b.classList.remove('selected'));
+        btnEl.classList.add('selected');
+        currentDifficulty = diff;
+        const pool = casesDB[diff];
+        if(!pool || pool.length===0){ alert('该难度暂无病例。'); return; }
+        const completed = getCompletedCases();
+        let available = pool.filter(c => !completed.includes(c.id));
+        if(available.length === 0){
+            openSimpleResultModal('🎉 闯关完毕', '该难度下所有病例均已完成，无新病例可学习。您可以在病例题库中复习已完成的病例。');
+            document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b=>b.classList.remove('selected'));
+            currentDifficulty = null;
+            return;
+        }
+        const randomIndex = Math.floor(Math.random() * available.length);
+        currentCase = available[randomIndex];
+        collectedClues=[]; exploredDiags={inspection:false,auscultation:false,inquiry:false,pulse:false};
+        inquiryHistory=[]; askedInquiryQuestions=[]; gameStarted=true;
+        document.getElementById('chiefComplaintCard').style.display='block';
+        document.getElementById('chiefComplaintText').textContent = currentCase.chiefComplaint;
+        document.getElementById('historyBtn').style.display='inline-flex';
+        document.getElementById('fourDiagBtns').style.display='grid';
+        document.getElementById('clueCollectionCard').style.display='block';
+        document.getElementById('answerCard').style.display='block';
+        document.getElementById('gameExtraBtns').style.display='flex';
+        document.getElementById('clueArea').innerHTML='';
+        document.getElementById('answerFeedback').innerHTML='';
+        document.getElementById('fullAnalysisArea').innerHTML='';
+        document.getElementById('inputSyndrome').value='';
+        document.getElementById('inputDisease').value='';
+        ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id=>document.getElementById(id)?.classList.remove('explored'));
+        const otherCheckBtn = document.getElementById('btnOtherCheck');
+        if (diff === 'basic') {
+            otherCheckBtn.style.display = 'none';
+        } else {
+            otherCheckBtn.style.display = 'block';
+        }
+        document.getElementById('chiefComplaintCard').scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    function exploreDiag(type){
+        if(!gameStarted||!currentCase){ alert('请先选择难度。'); return; }
+        if(type==='inquiry'){ openInquiryModal(); return; }
+        if(type==='inspection'){ openInspectionModal(); return; }
+        if(exploredDiags[type]){ alert('该诊法已探索过。'); return; }
+        exploredDiags[type]=true; markExplored(type);
+        const clue = currentCase.clues[type];
+        if(clue){ openSimpleResultModal(clue.displayTitle, clue.displayContent); addClue(type, clue.textSummary); }
+    }
+    function showOtherCheck() {
+        if (!currentCase) return;
+        const content = currentCase.otherCheck || '无';
+        openSimpleResultModal('📋 其他检查', content);
+    }
+    function openInquiryModal(){
+        if(!currentCase) return;
+        document.getElementById('inquiryChatArea').innerHTML='';
+        inquiryHistory.forEach(m=>appendChat(m.role,m.text));
+        document.getElementById('inquiryInput').value='';
+        document.getElementById('inquiryModal').style.display='flex';
+        document.getElementById('inquiryInput').focus();
+    }
+    function appendChat(role,text){
+        const div=document.createElement('div');
+        div.className='chat-bubble '+(role==='user'?'user':'patient');
+        div.textContent=text;
+        document.getElementById('inquiryChatArea').appendChild(div);
+        document.getElementById('inquiryChatArea').scrollTop=document.getElementById('inquiryChatArea').scrollHeight;
+    }
+    function sendInquiry(){
+        const input=document.getElementById('inquiryInput');
+        const q=input.value.trim(); if(!q||!currentCase) return;
+        inquiryHistory.push({role:'user',text:q}); appendChat('user',q);
+        input.value='';
+        const questions=currentCase.clues.inquiry.questions;
+        let matched=-1;
+        for(let i=0;i<questions.length;i++){
+            if(questions[i].keywords.some(k=>q.includes(k))){ matched=i; break; }
+        }
+        let answer='';
+        if(matched>=0){
+            answer=questions[matched].a;
+            if(!askedInquiryQuestions.includes(matched)){
+                askedInquiryQuestions.push(matched);
+                addClue('inquiry', answer, '问诊·'+questions[matched].q);
+            } else { answer+='（这个问题刚才已经回答过了）'; }
+        } else { answer=genericAnswers[Math.floor(Math.random()*genericAnswers.length)]; }
+        setTimeout(()=>{
+            inquiryHistory.push({role:'patient',text:answer}); appendChat('patient',answer);
+            if(askedInquiryQuestions.length>=questions.length){ exploredDiags.inquiry=true; markExplored('inquiry'); }
+        },300);
+    }
+    function closeInquiryModal(){
+        document.getElementById('inquiryModal').style.display='none';
+        if(currentCase && askedInquiryQuestions.length>=currentCase.clues.inquiry.questions.length){
+            exploredDiags.inquiry=true; markExplored('inquiry');
+        }
+    }
+    function openInspectionModal(){
+        if(!currentCase){ return; }
+        document.getElementById('inspectionImg').src = tongueImages[currentCase.id] || '';
+        document.getElementById('inspectionModal').style.display='flex';
+    }
+    function closeInspectionModal(){
+        document.getElementById('inspectionModal').style.display='none';
+        if(!exploredDiags.inspection && currentCase){
+            exploredDiags.inspection=true; markExplored('inspection');
+            addClue('inspection', currentCase.clues.inspection.textSummary);
+        }
+    }
+    function showHistory(){
+        if(!currentCase) return;
+        openSimpleResultModal('📜 病史（既往史）', currentCase.history || '无');
+    }
+    function openSimpleResultModal(title,content){
+        document.getElementById('simpleResultTitle').textContent=title;
+        document.getElementById('simpleResultContent').textContent=content;
+        document.getElementById('simpleResultModal').style.display='flex';
+    }
+    function closeSimpleResultModal(){ document.getElementById('simpleResultModal').style.display='none'; }
+    function markExplored(type){
+        const map={inspection:'btnWang',auscultation:'btnWen',inquiry:'btnAsk',pulse:'btnPulse'};
+        document.getElementById(map[type])?.classList.add('explored');
+    }
+    function addClue(type, content, tagText){
+        const tagMap={inspection:'tag-wang',auscultation:'tag-wen',inquiry:'tag-ask',pulse:'tag-pulse'};
+        const nameMap={inspection:'望诊',auscultation:'闻诊',inquiry:'问诊',pulse:'切脉'};
+        const tag=tagText||nameMap[type];
+        if(collectedClues.some(c=>c.content===content&&c.tag===tag)) return;
+        collectedClues.push({tag, tagClass:tagMap[type], content});
+        renderClues();
+    }
+    function renderClues(){
+        const area=document.getElementById('clueArea');
+        area.innerHTML=collectedClues.map(c=>`<div class="clue-item"><span class="clue-tag ${c.tagClass}">${c.tag}</span><span>${c.content}</span></div>`).join('');
+        area.scrollTop=area.scrollHeight;
+    }
+    function submitAnswer(){
+        if(!gameStarted||!currentCase){ alert('请先选择难度。'); return; }
+        const syndrome=document.getElementById('inputSyndrome').value.trim();
+        const disease=document.getElementById('inputDisease').value.trim();
+        if(!syndrome&&!disease){ alert('请至少输入证型或病名。'); return; }
+        const correct=currentCase.correctAnswer;
+        const fb=document.getElementById('answerFeedback');
+        const analysis=document.getElementById('fullAnalysisArea');
+        const dOk=disease && correct.disease.includes(disease.replace(/证$/,''));
+        const sOk=syndrome && (
+            correct.syndrome.includes('风热')&&syndrome.includes('风热')&&syndrome.includes('津伤') ||
+            correct.syndrome.includes('脾胃虚寒')&&syndrome.includes('脾胃虚寒') ||
+            correct.syndrome.includes('痰瘀互结')&&syndrome.includes('痰瘀')&&syndrome.includes('互结') ||
+            correct.syndrome.includes('痰热壅肺')&&syndrome.includes('痰热壅肺') ||
+            syndrome===correct.syndrome ||
+            correct.syndrome.includes(syndrome) ||
+            syndrome.includes(correct.syndrome)
+        );
+        if(dOk&&sOk){
+            fb.innerHTML=`<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${correct.disease} · ${correct.syndrome}</p></div>`;
+            showFullAnalysis(analysis);
+            saveRecord(true);
+            markCaseCompleted(currentCase.id);
+        } else {
+            let feedbackHtml = '';
+            if(!dOk && !sOk){
+                feedbackHtml = `<div class="result-box fail"><h4>🤔 辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
+            } else {
+                const parts=[];
+                if(dOk) parts.push('✅ 病名基本正确'); else parts.push('⚠️ 病名需调整');
+                if(sOk) parts.push('✅ 证型判断准确'); else parts.push('⚠️ 证型需斟酌');
+                feedbackHtml = `<div class="result-box fail"><h4>🔍 部分正确</h4><p>${parts.join('，')}</p>`;
+            }
+            feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">💡 查看答案</button></div>`;
+            fb.innerHTML = feedbackHtml;
+            analysis.innerHTML = '';
+        }
+        fb.scrollIntoView({behavior:'smooth'});
+    }
+    function viewAnswer(){
+        if(!currentCase) return;
+        showFullAnalysis(document.getElementById('fullAnalysisArea'));
+        markCaseCompleted(currentCase.id);
+        saveRecord(false);
+    }
+    function showFullAnalysis(el){
+        const fa=currentCase.fullAnalysis;
+        el.innerHTML=`<div class="result-box success">
+            <h4>📋 完整医案解析</h4>
+            <p><strong>中医病证：</strong>${fa.disease}（${fa.syndrome}）</p>
+            <p><strong>西医诊断：</strong>${fa.westernDiagnosis}</p>
+            <hr><p><strong>病机分析：</strong>${fa.pathogenesis}</p>
+            <hr><p><strong>推荐方药：</strong>${fa.prescription}</p>
+            <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k=>`<li>${k}</li>`).join('')}</ul>
+        </div>`;
+    }
+    function resetCurrentCase(){
+        if(!currentCase) return;
+        if(confirm('确定重新探查吗？线索将清除。')){
+            collectedClues=[]; exploredDiags={inspection:false,auscultation:false,inquiry:false,pulse:false};
+            inquiryHistory=[]; askedInquiryQuestions=[];
+            document.getElementById('clueArea').innerHTML='';
+            document.getElementById('answerFeedback').innerHTML='';
+            document.getElementById('fullAnalysisArea').innerHTML='';
+            ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id=>document.getElementById(id)?.classList.remove('explored'));
+        }
+    }
+    function closeRecords(){ document.getElementById('recordsModal').style.display='none'; }
+    function renderFullCase(c){
+        const fa=c.fullAnalysis; const cl=c.clues;
+        let html='';
+        html += `<div style="margin:6px 0 10px 0;"><strong>🩺 主诉 / 基本情况：</strong><br>${c.chiefComplaint.replace(/\n/g,'<br>')}</div>`;
+        if(c.history){
+            html += `<div style="margin:6px 0 10px 0;"><strong>📜 既往史：</strong><br>${c.history.replace(/\n/g,'<br>')}</div>`;
+        }
+        html += `<div style="margin:6px 0 10px 0;"><strong>🔍 四诊情况：</strong><br>`;
+        html += `【望诊】${cl.inspection.displayContent}<br>`;
+        html += `【闻诊】${cl.auscultation.displayContent}<br>`;
+        if(cl.inquiry && cl.inquiry.questions){
+            html += `【问诊】<br>` + cl.inquiry.questions.map(q=>`· ${q.q}：${q.a}`).join('<br>') + `<br>`;
+        }
+        html += `【切诊】${cl.pulse.displayContent}</div>`;
+        html += `<div style="margin:6px 0 4px 0;"><strong>📋 辨证分析过程：</strong><br>`;
+        html += `中医病证：${fa.disease}（${fa.syndrome}）<br>`;
+        if(fa.westernDiagnosis) html += `西医诊断：${fa.westernDiagnosis}<br>`;
+        html += `病机分析：${fa.pathogenesis}<br>`;
+        html += `推荐方药：${fa.prescription}<br>`;
+        if(fa.knowledgePoints && fa.knowledgePoints.length) html += `知识点：${fa.knowledgePoints.join('；')}`;
+        html += `</div>`;
+        return html;
+    }
+    function openCaseBank(){
+        const labels={basic:'🌱 基础（大一）',intermediate:'📖 进阶（内外妇儿）',advanced:'🎓 考研病例'};
+        const completedIds = getCompletedCases();
+        let html='';
+        for(const [diff,cases] of Object.entries(casesDB)){
+            html+=`<h4 style="margin-top:14px;color:var(--primary);">${labels[diff]}</h4>`;
+            cases.forEach(c=>{
+                const isCompleted = completedIds.includes(c.id);
+                if(isCompleted){
+                    html += `<div style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:10px;border:2px solid var(--gold-light);font-size:0.9em;line-height:1.7;">`;
+                    html += `<div style="font-weight:700;color:var(--accent);margin-bottom:6px;">✅ ${c.title}</div>`;
+                    html += `<div class="case-full">${renderFullCase(c)}</div>`;
+                    html += `</div>`;
+                } else {
+                    html += `<div style="padding:10px;margin:6px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;">`;
+                    html += `<strong>${c.title}</strong><br>主诉：${c.chiefComplaint.replace(/\n/g,'<br>')}<br><span style="color:var(--text-muted);">❓ 尚未完成（完成探查后可查看完整医案）</span>`;
+                    html += `</div>`;
+                }
+            });
+        }
+        document.getElementById('caseBankContent').innerHTML = html;
+        document.getElementById('caseBankModal').style.display='flex';
+    }
+    function closeCaseBank(){ document.getElementById('caseBankModal').style.display='none'; }
+    document.addEventListener('click',e=>{ if(e.target.classList.contains('modal-overlay')) e.target.style.display='none'; });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-overlay').forEach(m=>m.style.display='none'); });
+    (function initNav(){
+        const nav=`<div class="top-nav"><span class="nav-link nav-active" id="navHome" onclick="goHome()">🏠 首页</span><span class="nav-link" id="navGame" onclick="startChallenge()">🎯 闯关</span><span class="nav-link" id="navAbout" onclick="showAbout()">📖 关于</span></div>`;
+        document.getElementById('appContainer').insertAdjacentHTML('afterbegin',nav);
+    })();
+    showPage('Home');
+
+    // 投稿表单相关
+    function openSubmissionModal() {
+        document.getElementById('submissionModal').style.display = 'flex';
+        document.getElementById('submissionFeedback').innerHTML = '';
+        document.getElementById('formNext').value = window.location.href.split('?')[0] + '?submitted=true';
+        document.getElementById('difficultyDisplay').textContent = '点击选择难度';
+        document.getElementById('subDifficulty').value = '';
+        document.getElementById('difficultyOptions').style.display = 'none';
+        document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
+    }
+    function closeSubmissionModal() {
+        document.getElementById('submissionModal').style.display = 'none';
+    }
+    function toggleDifficultyOptions() {
+        const options = document.getElementById('difficultyOptions');
+        options.style.display = options.style.display === 'none' ? 'block' : 'none';
+    }
+    function selectDifficultyOption(value, label, btn) {
+        document.getElementById('difficultyDisplay').textContent = label;
+        document.getElementById('subDifficulty').value = value;
+        document.getElementById('difficultyOptions').style.display = 'none';
+        document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+    function validateSubmissionForm() {
+        const form = document.getElementById('submissionForm');
+        const feedback = document.getElementById('submissionFeedback');
+        const requiredFields = ['chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
+        for (const fieldName of requiredFields) {
+            const field = form.querySelector(`[name="${fieldName}"]`);
+            if (!field || !field.value.trim()) {
+                feedback.innerHTML = `<div class="result-box fail">请填写所有必填字段。</div>`;
+                field?.focus();
+                return false;
+            }
+        }
+        const difficulty = form.querySelector('[name="difficulty"]');
+        if (!difficulty || !difficulty.value) {
+            feedback.innerHTML = `<div class="result-box fail">请选择难度。</div>`;
+            return false;
+        }
+        const fileInput = document.getElementById('subTonguePhoto');
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (file.size > 10 * 1024 * 1024) {
+                feedback.innerHTML = `<div class="result-box fail">舌象照片大小不能超过10MB，请压缩后重新上传。</div>`;
+                return false;
+            }
+        }
+        feedback.innerHTML = '';
+        return true;
+    }
+    window.addEventListener('load', function() {
+        if (window.location.search.includes('submitted=true')) {
+            if (history.replaceState) {
+                history.replaceState(null, '', window.location.pathname);
+            }
+            openSubmissionModal();
+            document.getElementById('submissionFeedback').innerHTML = '<div class="result-box success">✅ 病例提交成功！感谢您的投稿。</div>';
+        }
+    });
+</script>
 </body>
-
 </html>
