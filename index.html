@@ -357,7 +357,8 @@
         </form>
     </div>
 </div>
-<script>
+
+    <script>
     /* ===================== 舌象图 ===================== */
     function svgURI(s){ return 'data:image/svg+xml,' + encodeURIComponent(s); }
     const T = {
@@ -394,8 +395,8 @@
         ],
         intermediate: [
             { id:'inter-002', title:'胃脘痛案（肝郁脾虚，湿浊中阻）', chiefComplaint:'赵某，男，45岁。\n\n反复胃脘部胀满疼痛3年，加重1周。', history:'既往史：否认高血压、糖尿病、心脏病等慢性病史
-```html
-    const genericAnswers = ["这个没什么特别的。","还好，没太注意。","有时有，有时没有。","和之前差不多。","好像没什么影响。","没感觉到什么异常。","就这样，老样子。","记不太清了。"];
+
+                 const genericAnswers = ["这个没什么特别的。","还好，没太注意。","有时有，有时没有。","和之前差不多。","好像没什么影响。","没感觉到什么异常。","就这样，老样子。","记不太清了。"];
     let currentDifficulty = null;
     let currentCase = null;
     let collectedClues = [];
@@ -561,7 +562,7 @@
     let inspectionIndex = 0;
     function openInspectionModal(){
         if(!currentCase){ return; }
-        inspectionImages = currentCase.inspectionImages || [tongueImages[currentCase.id] || '';
+        inspectionImages = currentCase.inspectionImages || [tongueImages[currentCase.id] || ''];
         inspectionIndex = 0;
         renderInspection();
         document.getElementById('inspectionModal').style.display='flex';
