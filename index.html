@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <meta name="description" content="中医辨证推演馆，通过海龟汤模式进行四诊探案，学习中医辨证论治。">
+    <meta property="og:title" content="中医辨证推演馆 - 海龟汤模式">
+<meta property="og:description" content="模拟门诊看病，通过望闻问切四诊探寻线索，逐步推理完成辨证论治。">
+<meta property="og:type" content="website">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中医辨证推演馆 - 海龟汤模式</title>
@@ -585,19 +589,39 @@
 
     /* ===================== 望诊 ===================== */
     function openInspectionModal() {
-        if (!currentCase) return;
-        inspectionImages = currentCase.inspectionImages || [tongueImages[currentCase.id] || ''];
-        inspectionIndex = 0;
-        renderInspection();
-        document.getElementById('inspectionModal').style.display = 'flex';
-    }
+    if (!currentCase) return;
+    inspectionImages = currentCase.inspectionImages || [tongueImages[currentCase.id] || ''];
+    inspectionIndex = 0;
+    document.getElementById('inspectionImg').src = '';
+    // 显示加载状态
+    document.getElementById('inspectionImg').style.display = 'none';
+    document.getElementById('inspectionCounter').textContent = '图片加载中...';
+    renderInspection();
+    document.getElementById('inspectionModal').style.display = 'flex';
+    // 图片加载完成后显示
+    document.getElementById('inspectionImg').onload = function() {
+        this.style.display = 'block';
+        document.getElementById('inspectionCounter').textContent = inspectionImages.length > 1 ? (inspectionIndex + 1) + ' / ' + inspectionImages.length : '';
+    };
+}
     function renderInspection() {
-        document.getElementById('inspectionImg').src = inspectionImages[inspectionIndex] || '';
-        const hasMultiple = inspectionImages.length > 1;
-        document.getElementById('inspectPrev').style.display = hasMultiple ? 'flex' : 'none';
-        document.getElementById('inspectNext').style.display = hasMultiple ? 'flex' : 'none';
-        document.getElementById('inspectionCounter').textContent = hasMultiple ? (inspectionIndex + 1) + ' / ' + inspectionImages.length : '';
+    document.getElementById('inspectionImg').src = inspectionImages[inspectionIndex] || '';
+    const hasMultiple = inspectionImages.length > 1;
+    document.getElementById('inspectPrev').style.display = hasMultiple ? 'flex' : 'none';
+    document.getElementById('inspectNext').style.display = hasMultiple ? 'flex' : 'none';
+    document.getElementById('inspectionCounter').textContent = hasMultiple ? (inspectionIndex + 1) + ' / ' + inspectionImages.length : '';
+    // 预加载下一张图片
+    preloadNextImage();
+}
+
+// 新增函数：预加载下一张舌象图片
+function preloadNextImage() {
+    const nextIndex = inspectionIndex + 1;
+    if (nextIndex < inspectionImages.length) {
+        const img = new Image();
+        img.src = inspectionImages[nextIndex];
     }
+}
     function inspectPrev() { if (inspectionIndex > 0) { inspectionIndex--; renderInspection(); } }
     function inspectNext() { if (inspectionIndex < inspectionImages.length - 1) { inspectionIndex++; renderInspection(); } }
     function closeInspectionModal() {
