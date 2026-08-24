@@ -601,12 +601,15 @@
     function inspectPrev() { if (inspectionIndex > 0) { inspectionIndex--; renderInspection(); } }
     function inspectNext() { if (inspectionIndex < inspectionImages.length - 1) { inspectionIndex++; renderInspection(); } }
     function closeInspectionModal() {
-        document.getElementById('inspectionModal').style.display = 'none';
-        if (!exploredDiags.inspection && currentCase) {
-            exploredDiags.inspection = true; markExplored('inspection');
-            addClue('inspection', currentCase.clues.inspection.textSummary);
-        }
+    document.getElementById('inspectionModal').style.display = 'none';
+    // 关闭模态框后清空图片地址，释放内存
+    document.getElementById('inspectionImg').src = '';
+    if (!exploredDiags.inspection && currentCase) {
+        exploredDiags.inspection = true;
+        markExplored('inspection');
+        addClue('inspection', currentCase.clues.inspection.textSummary);
     }
+}
 
     /* ===================== 提交辨证 ===================== */
     function submitAnswer() {
