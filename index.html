@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta name="description" content="中医辨证推演馆，通过海龟汤模式进行四诊探案，学习中医辨证论治。">
     <meta property="og:title" content="中医辨证推演馆 - 海龟汤模式">
 <meta property="og:description" content="模拟门诊看病，通过望闻问切四诊探寻线索，逐步推理完成辨证论治。">
 <meta property="og:type" content="website">
@@ -593,15 +592,18 @@
     inspectionImages = currentCase.inspectionImages || [tongueImages[currentCase.id] || ''];
     inspectionIndex = 0;
     document.getElementById('inspectionImg').src = '';
-    // 显示加载状态
     document.getElementById('inspectionImg').style.display = 'none';
     document.getElementById('inspectionCounter').textContent = '图片加载中...';
     renderInspection();
     document.getElementById('inspectionModal').style.display = 'flex';
-    // 图片加载完成后显示
     document.getElementById('inspectionImg').onload = function() {
         this.style.display = 'block';
         document.getElementById('inspectionCounter').textContent = inspectionImages.length > 1 ? (inspectionIndex + 1) + ' / ' + inspectionImages.length : '';
+    };
+    document.getElementById('inspectionImg').onerror = function() {
+        this.style.display = 'block';
+        this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="260" height="347" viewBox="0 0 260 347"%3E%3Crect width="260" height="347" fill="%23fdfaf5"/%3E%3Ctext x="130" y="170" font-size="14" fill="%23b5a595" text-anchor="middle"%3E图片加载失败%3C/text%3E%3C/svg%3E';
+        document.getElementById('inspectionCounter').textContent = '图片加载失败';
     };
 }
     function renderInspection() {
