@@ -471,7 +471,6 @@
                     <p class="data-stats" id="dataStats"></p>
                     <div class="data-actions">
                         <button onclick="resetAllProgress()">🔄 重置全部进度</button>
-                        <button onclick="clearWrongOnly()">🗑️ 仅清空错题</button>
                     </div>
                 </div>
             </div>
@@ -495,12 +494,6 @@
         safeSetStorage('tcm_wrong_cases', []);
         renderDataStats();
         alert('已重置全部本地学习数据。');
-    }
-    function clearWrongOnly(){
-        if (!confirm('确定只清空错题本吗？')) return;
-        safeSetStorage('tcm_wrong_cases', []);
-        renderDataStats();
-        alert('错题本已清空。');
     }
 
     /* ===================== 存储工具 ===================== */
