@@ -403,7 +403,7 @@
             </div>
             <div class="page" id="pageGame">
                 <div class="card" style="padding:16px 20px;">
-                    <div style="font-weight:700;color:var(--text-light);text-align:center;">📋 选择难度</div>
+                    <div style="font-weight:700;color:var(--text-light);text-align:center;">📋 选择关卡</div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;" id="difficultyBtns">
                         <button class="btn btn--difficulty btn--basic" data-diff="basic" onclick="selectDifficulty('basic', this)">🌱 入门训练</button>
                         <button class="btn btn--difficulty btn--intermediate" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">🌿 综合训练</button>
@@ -616,7 +616,7 @@
 
     /* ===================== 四诊探索 ===================== */
     function exploreDiag(type) {
-        if (!gameStarted || !currentCase) { alert('请先选择难度。'); return; }
+        if (!gameStarted || !currentCase) { alert('请先选择关卡。'); return; }
         if (type === 'inquiry') { openInquiryModal(); return; }
         if (type === 'inspection') { openInspectionModal(); return; }
         if (exploredDiags[type]) { alert('该诊法已探索过。'); return; }
@@ -842,7 +842,9 @@ function preloadNextImage() {
         if (!userText) { alert('请填写你的舌象判断。'); return; }
         const tj = currentCase.clues.inspection.tongueJudgment || {};
         const ok = judgeTongueField(userText, tj);
-        const correctText = `舌色${tj.color || '未述'}，舌形${tj.shape || '未述'}，舌苔${tj.coating || '未述'}`;
+        // 正确答案直接用病例对舌象的原始描述，不自行补充「舌形正常」等原病例未提及的内容
+        const correctText = (currentCase.clues.inspection.tongueDesc || '').trim()
+            || `舌色${tj.color || '未述'}，舌苔${tj.coating || '未述'}`;
         const html = `<strong>舌象判断</strong><br>${ok ? '✅' : '❌'} 你的描述：${userText}<br><span style="color:var(--text-muted);font-size:0.9em;">正确答案：${correctText}</span>`;
         addClue('inspection', html, '望诊·舌象');
         exploredDiags.inspection = true;
@@ -867,7 +869,7 @@ function preloadNextImage() {
 
     /* ===================== 提交辨证 ===================== */
     function submitAnswer() {
-        if (!gameStarted || !currentCase) { alert('请先选择难度。'); return; }
+        if (!gameStarted || !currentCase) { alert('请先选择关卡。'); return; }
         const syndrome = document.getElementById('inputSyndrome').value.trim();
         const disease = document.getElementById('inputDisease').value.trim();
         const basis = document.getElementById('inputBasis').value.trim();
@@ -986,10 +988,19 @@ function preloadNextImage() {
     function renderBankFilters() {
         const bar = document.getElementById('bankFilterBar');
         if (!bar) return;
-        // 分类按钮组：全部 + 有病例的一级分类
-        const catHtml = ['all', ...getActiveCategories()].map(key =>
-            `<button class="bank-chip${bankCategory === key ? ' active' : ''}" onclick="selectBankCategory('${key}')">${key === 'all' ? '全部' : categoryMap[key].name}</button>`
-        ).join('');
+        const cases = getAllCases();
+        // 分类按钮组：全部 + 全部一级分类（含暂无病例的分类，标注「暂无」）
+        const catCount = {};
+        for (const c of cases) catCount[c.category] = (catCount[c.category] || 0) + 1;
+        const catKeys = Object.keys(categoryMap).filter(k => k !== 'all');
+        const catHtml = ['all', ...catKeys].map(key => {
+            if (key === 'all') {
+                return `<button class="bank-chip${bankCategory === 'all' ? ' active' : ''}" onclick="selectBankCategory('all')">全部</button>`;
+            }
+            const hasCase = (catCount[key] || 0) > 0;
+            const mark = hasCase ? '' : '<span style="color:#c9b8a6;font-weight:400;">（暂无）</span>';
+            return `<button class="bank-chip${bankCategory === key ? ' active' : ''}${hasCase ? '' : ' empty'}" onclick="selectBankCategory('${key}')">${categoryMap[key].name}${mark}</button>`;
+        }).join('');
         // 难度按钮组：全部 + 有病例的训练阶段
         const diffHtml = ['all', ...getActiveDifficulties()].map(d =>
             `<button class="bank-chip${bankDiff === d ? ' active' : ''}" onclick="selectBankDiff('${d}')">${d === 'all' ? '全部' : diffMap[d].name}</button>`
@@ -1032,7 +1043,12 @@ function preloadNextImage() {
         html += `<div class="bank-summary">共 ${count} 例（未完成 ${count - doneCount} · 已完成 ${doneCount}）</div>`;
 
         if (filtered.length === 0) {
-            html += '<p style="text-align:center;color:#b5a595;padding:12px 0;">未找到匹配病例</p>';
+            if (bankCategory !== 'all') {
+                const cm = categoryMap[bankCategory];
+                html += `<p style="text-align:center;color:#b5a595;padding:12px 0;">${cm ? cm.emoji + ' ' + cm.name : ''}暂无病例，敬请期待。</p>`;
+            } else {
+                html += '<p style="text-align:center;color:#b5a595;padding:12px 0;">未找到匹配病例</p>';
+            }
             listEl.innerHTML = html;
             return;
         }
@@ -1042,12 +1058,12 @@ function preloadNextImage() {
             const isWrong = wrongIds.includes(c.id);
             const diffMeta = diffMap[c.difficulty] || { name: c.difficulty, emoji: '' };
             const catMeta = categoryMap[c.category] || { name: c.category, emoji: '' };
-            // 主标题：主诉前 30 字，过长省略号；卡片不暴露诊断（病名/证型）
-            const shortComplaint = c.chiefComplaint.length > 30 ? c.chiefComplaint.substring(0, 30) + '…' : c.chiefComplaint;
+            // 主标题：完整主诉（保留换行）；卡片不暴露诊断（病名/证型）
+            const fullComplaint = c.chiefComplaint.replace(/\n/g, '<br>');
             // 右上角标签：分类 + 难度
             const tag = `<span class="case-tag case-tag-cat">${catMeta.emoji} ${catMeta.name}</span> <span class="case-tag">${diffMeta.emoji} ${diffMeta.name}</span>`;
             const header = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
-                <div style="font-weight:700;color:var(--text-light);flex:1;min-width:0;">${shortComplaint}</div>
+                <div style="font-weight:700;color:var(--text-light);flex:1;min-width:0;font-size:0.95em;line-height:1.6;">${fullComplaint}</div>
                 <div style="display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap;">${tag}</div>
             </div>`;
             if (isCompleted && !isWrong) {
