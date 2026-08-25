@@ -126,12 +126,9 @@
         .difficulty-option { display: block; width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-family: var(--font-body); font-size: 0.95em; color: var(--text); transition: background 0.2s; }
         .difficulty-option:hover { background: rgba(139,69,19,0.06); }
         .difficulty-option.selected { background: rgba(139,69,19,0.1); font-weight: 600; }
-        .tongue-judge-form { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 0; }
-        .tongue-judge-form .tj-row { display: flex; gap: 10px; flex-wrap: wrap; }
-        .tongue-judge-form .tj-field { flex: 1; min-width: 110px; }
-        .tongue-judge-form label { display: block; font-size: 0.82em; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-        .tongue-judge-form input { width: 100%; padding: 9px 12px; border-radius: 10px; border: 2px solid var(--border); font-size: 0.92em; background: #fffefb; outline: none; }
-        .tongue-judge-form input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(139,69,19,0.07); }
+        .tongue-judge-form { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; }
+        .tongue-judge-form textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--border); font-size: 0.95em; font-family: var(--font-body); line-height: 1.7; background: #fffefb; outline: none; resize: vertical; box-sizing: border-box; }
+        .tongue-judge-form textarea:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(139,69,19,0.07); }
         .tongue-badge { position: absolute; top: 10px; left: 10px; font-size: 0.72em; font-weight: 700; color: #fff; background: rgba(139,69,19,0.85); padding: 3px 10px; border-radius: 12px; letter-spacing: 0.04em; z-index: 5; }
         .tongue-img-wrap { position: relative; display: inline-block; }
         .wrong-card { padding: 14px; margin: 10px 0; background: #fffefb; border-radius: 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); font-size: 0.9em; line-height: 1.7; }
@@ -192,14 +189,11 @@
         </div>
         <div id="inspectionNonTongue" style="background:#fdfaf5;border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:0.9em;color:var(--text-light);display:none;"></div>
         <div class="card" style="margin-top:8px;padding:14px 16px;">
-            <div style="font-weight:700;color:var(--primary);margin-bottom:8px;">🔍 判断舌象 <span style="color:var(--text-muted);font-weight:400;font-size:0.85em;">（舌色，舌形，舌苔）</span></div>
+            <div style="font-weight:700;color:var(--primary);margin-bottom:8px;">🔍 判断舌象</div>
             <div class="tongue-judge-form">
-                <div class="tj-row">
-                    <div class="tj-field"><label>舌色</label><input type="text" id="tongueColorInput" placeholder="如：淡红"></div>
-                    <div class="tj-field"><label>舌形</label><input type="text" id="tongueShapeInput" placeholder="如：胖大有齿痕"></div>
-                    <div class="tj-field"><label>舌苔</label><input type="text" id="tongueCoatingInput" placeholder="如：黄腻"></div>
-                </div>
-                <button class="btn btn--primary" style="margin-top:6px;width:100%;padding:12px 20px;font-size:1em;animation:none;" onclick="submitTongueJudgment()">提交舌象判断</button>
+                <textarea id="tongueJudgmentInput" rows="3" placeholder="请从舌色、舌形、舌苔等方面综合描述该舌象特征"></textarea>
+                <div style="color:var(--text-muted);font-size:0.82em;margin:2px 2px 0;line-height:1.6;">小提示：可从 <span style="color:var(--text-light);">舌色、舌形、舌苔</span> 等方面观察后进行整体描述。</div>
+                <button class="btn btn--primary" style="margin-top:2px;width:100%;padding:12px 20px;font-size:1em;animation:none;" onclick="submitTongueJudgment()">提交舌象判断</button>
             </div>
         </div>
         <p style="text-align:center;color:var(--text-muted);font-size:0.85em;margin:10px 4px 2px;line-height:1.6;">提交舌象判断后，舌象答案将在「线索收集区」公布并判定对错；未提交则暂不公布舌象答案。</p>
@@ -365,9 +359,9 @@
                 <div class="card" style="padding:16px 20px;">
                     <div style="font-weight:700;color:var(--text-light);text-align:center;">📋 选择难度</div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;" id="difficultyBtns">
-                        <button class="btn btn--difficulty btn--basic" data-diff="basic" onclick="selectDifficulty('basic', this)">🌱 入门训练<br><small>适合刚开始学习辨证的同学</small></button>
-                        <button class="btn btn--difficulty btn--intermediate" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">🌿 综合训练<br><small>适合已掌握基本证候、需综合四诊的同学</small></button>
-                        <button class="btn btn--difficulty btn--advanced" data-diff="advanced" onclick="selectDifficulty('advanced', this)">🌳 临床思维<br><small>适合希望挑战完整真实病例的同学</small></button>
+                        <button class="btn btn--difficulty btn--basic" data-diff="basic" onclick="selectDifficulty('basic', this)">🌱 入门训练</button>
+                        <button class="btn btn--difficulty btn--intermediate" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">🌿 综合训练</button>
+                        <button class="btn btn--difficulty btn--advanced" data-diff="advanced" onclick="selectDifficulty('advanced', this)">🌳 临床思维</button>
                     </div>
                 </div>
                 <div class="card card--highlight" id="chiefComplaintCard" style="display:none;">
@@ -641,9 +635,7 @@
         document.getElementById('inspectionImg').style.display = 'none';
         document.getElementById('inspectionCounter').textContent = '图片加载中...';
         document.getElementById('tongueImageBadge').textContent = tongueImageTypeMap[currentCase.id] || '原始病例图片';
-        document.getElementById('tongueColorInput').value = '';
-        document.getElementById('tongueShapeInput').value = '';
-        document.getElementById('tongueCoatingInput').value = '';
+        document.getElementById('tongueJudgmentInput').value = '';
         const nonTongue = currentCase.clues.inspection.nonTongue || '';
         const nonTongueEl = document.getElementById('inspectionNonTongue');
         if (nonTongue) {
@@ -695,32 +687,31 @@ function preloadNextImage() {
     }
     function submitTongueJudgment() {
         if (!currentCase) return;
-        const color = document.getElementById('tongueColorInput').value.trim();
-        const shape = document.getElementById('tongueShapeInput').value.trim();
-        const coating = document.getElementById('tongueCoatingInput').value.trim();
-        if (!color && !shape && !coating) { alert('请至少填写一项舌象判断。'); return; }
+        const userText = document.getElementById('tongueJudgmentInput').value.trim();
+        if (!userText) { alert('请填写你的舌象判断。'); return; }
         const tj = currentCase.clues.inspection.tongueJudgment || {};
-        const colorOk = judgeTongueField(color, tj.color);
-        const shapeOk = judgeTongueField(shape, tj.shape);
-        const coatingOk = judgeTongueField(coating, tj.coating);
-        const mark = ok => ok ? '✅' : '❌';
+        const ok = judgeTongueField(userText, tj);
         const correctText = `舌色${tj.color || '未述'}，舌形${tj.shape || '未述'}，舌苔${tj.coating || '未述'}`;
-        const html = `<strong>舌象判断</strong><br>舌色${mark(colorOk)} 舌形${mark(shapeOk)} 舌苔${mark(coatingOk)}<br><span style="color:var(--text-muted);font-size:0.9em;">正确答案：${correctText}</span>`;
+        const html = `<strong>舌象判断</strong><br>${ok ? '✅' : '❌'} 你的描述：${userText}<br><span style="color:var(--text-muted);font-size:0.9em;">正确答案：${correctText}</span>`;
         addClue('inspection', html, '望诊·舌象');
         exploredDiags.inspection = true;
         markExplored('inspection');
         closeInspectionModal();
     }
-    function judgeTongueField(userVal, correctVal) {
-        if (!userVal || !correctVal) return false;
-        const u = userVal.trim();
-        const c = correctVal.trim();
-        if (c === '正常') {
-            return /正常|无异常|无明显异常|未见异常|无特殊/.test(u);
-        }
+    function judgeTongueField(userText, tj) {
+        if (!userText || !tj) return false;
+        const u = userText.replace(/\s+/g, '');
+        const colorOk = /正常|无异常|无明显异常|未见异常|无特殊/.test(tj.color || '') ? /正常|无异常|无明显异常|未见异常|无特殊/.test(u) : matchTerm(u, tj.color);
+        const shapeOk = /正常|无异常|无明显异常|未见异常|无特殊/.test(tj.shape || '') ? /正常|无异常|无明显异常|未见异常|无特殊/.test(u) : matchTerm(u, tj.shape);
+        const coatingOk = /正常|无异常|无明显异常|未见异常|无特殊/.test(tj.coating || '') ? /正常|无异常|无明显异常|未见异常|无特殊/.test(u) : matchTerm(u, tj.coating);
+        return (colorOk || shapeOk || coatingOk) && (colorOk + shapeOk + coatingOk >= 2);
+    }
+    function matchTerm(u, correctVal) {
+        if (!correctVal) return false;
         const strip = s => s.replace(/^舌(质|体|色|形|苔)?/, '').replace(/^苔/, '');
-        const uu = strip(u), cc = strip(c);
-        return uu === cc || uu.includes(cc) || cc.includes(uu);
+        const cc = strip(correctVal);
+        if (!cc) return false;
+        return u.includes(cc) || (cc.length >= 2 && cc.split('').some((_, i) => u.includes(cc.substr(i, 2))));
     }
 
     /* ===================== 提交辨证 ===================== */
