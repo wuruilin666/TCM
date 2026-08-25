@@ -1,5 +1,5 @@
 {
-  "basic": [
+  "cases": [
     {
       "id": "basic-001",
       "title": "咳嗽案（风热犯肺津伤）",
@@ -95,10 +95,11 @@
         ]
       },
       "otherCheck": null,
-      "source": ""
-    }
-  ],
-  "intermediate": [
+      "source": "",
+      "category": "pulmonary",
+      "disease": "感冒",
+      "difficulty": "basic"
+    },
     {
       "id": "basic-002",
       "title": "肺痈案（痰热壅肺）",
@@ -204,7 +205,10 @@
         ]
       },
       "otherCheck": null,
-      "source": ""
+      "source": "",
+      "category": "pulmonary",
+      "disease": "肺痈",
+      "difficulty": "intermediate"
     },
     {
       "id": "basic-003",
@@ -309,7 +313,10 @@
         ]
       },
       "otherCheck": null,
-      "source": ""
+      "source": "",
+      "category": "pulmonary",
+      "disease": "哮病",
+      "difficulty": "intermediate"
     },
     {
       "id": "basic-004",
@@ -407,7 +414,10 @@
         ]
       },
       "otherCheck": null,
-      "source": "《名医医案评选》"
+      "source": "《名医医案评选》",
+      "category": "pulmonary",
+      "disease": "感冒",
+      "difficulty": "intermediate"
     },
     {
       "id": "inter-002",
@@ -533,217 +543,11 @@
         ]
       },
       "otherCheck": null,
-      "source": ""
+      "source": "",
+      "category": "spleen_stomach",
+      "disease": "胃痛",
+      "difficulty": "intermediate"
     },
-    {
-      "id": "inter-005",
-      "title": "绝经前后诸症案（肾精亏虚证）",
-      "chiefComplaint": "周某，女性，43岁。初诊时间：2022年4月27日。\n\n月经稀发伴烘热汗出2年，加重1周。",
-      "history": "末次月经时间：2022年2月21日，量少、色暗、无血块。",
-      "clues": {
-        "inspection": {
-          "displayTitle": "舌象观察",
-          "displayContent": "舌淡略黯，苔薄白。",
-          "tongueDesc": "舌淡略黯，苔薄白。",
-          "textSummary": "舌淡略黯，苔薄白",
-          "tongueJudgment": {
-            "color": "淡黯",
-            "shape": "正常",
-            "coating": "薄白"
-          },
-          "nonTongue": ""
-        },
-        "auscultation": {
-          "displayTitle": "闻诊结果",
-          "displayContent": "未闻异常声音及气味。",
-          "textSummary": "未闻异常声音及气味"
-        },
-        "inquiry": {
-          "questions": [
-            {
-              "q": "烘热汗出",
-              "a": "烘热汗出，阴道干涩、痒，性欲降低。",
-              "keywords": [
-                "烘热",
-                "汗出",
-                "阴道",
-                "干涩",
-                "性欲"
-              ]
-            },
-            {
-              "q": "下肢冷",
-              "a": "下肢冷，口淡、口苦。",
-              "keywords": [
-                "下肢冷",
-                "口淡",
-                "口苦"
-              ]
-            },
-            {
-              "q": "失眠",
-              "a": "失眠。",
-              "keywords": [
-                "失眠",
-                "睡眠"
-              ]
-            },
-            {
-              "q": "二便",
-              "a": "二便正常。",
-              "keywords": [
-                "二便",
-                "大便",
-                "小便"
-              ]
-            }
-          ]
-        },
-        "pulse": {
-          "displayTitle": "切脉结果",
-          "displayContent": "脉细。",
-          "textSummary": "脉细"
-        }
-      },
-      "correctAnswer": {
-        "disease": "绝经前后诸症",
-        "syndrome": "肾精亏虚证",
-        "westernDiagnosis": "绝经综合征"
-      },
-      "fullAnalysis": {
-        "disease": "绝经前后诸症",
-        "syndrome": "肾精亏虚证",
-        "westernDiagnosis": "绝经综合征",
-        "pathogenesis": "肾精亏虚，肾气不足，封藏失职，冲任不固，故月经稀发量少；肾阴不足，虚火上亢则烘热汗出；精亏阴虚失润则阴道干涩、痒，性欲降低；肾阳温煦乏权则下肢冷、口淡；肾阴亏虚不能涵养心阴则失眠；舌淡略黯、脉细为肾精亏虚之征。",
-        "prescription": "二仙汤合知柏地黄丸加减。",
-        "knowledgePoints": [
-          "绝经前后诸症以肾精亏虚为本，治以补肾益精、滋阴敛汗。",
-          "二仙汤合知柏地黄丸用于肾阴阳两虚、阴虚火旺之证。"
-        ]
-      },
-      "otherCheck": null,
-      "source": "中国中医药临床案例成果库"
-    },
-    {
-      "id": "adv-003",
-      "title": "胸痹案（阳虚血瘀）",
-      "chiefComplaint": "穆某，女，61岁。初诊时间：2018年3月13日。\n\n发作性胸闷、气短2周。",
-      "history": "既往史未详述，2周前无明显诱因起病，曾于外院就诊。",
-      "clues": {
-        "inspection": {
-          "displayTitle": "舌象观察",
-          "displayContent": "舌象特征：舌紫暗，苔少。",
-          "tongueDesc": "舌紫暗，苔少。",
-          "textSummary": "舌紫暗，苔少",
-          "tongueJudgment": {
-            "color": "紫暗",
-            "shape": "正常",
-            "coating": "少"
-          },
-          "nonTongue": ""
-        },
-        "auscultation": {
-          "displayTitle": "闻诊结果",
-          "displayContent": "语声尚平，未闻异常气味。",
-          "textSummary": "语声尚平，未闻异常气味"
-        },
-        "inquiry": {
-          "questions": [
-            {
-              "q": "胸闷气短",
-              "a": "发作性胸闷、气短，间断发作，每次持续约5分钟，可自行缓解。",
-              "keywords": [
-                "胸闷",
-                "气短",
-                "闷",
-                "发作",
-                "缓解"
-              ]
-            },
-            {
-              "q": "头晕及伴随",
-              "a": "伴头晕；无心慌、胸痛及放射痛，无黑矇、视物旋转，无恶心、呕吐、反酸、烧心。",
-              "keywords": [
-                "头晕",
-                "心慌",
-                "胸痛",
-                "放射",
-                "黑矇",
-                "恶心",
-                "反酸",
-                "烧心",
-                "视物"
-              ]
-            },
-            {
-              "q": "畏寒肢凉",
-              "a": "畏寒，四肢凉。",
-              "keywords": [
-                "畏寒",
-                "怕冷",
-                "四肢",
-                "凉",
-                "肢冷",
-                "肢凉"
-              ]
-            },
-            {
-              "q": "一般状况",
-              "a": "食纳可，夜休可，二便调。",
-              "keywords": [
-                "食纳",
-                "食欲",
-                "夜休",
-                "睡眠",
-                "二便",
-                "大便",
-                "小便"
-              ]
-            },
-            {
-              "q": "诊治检查",
-              "a": "外院心电图：窦性心律，心率76次/分，ST-T异常改变；曾服心宝丸、阿司匹林、阿托伐他汀钙片、麝香保心丸，缓解不明显。",
-              "keywords": [
-                "心电图",
-                "心率",
-                "ST-T",
-                "心宝丸",
-                "阿司匹林",
-                "他汀",
-                "治疗",
-                "缓解",
-                "检查"
-              ]
-            }
-          ]
-        },
-        "pulse": {
-          "displayTitle": "切脉结果",
-          "displayContent": "脉涩。",
-          "textSummary": "脉涩"
-        }
-      },
-      "correctAnswer": {
-        "disease": "胸痹",
-        "syndrome": "阳虚血瘀",
-        "westernDiagnosis": "冠心病，不稳定型心绞痛，心功能Ⅰ级"
-      },
-      "fullAnalysis": {
-        "disease": "胸痹",
-        "syndrome": "阳虚血瘀",
-        "westernDiagnosis": "冠心病，不稳定型心绞痛，心功能Ⅰ级",
-        "pathogenesis": "阳气虚衰，鼓动无力，血行瘀滞，心脉痹阻，故胸闷、气短、脉涩；阳虚失温则畏寒、四肢凉；舌紫暗苔少为阳虚血瘀之象。",
-        "prescription": "瓜蒌15g 薤白12g 赤芍9g 香附9g 川芎12g 桃仁12g 红花12g 丹参9g 黄芪20g 炙甘草6g 桂枝10g。",
-        "knowledgePoints": [
-          "胸痹以胸闷、胸痛为主要表现，相当于冠心病心绞痛。",
-          "阳虚血瘀证：胸闷气短、畏寒肢冷、舌紫暗、脉涩。"
-        ]
-      },
-      "otherCheck": "心电图示：窦性心律，心率76次/分，ST-T异常改变。",
-      "source": "《中医望诊与舌诊彩色图解》"
-    }
-  ],
-  "advanced": [
     {
       "id": "inter-003",
       "title": "痫病案（肝郁脾虚痰盛）",
@@ -860,7 +664,10 @@
         ]
       },
       "otherCheck": "脑电图未见明显异常。\n头部MRI平扫未见明显异常。",
-      "source": "《中医临床带教经典医案》赵建军案"
+      "source": "《中医临床带教经典医案》赵建军案",
+      "category": "heart",
+      "disease": "痫病",
+      "difficulty": "intermediate"
     },
     {
       "id": "inter-004",
@@ -961,7 +768,102 @@
         ]
       },
       "otherCheck": null,
-      "source": "中国中医药临床案例成果库"
+      "source": "中国中医药临床案例成果库",
+      "category": "spleen_stomach",
+      "disease": "嗳气",
+      "difficulty": "advanced"
+    },
+    {
+      "id": "inter-005",
+      "title": "绝经前后诸症案（肾精亏虚证）",
+      "chiefComplaint": "周某，女性，43岁。初诊时间：2022年4月27日。\n\n月经稀发伴烘热汗出2年，加重1周。",
+      "history": "末次月经时间：2022年2月21日，量少、色暗、无血块。",
+      "clues": {
+        "inspection": {
+          "displayTitle": "舌象观察",
+          "displayContent": "舌淡略黯，苔薄白。",
+          "tongueDesc": "舌淡略黯，苔薄白。",
+          "textSummary": "舌淡略黯，苔薄白",
+          "tongueJudgment": {
+            "color": "淡黯",
+            "shape": "正常",
+            "coating": "薄白"
+          },
+          "nonTongue": ""
+        },
+        "auscultation": {
+          "displayTitle": "闻诊结果",
+          "displayContent": "未闻异常声音及气味。",
+          "textSummary": "未闻异常声音及气味"
+        },
+        "inquiry": {
+          "questions": [
+            {
+              "q": "烘热汗出",
+              "a": "烘热汗出，阴道干涩、痒，性欲降低。",
+              "keywords": [
+                "烘热",
+                "汗出",
+                "阴道",
+                "干涩",
+                "性欲"
+              ]
+            },
+            {
+              "q": "下肢冷",
+              "a": "下肢冷，口淡、口苦。",
+              "keywords": [
+                "下肢冷",
+                "口淡",
+                "口苦"
+              ]
+            },
+            {
+              "q": "失眠",
+              "a": "失眠。",
+              "keywords": [
+                "失眠",
+                "睡眠"
+              ]
+            },
+            {
+              "q": "二便",
+              "a": "二便正常。",
+              "keywords": [
+                "二便",
+                "大便",
+                "小便"
+              ]
+            }
+          ]
+        },
+        "pulse": {
+          "displayTitle": "切脉结果",
+          "displayContent": "脉细。",
+          "textSummary": "脉细"
+        }
+      },
+      "correctAnswer": {
+        "disease": "绝经前后诸症",
+        "syndrome": "肾精亏虚证",
+        "westernDiagnosis": "绝经综合征"
+      },
+      "fullAnalysis": {
+        "disease": "绝经前后诸症",
+        "syndrome": "肾精亏虚证",
+        "westernDiagnosis": "绝经综合征",
+        "pathogenesis": "肾精亏虚，肾气不足，封藏失职，冲任不固，故月经稀发量少；肾阴不足，虚火上亢则烘热汗出；精亏阴虚失润则阴道干涩、痒，性欲降低；肾阳温煦乏权则下肢冷、口淡；肾阴亏虚不能涵养心阴则失眠；舌淡略黯、脉细为肾精亏虚之征。",
+        "prescription": "二仙汤合知柏地黄丸加减。",
+        "knowledgePoints": [
+          "绝经前后诸症以肾精亏虚为本，治以补肾益精、滋阴敛汗。",
+          "二仙汤合知柏地黄丸用于肾阴阳两虚、阴虚火旺之证。"
+        ]
+      },
+      "otherCheck": null,
+      "source": "中国中医药临床案例成果库",
+      "category": "gynecology",
+      "disease": "绝经前后诸证",
+      "difficulty": "advanced"
     },
     {
       "id": "inter-006",
@@ -1083,7 +985,10 @@
         "tongue/inter-006.jpg",
         "tongue/inter-0061.jpg"
       ],
-      "source": "中国中医药临床案例成果库"
+      "source": "中国中医药临床案例成果库",
+      "category": "surgery_dermatology",
+      "disease": "湿疮",
+      "difficulty": "intermediate"
     },
     {
       "id": "adv-001",
@@ -1197,7 +1102,10 @@
         ]
       },
       "otherCheck": null,
-      "source": "小红书博主天蓝海蓝"
+      "source": "小红书博主天蓝海蓝",
+      "category": "spleen_stomach",
+      "disease": "便秘",
+      "difficulty": "advanced"
     },
     {
       "id": "adv-002",
@@ -1311,7 +1219,131 @@
         ]
       },
       "otherCheck": "心电图示：窦性心律，心率81次/分，II、III、aVF导联弓背样抬高。\n心脏B超示：各心腔大小未见明显异常，左心室收缩功能EF=53%，左心室壁运动欠协调，心包腔未见明显积液。",
-      "source": "《中医望诊与舌诊彩色图解》"
+      "source": "《中医望诊与舌诊彩色图解》",
+      "category": "heart",
+      "disease": "真心痛",
+      "difficulty": "advanced"
+    },
+    {
+      "id": "adv-003",
+      "title": "胸痹案（阳虚血瘀）",
+      "chiefComplaint": "穆某，女，61岁。初诊时间：2018年3月13日。\n\n发作性胸闷、气短2周。",
+      "history": "既往史未详述，2周前无明显诱因起病，曾于外院就诊。",
+      "clues": {
+        "inspection": {
+          "displayTitle": "舌象观察",
+          "displayContent": "舌象特征：舌紫暗，苔少。",
+          "tongueDesc": "舌紫暗，苔少。",
+          "textSummary": "舌紫暗，苔少",
+          "tongueJudgment": {
+            "color": "紫暗",
+            "shape": "正常",
+            "coating": "少"
+          },
+          "nonTongue": ""
+        },
+        "auscultation": {
+          "displayTitle": "闻诊结果",
+          "displayContent": "语声尚平，未闻异常气味。",
+          "textSummary": "语声尚平，未闻异常气味"
+        },
+        "inquiry": {
+          "questions": [
+            {
+              "q": "胸闷气短",
+              "a": "发作性胸闷、气短，间断发作，每次持续约5分钟，可自行缓解。",
+              "keywords": [
+                "胸闷",
+                "气短",
+                "闷",
+                "发作",
+                "缓解"
+              ]
+            },
+            {
+              "q": "头晕及伴随",
+              "a": "伴头晕；无心慌、胸痛及放射痛，无黑矇、视物旋转，无恶心、呕吐、反酸、烧心。",
+              "keywords": [
+                "头晕",
+                "心慌",
+                "胸痛",
+                "放射",
+                "黑矇",
+                "恶心",
+                "反酸",
+                "烧心",
+                "视物"
+              ]
+            },
+            {
+              "q": "畏寒肢凉",
+              "a": "畏寒，四肢凉。",
+              "keywords": [
+                "畏寒",
+                "怕冷",
+                "四肢",
+                "凉",
+                "肢冷",
+                "肢凉"
+              ]
+            },
+            {
+              "q": "一般状况",
+              "a": "食纳可，夜休可，二便调。",
+              "keywords": [
+                "食纳",
+                "食欲",
+                "夜休",
+                "睡眠",
+                "二便",
+                "大便",
+                "小便"
+              ]
+            },
+            {
+              "q": "诊治检查",
+              "a": "外院心电图：窦性心律，心率76次/分，ST-T异常改变；曾服心宝丸、阿司匹林、阿托伐他汀钙片、麝香保心丸，缓解不明显。",
+              "keywords": [
+                "心电图",
+                "心率",
+                "ST-T",
+                "心宝丸",
+                "阿司匹林",
+                "他汀",
+                "治疗",
+                "缓解",
+                "检查"
+              ]
+            }
+          ]
+        },
+        "pulse": {
+          "displayTitle": "切脉结果",
+          "displayContent": "脉涩。",
+          "textSummary": "脉涩"
+        }
+      },
+      "correctAnswer": {
+        "disease": "胸痹",
+        "syndrome": "阳虚血瘀",
+        "westernDiagnosis": "冠心病，不稳定型心绞痛，心功能Ⅰ级"
+      },
+      "fullAnalysis": {
+        "disease": "胸痹",
+        "syndrome": "阳虚血瘀",
+        "westernDiagnosis": "冠心病，不稳定型心绞痛，心功能Ⅰ级",
+        "pathogenesis": "阳气虚衰，鼓动无力，血行瘀滞，心脉痹阻，故胸闷、气短、脉涩；阳虚失温则畏寒、四肢凉；舌紫暗苔少为阳虚血瘀之象。",
+        "prescription": "瓜蒌15g 薤白12g 赤芍9g 香附9g 川芎12g 桃仁12g 红花12g 丹参9g 黄芪20g 炙甘草6g 桂枝10g。",
+        "knowledgePoints": [
+          "胸痹以胸闷、胸痛为主要表现，相当于冠心病心绞痛。",
+          "阳虚血瘀证：胸闷气短、畏寒肢冷、舌紫暗、脉涩。"
+        ]
+      },
+      "otherCheck": "心电图示：窦性心律，心率76次/分，ST-T异常改变。",
+      "source": "《中医望诊与舌诊彩色图解》",
+      "category": "heart",
+      "disease": "胸痹",
+      "difficulty": "advanced"
     },
     {
       "id": "adv-004",
@@ -1420,7 +1452,10 @@
         ]
       },
       "otherCheck": "心电图示：异位心律，快速心房纤颤。",
-      "source": "《中医望诊与舌诊彩色图解》"
+      "source": "《中医望诊与舌诊彩色图解》",
+      "category": "heart",
+      "disease": "心悸",
+      "difficulty": "intermediate"
     },
     {
       "id": "adv-005",
@@ -1512,7 +1547,10 @@
         ]
       },
       "otherCheck": "体格检查：心前区无隆起，心尖搏动正常，触诊未触及震颤，未触及心包摩擦感。听诊心脏相对浊音界正常，心率80次/分，心律不齐，心尖区未闻及心包摩擦感等。触诊可及四末冷。\n\n辅助检查：24h动态心电图（6月21日瑞金医院）：平均心率80 bpm，室早2 975个，最多室早1 256次，发生于8：00，室性二联律97阵，室性三联律4阵；未见长R-R间期；ST-T未见明显异常。查血无殊，查24 h心电图（6月28日）：平均心率72 bpm，最快心率111 bpm，见于5：51，为窦性心动过速；最慢心率52 bpm，见于23：45，为窦性心动过缓；最长R-R间期1.188 s，见于2：13：15，为窦性心动过缓。房性早搏1次（其中单个1次）；间歇性T波低平。",
-      "source": "中国中医药临床案例成果库"
+      "source": "中国中医药临床案例成果库",
+      "category": "heart",
+      "disease": "心悸",
+      "difficulty": "advanced"
     },
     {
       "id": "adv-006",
@@ -1598,7 +1636,10 @@
         ]
       },
       "otherCheck": null,
-      "source": "PubMed官网"
+      "source": "PubMed官网",
+      "category": "surgery_dermatology",
+      "disease": "黑毛舌",
+      "difficulty": "advanced"
     }
   ]
 }
