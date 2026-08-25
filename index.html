@@ -105,6 +105,20 @@
         .top-nav .nav-link.nav-active { color: var(--accent); font-weight: 700; background: rgba(192,57,43,0.06); border-color: rgba(192,57,43,0.2); }
         .case-full { font-size: 0.92em; line-height: 1.7; color: var(--text-light); }
         .case-full strong { color: var(--primary); }
+        .bank-block { margin: 6px 0 10px; }
+        .bank-label { font-weight: 700; color: var(--primary); font-size: 0.82em; margin-bottom: 6px; }
+        .bank-nav-wrap, .bank-chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+        .bank-nav { border: 2px solid var(--border); background: #fffefb; color: var(--text-light); border-radius: 20px; padding: 6px 12px; font-size: 0.85em; cursor: pointer; font-family: var(--font-body); transition: var(--transition); }
+        .bank-nav:hover { border-color: var(--primary-light); color: var(--primary); }
+        .bank-nav.active { background: rgba(139,69,19,0.12); border-color: var(--primary); color: var(--primary); font-weight: 700; }
+        .bank-chip { border: 1px solid var(--border); background: #fffefb; color: var(--text-muted); border-radius: 14px; padding: 4px 10px; font-size: 0.8em; cursor: pointer; font-family: var(--font-body); transition: var(--transition); }
+        .bank-chip:hover { border-color: var(--primary-light); color: var(--primary); }
+        .bank-chip.active { background: rgba(139,69,19,0.1); border-color: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .bank-summary { font-size: 0.85em; color: var(--text-muted); margin: 4px 0 8px; }
+        .case-tag { display: inline-block; background: rgba(139,69,19,0.08); color: var(--primary); padding: 1px 8px; border-radius: 10px; font-size: 0.8em; font-weight: 600; margin-right: 4px; }
+        .case-tag-cat { background: rgba(184,134,11,0.1); color: var(--gold); }
+        .btn--sm { padding: 6px 12px; font-size: 0.85em; }
+        .case-bank-item .btn--sm { animation: none; }
         .submission-form { display: flex; flex-direction: column; gap: 12px; }
         .submission-form label { font-weight: 600; color: var(--text-light); font-size: 0.9em; }
         .submission-form input[type="text"], .submission-form textarea { width: 100%; padding: 10px 14px; border-radius: 10px; border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none; transition: var(--transition); font-family: var(--font-body); }
@@ -308,6 +322,32 @@
         'basic-001': '参考图', 'basic-002': '参考图', 'basic-003': '参考图', 'basic-004': '参考图',
         'inter-002': '参考图', 'inter-003': '参考图', 'adv-001': '参考图'
     };
+    // 一级分类映射：代码 -> {名称, emoji}
+    const categoryMap = {
+        'all': { name: '全部病例', emoji: '📂' },
+        'pulmonary': { name: '肺系病证', emoji: '🌬' },
+        'heart': { name: '心系病证', emoji: '❤' },
+        'spleen_stomach': { name: '脾胃系病证', emoji: '🥣' },
+        'liver_gallbladder': { name: '肝胆系病证', emoji: '🫁' },
+        'kidney': { name: '肾系病证', emoji: '💧' },
+        'qi_blood_fluid': { name: '气血津液病证', emoji: '🌡' },
+        'limb_meridian': { name: '肢体经络病证', emoji: '🦴' },
+        'gynecology': { name: '妇科病证', emoji: '👩' },
+        'pediatrics': { name: '儿科病证', emoji: '👶' },
+        'surgery_dermatology': { name: '外科/皮肤科病证', emoji: '🧴' },
+        'ent': { name: '五官病证', emoji: '👁' }
+    };
+    // 训练阶段映射：代码 -> {名称, emoji}
+    const diffMap = {
+        'basic': { name: '入门训练', emoji: '🌱' },
+        'intermediate': { name: '综合训练', emoji: '🌿' },
+        'advanced': { name: '临床思维', emoji: '🌳' }
+    };
+    const diffOrder = ['basic', 'intermediate', 'advanced'];
+    // 题库筛选状态
+    let bankCategory = 'all';
+    let bankDisease = 'all';
+    let bankDiff = 'all';
     const genericAnswers = ["这个没什么特别的。","还好，没太注意。","有时有，有时没有。","和之前差不多。","好像没什么影响。","没感觉到什么异常。","就这样，老样子。","记不太清了。"];
     let currentDifficulty = null;
     let currentCase = null;
@@ -495,7 +535,7 @@
         document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
         btnEl.classList.add('selected');
         currentDifficulty = diff;
-        const pool = casesDB[diff];
+        const pool = getAllCases().filter(c => c.difficulty === diff);
         if (!pool || pool.length === 0) { alert('该难度暂无病例。'); return; }
         const completed = getCompletedCases();
         unfinishedCases = pool.filter(c => !completed.includes(c.id));
@@ -798,43 +838,139 @@ function preloadNextImage() {
     function closeSimpleResultModal() { document.getElementById('simpleResultModal').style.display = 'none'; }
 
     /* ===================== 病例题库 ===================== */
+    function getAllCases() { return (casesDB && casesDB.cases) ? casesDB.cases : []; }
+
     function openCaseBank() {
+        bankCategory = 'all'; bankDisease = 'all'; bankDiff = 'all';
         document.getElementById('caseBankContent').innerHTML = `
             <div style="margin-bottom:12px;">
-                <input type="text" id="caseSearchInput" placeholder="搜索证型、病名、主诉等" oninput="filterCaseBank(this.value)" style="width:100%;padding:10px 14px;border-radius:24px;border:2px solid var(--border);font-size:0.95em;background:#fffefb;outline:none;">
+                <input type="text" id="caseSearchInput" placeholder="搜索证型、病名、主诉等" oninput="filterCaseBank()" style="width:100%;padding:10px 14px;border-radius:24px;border:2px solid var(--border);font-size:0.95em;background:#fffefb;outline:none;">
             </div>
+            <div id="bankFilterBar"></div>
             <div id="caseBankList"></div>
         `;
-        filterCaseBank('');
+        renderBankFilters();
+        filterCaseBank();
         document.getElementById('caseBankModal').style.display = 'flex';
     }
-    function filterCaseBank(keyword) {
-        const listEl = document.getElementById('caseBankList');
-        const completedIds = getCompletedCases();
-        let html = '';
-        const labels = { basic: '🌱 入门训练', intermediate: '🌿 综合训练', advanced: '🌳 临床思维' };
-        for (const [diff, cases] of Object.entries(casesDB)) {
-            cases.forEach((c, index) => {
-                const caseNumber = index + 1;
-                const searchText = (c.title + ' ' + c.chiefComplaint + ' ' + c.correctAnswer.disease + ' ' + c.correctAnswer.syndrome + ' ' + c.correctAnswer.westernDiagnosis).toLowerCase();
-                if (keyword && !searchText.includes(keyword.toLowerCase())) return;
-                const isCompleted = completedIds.includes(c.id);
-                const caseLabel = `${labels[diff]} 病例${caseNumber}`;
-                if (isCompleted) {
-                    html += `<div style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:10px;border:2px solid var(--gold-light);font-size:0.9em;line-height:1.7;">
-                        <div style="font-weight:700;color:var(--accent);margin-bottom:6px;">✅ ${caseLabel}：${c.title}</div>
-                        <div class="case-full">${renderFullCase(c)}</div>
-                    </div>`;
-                } else {
-                    html += `<div style="padding:10px;margin:6px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;">
-                        <strong>${caseLabel}</strong><br>主诉：${c.chiefComplaint.replace(/\n/g, '<br>')}
-                        <br><span style="color:var(--text-muted);">❓ 完成病例后可查看完整医案</span>
-                    </div>`;
-                }
-            });
+
+    // 渲染一级分类 + 二级病症 + 训练阶段筛选栏
+    function renderBankFilters() {
+        const bar = document.getElementById('bankFilterBar');
+        if (!bar) return;
+        // 一级分类导航（主导航）
+        const cats = Object.keys(categoryMap);
+        const catHtml = cats.map(key => {
+            const meta = categoryMap[key];
+            return `<button class="bank-nav${bankCategory === key ? ' active' : ''}" onclick="selectBankCategory('${key}')">${meta.emoji} ${meta.name}</button>`;
+        }).join('');
+        // 二级病症（根据当前一级分类动态生成；"全部"则列出所有病证）
+        const diseases = getBankDiseases();
+        const disHtml = ['all', ...diseases].map(d =>
+            `<button class="bank-chip${bankDisease === d ? ' active' : ''}" onclick="selectBankDisease('${d.replace(/'/g, "\\'")}')">${d === 'all' ? '全部病证' : d}</button>`
+        ).join('');
+        // 训练阶段筛选
+        const diffHtml = ['all', ...diffOrder].map(d =>
+            `<button class="bank-chip${bankDiff === d ? ' active' : ''}" onclick="selectBankDiff('${d}')">${d === 'all' ? '全部阶段' : diffMap[d].emoji + ' ' + diffMap[d].name}</button>`
+        ).join('');
+        bar.innerHTML = `
+            <div class="bank-block"><div class="bank-label">一级分类</div><div class="bank-nav-wrap">${catHtml}</div></div>
+            <div class="bank-block"><div class="bank-label">具体病证</div><div class="bank-chip-wrap">${disHtml}</div></div>
+            <div class="bank-block"><div class="bank-label">训练阶段</div><div class="bank-chip-wrap">${diffHtml}</div></div>
+        `;
+    }
+
+    // 获取当前一级分类下的二级病症（按展示顺序去重）
+    function getBankDiseases() {
+        const cases = getAllCases();
+        const list = [];
+        for (const c of cases) {
+            if (bankCategory !== 'all' && c.category !== bankCategory) continue;
+            if (!list.includes(c.disease)) list.push(c.disease);
         }
-        if (!html) html = '<p style="text-align:center;color:#b5a595;">未找到匹配病例</p>';
+        return list;
+    }
+
+    function selectBankCategory(key) { bankCategory = key; bankDisease = 'all'; renderBankFilters(); filterCaseBank(); }
+    function selectBankDisease(d) { bankDisease = d; renderBankFilters(); filterCaseBank(); }
+    function selectBankDiff(d) { bankDiff = d; renderBankFilters(); filterCaseBank(); }
+
+    function filterCaseBank() {
+        const listEl = document.getElementById('caseBankList');
+        if (!listEl) return;
+        const keyword = (document.getElementById('caseSearchInput')?.value || '').trim().toLowerCase();
+        const completedIds = getCompletedCases();
+        const cases = getAllCases();
+
+        const filtered = cases.filter(c => {
+            if (bankCategory !== 'all' && c.category !== bankCategory) return false;
+            if (bankDisease !== 'all' && c.disease !== bankDisease) return false;
+            if (bankDiff !== 'all' && c.difficulty !== bankDiff) return false;
+            if (keyword) {
+                const searchText = (c.title + ' ' + c.chiefComplaint + ' ' + c.correctAnswer.disease + ' ' + c.correctAnswer.syndrome + ' ' + c.correctAnswer.westernDiagnosis + ' ' + c.disease).toLowerCase();
+                if (!searchText.includes(keyword)) return false;
+            }
+            return true;
+        });
+
+        // 排序：未完成在前，已完成在后；同状态按原始顺序
+        filtered.sort((a, b) => {
+            const ca = completedIds.includes(a.id) ? 1 : 0;
+            const cb = completedIds.includes(b.id) ? 1 : 0;
+            if (ca !== cb) return ca - cb;
+            return 0; // 保持原顺序（Array.sort 稳定）
+        });
+
+        let html = '';
+        const count = filtered.length;
+        const doneCount = filtered.filter(c => completedIds.includes(c.id)).length;
+        html += `<div class="bank-summary">共 ${count} 例（未完成 ${count - doneCount} · 已完成 ${doneCount}）</div>`;
+
+        if (filtered.length === 0) {
+            html += '<p style="text-align:center;color:#b5a595;padding:12px 0;">未找到匹配病例</p>';
+            listEl.innerHTML = html;
+            return;
+        }
+
+        filtered.forEach((c, i) => {
+            const isCompleted = completedIds.includes(c.id);
+            const diffMeta = diffMap[c.difficulty] || { name: c.difficulty, emoji: '' };
+            const catMeta = categoryMap[c.category] || { name: c.category, emoji: '' };
+            const tag = `<span class="case-tag">${diffMeta.emoji} ${diffMeta.name}</span> <span class="case-tag case-tag-cat">${catMeta.emoji} ${catMeta.name}</span>`;
+            if (isCompleted) {
+                html += `<div class="case-bank-item done" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:10px;border:2px solid var(--gold-light);font-size:0.9em;line-height:1.7;">
+                    <div style="font-weight:700;color:var(--accent);margin-bottom:6px;">✅ ${tag}：${c.title}</div>
+                    <div class="case-full">${renderFullCase(c)}</div>
+                </div>`;
+            } else {
+                html += `<div class="case-bank-item todo" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;line-height:1.7;">
+                    <div style="font-weight:700;color:var(--text-light);margin-bottom:4px;">${tag}：${c.title}</div>
+                    <div><strong>主诉：</strong>${c.chiefComplaint.replace(/\n/g, '<br>')}</div>
+                    <div style="margin-top:8px;">
+                        <button class="btn btn--primary btn--sm" onclick="challengeCaseFromBank('${c.id}')">⚔️ 挑战病例</button>
+                        <span style="color:var(--text-muted);font-size:0.85em;margin-left:8px;">❓ 完成挑战后可查看完整医案</span>
+                    </div>
+                </div>`;
+            }
+        });
         listEl.innerHTML = html;
+    }
+
+    // 从题库点击"挑战病例"：跳转到闯关页并练习该病例
+    function challengeCaseFromBank(caseId) {
+        const c = findCaseById(caseId);
+        if (!c) { alert('病例不存在。'); return; }
+        closeCaseBank();
+        showPage('Game');
+        resetGameUI();
+        currentDifficulty = c.difficulty;
+        document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.toggle('selected', b.dataset.diff === c.difficulty));
+        const completed = getCompletedCases();
+        unfinishedCases = getAllCases().filter(x => x.difficulty === c.difficulty && !completed.includes(x.id));
+        if (!unfinishedCases.some(x => x.id === caseId)) unfinishedCases.push(c);
+        currentCaseIndex = unfinishedCases.findIndex(x => x.id === caseId);
+        if (currentCaseIndex < 0) currentCaseIndex = 0;
+        showCurrentCase();
     }
     function renderFullCase(c) {
         const fa = c.fullAnalysis; const cl = c.clues;
@@ -887,17 +1023,11 @@ function preloadNextImage() {
     function closeRecords() { document.getElementById('recordsModal').style.display = 'none'; }
     function clearRecords() { if (confirm('清空我的错题？')) { try { localStorage.removeItem('tcm_wrong_cases'); } catch (e) {} closeRecords(); } }
     function findCaseById(caseId) {
-        for (const diff of ['basic', 'intermediate', 'advanced']) {
-            const c = (casesDB[diff] || []).find(x => x.id === caseId);
-            if (c) return c;
-        }
-        return null;
+        return getAllCases().find(x => x.id === caseId) || null;
     }
     function findCaseDifficulty(caseId) {
-        for (const diff of ['basic', 'intermediate', 'advanced']) {
-            if ((casesDB[diff] || []).some(x => x.id === caseId)) return diff;
-        }
-        return null;
+        const c = findCaseById(caseId);
+        return c ? c.difficulty : null;
     }
     function rechallengeCase(caseId) {
         closeRecords();
@@ -907,11 +1037,11 @@ function preloadNextImage() {
         resetGameUI();
         currentDifficulty = diff;
         document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.toggle('selected', b.dataset.diff === diff));
-        const pool = casesDB[diff] || [];
+        const pool = getAllCases().filter(c => c.difficulty === diff);
         const completed = getCompletedCases();
         unfinishedCases = pool.filter(c => !completed.includes(c.id));
         if (!unfinishedCases.some(c => c.id === caseId)) {
-            const c = pool.find(c => c.id === caseId);
+            const c = findCaseById(caseId);
             if (c) unfinishedCases.push(c);
         }
         currentCaseIndex = unfinishedCases.findIndex(c => c.id === caseId);
