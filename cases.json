@@ -101,7 +101,7 @@
       "difficulty": "basic"
     },
     {
-      "id": "basic-002",
+      "id": "inter-001",
       "title": "肺痈案（痰热壅肺）",
       "chiefComplaint": "陈某，男，87岁。就诊日期：2021年5月8日。\n\n持续低热咳嗽二月余。",
       "history": "既往史：2021年4月15日诊断为化脓性阑尾炎，入院进行手术。",
@@ -211,7 +211,7 @@
       "difficulty": "intermediate"
     },
     {
-      "id": "basic-003",
+      "id": "inter-002",
       "title": "哮病案（痰热壅肺）",
       "chiefComplaint": "陈某，女，2岁。就诊日期：2021年8月16日。\n\n咳嗽3周。",
       "clues": {
@@ -319,7 +319,7 @@
       "difficulty": "intermediate"
     },
     {
-      "id": "basic-004",
+      "id": "inter-003",
       "title": "感冒案（暑湿客表，脾胃失和）",
       "chiefComplaint": "郑某，男，26岁，冶金研究院研究生。1998年7月13日初诊。\n\n发热、头痛伴胃肠不舒5天。",
       "clues": {
@@ -420,7 +420,7 @@
       "difficulty": "intermediate"
     },
     {
-      "id": "inter-002",
+      "id": "inter-004",
       "title": "胃脘痛案（肝郁脾虚，湿浊中阻）",
       "chiefComplaint": "赵某，男，45岁。\n\n反复胃脘部胀满疼痛3年，加重1周。",
       "history": "既往史：否认高血压、糖尿病、心脏病等慢性病史，否认药物及食物过敏史。",
@@ -549,7 +549,7 @@
       "difficulty": "intermediate"
     },
     {
-      "id": "inter-003",
+      "id": "inter-005",
       "title": "痫病案（肝郁脾虚痰盛）",
       "chiefComplaint": "周某，男，16岁。就诊日期：2010年7月13日。\n\n发作性意识丧失、四肢抽搐3年，加重2个月。",
       "history": "患者3年前受到惊吓后出现意识突然丧失、仆倒不省人事、两目上视、喉中痰鸣、口吐涎沫、四肢抽搐，醒后如常人，每次持续30秒至1分钟不等，每年发作4~5次，未予系统诊治。",
@@ -668,202 +668,6 @@
       "category": "heart",
       "disease": "痫病",
       "difficulty": "intermediate"
-    },
-    {
-      "id": "inter-004",
-      "title": "顽固性嗳气案（痰气交阻，湿热蕴结）",
-      "chiefComplaint": "苏某，女，54岁。初诊日期：2021年6月23日。\n\n嗳气、上腹胀40年，加重3个月。",
-      "history": "既往史：抑郁症发作3次；糖尿病7～8年；高血压15年。用药史：糖尿病服二甲双胍、格列齐特；高血压服络活喜。过敏史：无特殊。近期体重下降3.5 kg，现72 kg，身高161 cm。",
-      "clues": {
-        "inspection": {
-          "displayTitle": "舌象观察",
-          "displayContent": "面色晦暗，舌暗红，舌中后部苔黄且较厚。",
-          "tongueDesc": "面色晦暗，舌暗红，舌中后部苔黄且较厚。",
-          "textSummary": "面色晦暗，舌暗红，舌中后部苔黄且较厚",
-          "tongueJudgment": {
-            "color": "暗红",
-            "shape": "正常",
-            "coating": "黄厚"
-          },
-          "nonTongue": "面色晦暗"
-        },
-        "auscultation": {
-          "displayTitle": "闻诊结果",
-          "displayContent": "嗳气频频，声音响亮，难以自行控制。",
-          "textSummary": "嗳气频频，声音响亮"
-        },
-        "inquiry": {
-          "questions": [
-            {
-              "q": "饮食习惯",
-              "a": "平素喜食辛辣炙煿、肥甘厚腻之品。",
-              "keywords": [
-                "饮食",
-                "辛辣",
-                "肥甘",
-                "厚腻"
-              ]
-            },
-            {
-              "q": "食欲",
-              "a": "食欲一般。",
-              "keywords": [
-                "食欲",
-                "食纳"
-              ]
-            },
-            {
-              "q": "睡眠",
-              "a": "睡眠差。",
-              "keywords": [
-                "睡眠",
-                "失眠",
-                "寐"
-              ]
-            },
-            {
-              "q": "大便",
-              "a": "大便每日1次，成形，但稍黏马桶。",
-              "keywords": [
-                "大便",
-                "黏",
-                "马桶"
-              ]
-            },
-            {
-              "q": "其他不适",
-              "a": "胸闷、吐白黏痰、咽部异物感，如有物梗喉。无反酸、烧心、呃逆。",
-              "keywords": [
-                "胸闷",
-                "痰",
-                "咽部",
-                "异物感",
-                "反酸",
-                "烧心",
-                "呃逆"
-              ]
-            }
-          ]
-        },
-        "pulse": {
-          "displayTitle": "切脉结果",
-          "displayContent": "脉沉滑。",
-          "textSummary": "脉沉滑"
-        }
-      },
-      "correctAnswer": {
-        "disease": "顽固性嗳气",
-        "syndrome": "痰气交阻、湿热蕴结证",
-        "westernDiagnosis": "功能性消化不良；脂肪肝；慢性糜烂性胃炎；2型糖尿病；高血压；甲状腺结节"
-      },
-      "fullAnalysis": {
-        "disease": "顽固性嗳气",
-        "syndrome": "痰气交阻、湿热蕴结证",
-        "westernDiagnosis": "功能性消化不良；脂肪肝；慢性糜烂性胃炎；2型糖尿病；高血压；甲状腺结节",
-        "pathogenesis": "长期情志不畅，肝气郁结；嗜食辛辣肥甘，脾胃运化失常，痰湿内生，郁久化热，湿热壅滞中焦，脾胃升降失常，胃失和降则嗳气频作；痰气阻滞则胸闷、咽中异物感、吐白黏痰。舌暗红、苔黄厚为湿热痰湿内蕴，脉沉滑为痰湿之象。",
-        "prescription": "旋覆代赭汤加减。",
-        "knowledgePoints": [
-          "顽固性嗳气属痰气交阻、湿热蕴结证，治以理气化痰、清热祛湿、降逆和胃。",
-          "旋覆代赭汤为降逆化痰、益气和胃之方，适用于胃虚痰阻气逆证。"
-        ]
-      },
-      "otherCheck": null,
-      "source": "中国中医药临床案例成果库",
-      "category": "spleen_stomach",
-      "disease": "嗳气",
-      "difficulty": "advanced"
-    },
-    {
-      "id": "inter-005",
-      "title": "绝经前后诸症案（肾精亏虚证）",
-      "chiefComplaint": "周某，女性，43岁。初诊时间：2022年4月27日。\n\n月经稀发伴烘热汗出2年，加重1周。",
-      "history": "末次月经时间：2022年2月21日，量少、色暗、无血块。",
-      "clues": {
-        "inspection": {
-          "displayTitle": "舌象观察",
-          "displayContent": "舌淡略黯，苔薄白。",
-          "tongueDesc": "舌淡略黯，苔薄白。",
-          "textSummary": "舌淡略黯，苔薄白",
-          "tongueJudgment": {
-            "color": "淡黯",
-            "shape": "正常",
-            "coating": "薄白"
-          },
-          "nonTongue": ""
-        },
-        "auscultation": {
-          "displayTitle": "闻诊结果",
-          "displayContent": "未闻异常声音及气味。",
-          "textSummary": "未闻异常声音及气味"
-        },
-        "inquiry": {
-          "questions": [
-            {
-              "q": "烘热汗出",
-              "a": "烘热汗出，阴道干涩、痒，性欲降低。",
-              "keywords": [
-                "烘热",
-                "汗出",
-                "阴道",
-                "干涩",
-                "性欲"
-              ]
-            },
-            {
-              "q": "下肢冷",
-              "a": "下肢冷，口淡、口苦。",
-              "keywords": [
-                "下肢冷",
-                "口淡",
-                "口苦"
-              ]
-            },
-            {
-              "q": "失眠",
-              "a": "失眠。",
-              "keywords": [
-                "失眠",
-                "睡眠"
-              ]
-            },
-            {
-              "q": "二便",
-              "a": "二便正常。",
-              "keywords": [
-                "二便",
-                "大便",
-                "小便"
-              ]
-            }
-          ]
-        },
-        "pulse": {
-          "displayTitle": "切脉结果",
-          "displayContent": "脉细。",
-          "textSummary": "脉细"
-        }
-      },
-      "correctAnswer": {
-        "disease": "绝经前后诸症",
-        "syndrome": "肾精亏虚证",
-        "westernDiagnosis": "绝经综合征"
-      },
-      "fullAnalysis": {
-        "disease": "绝经前后诸症",
-        "syndrome": "肾精亏虚证",
-        "westernDiagnosis": "绝经综合征",
-        "pathogenesis": "肾精亏虚，肾气不足，封藏失职，冲任不固，故月经稀发量少；肾阴不足，虚火上亢则烘热汗出；精亏阴虚失润则阴道干涩、痒，性欲降低；肾阳温煦乏权则下肢冷、口淡；肾阴亏虚不能涵养心阴则失眠；舌淡略黯、脉细为肾精亏虚之征。",
-        "prescription": "二仙汤合知柏地黄丸加减。",
-        "knowledgePoints": [
-          "绝经前后诸症以肾精亏虚为本，治以补肾益精、滋阴敛汗。",
-          "二仙汤合知柏地黄丸用于肾阴阳两虚、阴虚火旺之证。"
-        ]
-      },
-      "otherCheck": null,
-      "source": "中国中医药临床案例成果库",
-      "category": "gynecology",
-      "disease": "绝经前后诸证",
-      "difficulty": "advanced"
     },
     {
       "id": "inter-006",
@@ -988,6 +792,118 @@
       "source": "中国中医药临床案例成果库",
       "category": "surgery_dermatology",
       "disease": "湿疮",
+      "difficulty": "intermediate"
+    },
+    {
+      "id": "inter-007",
+      "title": "心悸案（肝肾阴亏）",
+      "chiefComplaint": "王某，女，71岁。初诊时间：2018年3月2日。\n\n发作性心慌、气短20年，再发加重2天。",
+      "history": "20年前活动后出现心慌、气短，曾多次于当地医院住院对症支持治疗，出院后间断口服复方丹参滴丸（6丸 qd），病情控制较理想。",
+      "clues": {
+        "inspection": {
+          "displayTitle": "舌象观察",
+          "displayContent": "舌象特征：舌红少津，苔少。",
+          "tongueDesc": "舌红少津，苔少。",
+          "textSummary": "舌红少津，苔少",
+          "tongueJudgment": {
+            "color": "红",
+            "shape": "正常",
+            "coating": "少"
+          },
+          "nonTongue": ""
+        },
+        "auscultation": {
+          "displayTitle": "闻诊结果",
+          "displayContent": "语声稍弱，未闻异常气味。",
+          "textSummary": "语声稍弱，未闻异常气味"
+        },
+        "inquiry": {
+          "questions": [
+            {
+              "q": "心慌气短",
+              "a": "活动后发作心慌、气短、乏力，每次持续约20分钟，休息后可缓解；2天前加重。",
+              "keywords": [
+                "心慌",
+                "心悸",
+                "气短",
+                "乏力",
+                "活动",
+                "休息",
+                "缓解"
+              ]
+            },
+            {
+              "q": "伴随症状",
+              "a": "伴头晕、耳鸣、五心烦热、腰膝酸软。",
+              "keywords": [
+                "头晕",
+                "耳鸣",
+                "五心烦热",
+                "腰膝酸软",
+                "心烦"
+              ]
+            },
+            {
+              "q": "睡眠",
+              "a": "夜休差。",
+              "keywords": [
+                "夜休",
+                "睡眠",
+                "失眠",
+                "寐"
+              ]
+            },
+            {
+              "q": "二便",
+              "a": "小便黄，大便干。",
+              "keywords": [
+                "小便",
+                "大便",
+                "干结",
+                "黄"
+              ]
+            },
+            {
+              "q": "检查治疗",
+              "a": "心电图示异位心律、快速心房纤颤；既往长期口服复方丹参滴丸，控制尚可。",
+              "keywords": [
+                "心电图",
+                "房颤",
+                "异位",
+                "纤颤",
+                "丹参滴丸",
+                "治疗",
+                "检查"
+              ]
+            }
+          ]
+        },
+        "pulse": {
+          "displayTitle": "切脉结果",
+          "displayContent": "脉细数。",
+          "textSummary": "脉细数"
+        }
+      },
+      "correctAnswer": {
+        "disease": "心悸",
+        "syndrome": "肝肾阴亏",
+        "westernDiagnosis": "心律失常，快速型房颤"
+      },
+      "fullAnalysis": {
+        "disease": "心悸",
+        "syndrome": "肝肾阴亏",
+        "westernDiagnosis": "心律失常，快速型房颤",
+        "pathogenesis": "肝肾阴虚，虚火内动，扰动心神，故心慌、心悸、脉细数；阴虚阳亢则头晕耳鸣、五心烦热；腰为肾府，肾虚则腰膝酸软；舌红少津苔少为阴虚之象。",
+        "prescription": "当归15g 生地黄12g 沙参12g 麦冬12g 川楝子9g 知母12g 酸枣仁（炒）30g 茯苓9g 炙甘草6g 川芎10g 山茱萸12g。",
+        "knowledgePoints": [
+          "心悸相当于心律失常（如房颤），以自觉心慌不安为主症。",
+          "肝肾阴亏证：心悸、头晕耳鸣、腰膝酸软、五心烦热、舌红少津、脉细数。"
+        ]
+      },
+      "otherCheck": "心电图示：异位心律，快速心房纤颤。",
+      "source": "《中医望诊与舌诊彩色图解》",
+      "category": "heart",
+      "disease": "心悸",
       "difficulty": "intermediate"
     },
     {
@@ -1347,118 +1263,6 @@
     },
     {
       "id": "adv-004",
-      "title": "心悸案（肝肾阴亏）",
-      "chiefComplaint": "王某，女，71岁。初诊时间：2018年3月2日。\n\n发作性心慌、气短20年，再发加重2天。",
-      "history": "20年前活动后出现心慌、气短，曾多次于当地医院住院对症支持治疗，出院后间断口服复方丹参滴丸（6丸 qd），病情控制较理想。",
-      "clues": {
-        "inspection": {
-          "displayTitle": "舌象观察",
-          "displayContent": "舌象特征：舌红少津，苔少。",
-          "tongueDesc": "舌红少津，苔少。",
-          "textSummary": "舌红少津，苔少",
-          "tongueJudgment": {
-            "color": "红",
-            "shape": "正常",
-            "coating": "少"
-          },
-          "nonTongue": ""
-        },
-        "auscultation": {
-          "displayTitle": "闻诊结果",
-          "displayContent": "语声稍弱，未闻异常气味。",
-          "textSummary": "语声稍弱，未闻异常气味"
-        },
-        "inquiry": {
-          "questions": [
-            {
-              "q": "心慌气短",
-              "a": "活动后发作心慌、气短、乏力，每次持续约20分钟，休息后可缓解；2天前加重。",
-              "keywords": [
-                "心慌",
-                "心悸",
-                "气短",
-                "乏力",
-                "活动",
-                "休息",
-                "缓解"
-              ]
-            },
-            {
-              "q": "伴随症状",
-              "a": "伴头晕、耳鸣、五心烦热、腰膝酸软。",
-              "keywords": [
-                "头晕",
-                "耳鸣",
-                "五心烦热",
-                "腰膝酸软",
-                "心烦"
-              ]
-            },
-            {
-              "q": "睡眠",
-              "a": "夜休差。",
-              "keywords": [
-                "夜休",
-                "睡眠",
-                "失眠",
-                "寐"
-              ]
-            },
-            {
-              "q": "二便",
-              "a": "小便黄，大便干。",
-              "keywords": [
-                "小便",
-                "大便",
-                "干结",
-                "黄"
-              ]
-            },
-            {
-              "q": "检查治疗",
-              "a": "心电图示异位心律、快速心房纤颤；既往长期口服复方丹参滴丸，控制尚可。",
-              "keywords": [
-                "心电图",
-                "房颤",
-                "异位",
-                "纤颤",
-                "丹参滴丸",
-                "治疗",
-                "检查"
-              ]
-            }
-          ]
-        },
-        "pulse": {
-          "displayTitle": "切脉结果",
-          "displayContent": "脉细数。",
-          "textSummary": "脉细数"
-        }
-      },
-      "correctAnswer": {
-        "disease": "心悸",
-        "syndrome": "肝肾阴亏",
-        "westernDiagnosis": "心律失常，快速型房颤"
-      },
-      "fullAnalysis": {
-        "disease": "心悸",
-        "syndrome": "肝肾阴亏",
-        "westernDiagnosis": "心律失常，快速型房颤",
-        "pathogenesis": "肝肾阴虚，虚火内动，扰动心神，故心慌、心悸、脉细数；阴虚阳亢则头晕耳鸣、五心烦热；腰为肾府，肾虚则腰膝酸软；舌红少津苔少为阴虚之象。",
-        "prescription": "当归15g 生地黄12g 沙参12g 麦冬12g 川楝子9g 知母12g 酸枣仁（炒）30g 茯苓9g 炙甘草6g 川芎10g 山茱萸12g。",
-        "knowledgePoints": [
-          "心悸相当于心律失常（如房颤），以自觉心慌不安为主症。",
-          "肝肾阴亏证：心悸、头晕耳鸣、腰膝酸软、五心烦热、舌红少津、脉细数。"
-        ]
-      },
-      "otherCheck": "心电图示：异位心律，快速心房纤颤。",
-      "source": "《中医望诊与舌诊彩色图解》",
-      "category": "heart",
-      "disease": "心悸",
-      "difficulty": "intermediate"
-    },
-    {
-      "id": "adv-005",
       "title": "心悸案（心气阴两虚兼肝郁）",
       "chiefComplaint": "李某，女，58岁，上海人，2023年6月28日初诊。\n\n胸闷心慌5月余。",
       "history": "2021年6月外感后心慌，服中药半年平稳后停药，2023年1月底外感后复作心慌，于瑞金医院诊断为“冠状动脉粥样硬化”，予氯吡格雷、瑞舒伐他汀。",
@@ -1553,7 +1357,7 @@
       "difficulty": "advanced"
     },
     {
-      "id": "adv-006",
+      "id": "adv-005",
       "title": "黑毛舌案（脾气虚兼浊湿）",
       "chiefComplaint": "某患者，女，73岁。就诊日期：2021年4月14日。\n\n黑舌持续2周，伴口渴、腹泻。",
       "history": "既往有高血压、心律失常；曾做阑尾切除及子宫肌瘤手术。无吸烟饮酒史。此前因右肾鹿角形结石、黄色肉芽肿性肾盂肾炎、尿源性脓毒症住院，并接受多种抗菌药物治疗；手术后逐渐出现黑舌。",
@@ -1639,6 +1443,202 @@
       "source": "PubMed官网",
       "category": "surgery_dermatology",
       "disease": "黑毛舌",
+      "difficulty": "advanced"
+    },
+    {
+      "id": "adv-006",
+      "title": "顽固性嗳气案（痰气交阻，湿热蕴结）",
+      "chiefComplaint": "苏某，女，54岁。初诊日期：2021年6月23日。\n\n嗳气、上腹胀40年，加重3个月。",
+      "history": "既往史：抑郁症发作3次；糖尿病7～8年；高血压15年。用药史：糖尿病服二甲双胍、格列齐特；高血压服络活喜。过敏史：无特殊。近期体重下降3.5 kg，现72 kg，身高161 cm。",
+      "clues": {
+        "inspection": {
+          "displayTitle": "舌象观察",
+          "displayContent": "面色晦暗，舌暗红，舌中后部苔黄且较厚。",
+          "tongueDesc": "面色晦暗，舌暗红，舌中后部苔黄且较厚。",
+          "textSummary": "面色晦暗，舌暗红，舌中后部苔黄且较厚",
+          "tongueJudgment": {
+            "color": "暗红",
+            "shape": "正常",
+            "coating": "黄厚"
+          },
+          "nonTongue": "面色晦暗"
+        },
+        "auscultation": {
+          "displayTitle": "闻诊结果",
+          "displayContent": "嗳气频频，声音响亮，难以自行控制。",
+          "textSummary": "嗳气频频，声音响亮"
+        },
+        "inquiry": {
+          "questions": [
+            {
+              "q": "饮食习惯",
+              "a": "平素喜食辛辣炙煿、肥甘厚腻之品。",
+              "keywords": [
+                "饮食",
+                "辛辣",
+                "肥甘",
+                "厚腻"
+              ]
+            },
+            {
+              "q": "食欲",
+              "a": "食欲一般。",
+              "keywords": [
+                "食欲",
+                "食纳"
+              ]
+            },
+            {
+              "q": "睡眠",
+              "a": "睡眠差。",
+              "keywords": [
+                "睡眠",
+                "失眠",
+                "寐"
+              ]
+            },
+            {
+              "q": "大便",
+              "a": "大便每日1次，成形，但稍黏马桶。",
+              "keywords": [
+                "大便",
+                "黏",
+                "马桶"
+              ]
+            },
+            {
+              "q": "其他不适",
+              "a": "胸闷、吐白黏痰、咽部异物感，如有物梗喉。无反酸、烧心、呃逆。",
+              "keywords": [
+                "胸闷",
+                "痰",
+                "咽部",
+                "异物感",
+                "反酸",
+                "烧心",
+                "呃逆"
+              ]
+            }
+          ]
+        },
+        "pulse": {
+          "displayTitle": "切脉结果",
+          "displayContent": "脉沉滑。",
+          "textSummary": "脉沉滑"
+        }
+      },
+      "correctAnswer": {
+        "disease": "顽固性嗳气",
+        "syndrome": "痰气交阻、湿热蕴结证",
+        "westernDiagnosis": "功能性消化不良；脂肪肝；慢性糜烂性胃炎；2型糖尿病；高血压；甲状腺结节"
+      },
+      "fullAnalysis": {
+        "disease": "顽固性嗳气",
+        "syndrome": "痰气交阻、湿热蕴结证",
+        "westernDiagnosis": "功能性消化不良；脂肪肝；慢性糜烂性胃炎；2型糖尿病；高血压；甲状腺结节",
+        "pathogenesis": "长期情志不畅，肝气郁结；嗜食辛辣肥甘，脾胃运化失常，痰湿内生，郁久化热，湿热壅滞中焦，脾胃升降失常，胃失和降则嗳气频作；痰气阻滞则胸闷、咽中异物感、吐白黏痰。舌暗红、苔黄厚为湿热痰湿内蕴，脉沉滑为痰湿之象。",
+        "prescription": "旋覆代赭汤加减。",
+        "knowledgePoints": [
+          "顽固性嗳气属痰气交阻、湿热蕴结证，治以理气化痰、清热祛湿、降逆和胃。",
+          "旋覆代赭汤为降逆化痰、益气和胃之方，适用于胃虚痰阻气逆证。"
+        ]
+      },
+      "otherCheck": null,
+      "source": "中国中医药临床案例成果库",
+      "category": "spleen_stomach",
+      "disease": "嗳气",
+      "difficulty": "advanced"
+    },
+    {
+      "id": "adv-007",
+      "title": "绝经前后诸症案（肾精亏虚证）",
+      "chiefComplaint": "周某，女性，43岁。初诊时间：2022年4月27日。\n\n月经稀发伴烘热汗出2年，加重1周。",
+      "history": "末次月经时间：2022年2月21日，量少、色暗、无血块。",
+      "clues": {
+        "inspection": {
+          "displayTitle": "舌象观察",
+          "displayContent": "舌淡略黯，苔薄白。",
+          "tongueDesc": "舌淡略黯，苔薄白。",
+          "textSummary": "舌淡略黯，苔薄白",
+          "tongueJudgment": {
+            "color": "淡黯",
+            "shape": "正常",
+            "coating": "薄白"
+          },
+          "nonTongue": ""
+        },
+        "auscultation": {
+          "displayTitle": "闻诊结果",
+          "displayContent": "未闻异常声音及气味。",
+          "textSummary": "未闻异常声音及气味"
+        },
+        "inquiry": {
+          "questions": [
+            {
+              "q": "烘热汗出",
+              "a": "烘热汗出，阴道干涩、痒，性欲降低。",
+              "keywords": [
+                "烘热",
+                "汗出",
+                "阴道",
+                "干涩",
+                "性欲"
+              ]
+            },
+            {
+              "q": "下肢冷",
+              "a": "下肢冷，口淡、口苦。",
+              "keywords": [
+                "下肢冷",
+                "口淡",
+                "口苦"
+              ]
+            },
+            {
+              "q": "失眠",
+              "a": "失眠。",
+              "keywords": [
+                "失眠",
+                "睡眠"
+              ]
+            },
+            {
+              "q": "二便",
+              "a": "二便正常。",
+              "keywords": [
+                "二便",
+                "大便",
+                "小便"
+              ]
+            }
+          ]
+        },
+        "pulse": {
+          "displayTitle": "切脉结果",
+          "displayContent": "脉细。",
+          "textSummary": "脉细"
+        }
+      },
+      "correctAnswer": {
+        "disease": "绝经前后诸症",
+        "syndrome": "肾精亏虚证",
+        "westernDiagnosis": "绝经综合征"
+      },
+      "fullAnalysis": {
+        "disease": "绝经前后诸症",
+        "syndrome": "肾精亏虚证",
+        "westernDiagnosis": "绝经综合征",
+        "pathogenesis": "肾精亏虚，肾气不足，封藏失职，冲任不固，故月经稀发量少；肾阴不足，虚火上亢则烘热汗出；精亏阴虚失润则阴道干涩、痒，性欲降低；肾阳温煦乏权则下肢冷、口淡；肾阴亏虚不能涵养心阴则失眠；舌淡略黯、脉细为肾精亏虚之征。",
+        "prescription": "二仙汤合知柏地黄丸加减。",
+        "knowledgePoints": [
+          "绝经前后诸症以肾精亏虚为本，治以补肾益精、滋阴敛汗。",
+          "二仙汤合知柏地黄丸用于肾阴阳两虚、阴虚火旺之证。"
+        ]
+      },
+      "otherCheck": null,
+      "source": "中国中医药临床案例成果库",
+      "category": "gynecology",
+      "disease": "绝经前后诸证",
       "difficulty": "advanced"
     }
   ]
