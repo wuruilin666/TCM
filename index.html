@@ -126,6 +126,20 @@
         .difficulty-option { display: block; width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-family: var(--font-body); font-size: 0.95em; color: var(--text); transition: background 0.2s; }
         .difficulty-option:hover { background: rgba(139,69,19,0.06); }
         .difficulty-option.selected { background: rgba(139,69,19,0.1); font-weight: 600; }
+        .tongue-judge-form { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 0; }
+        .tongue-judge-form .tj-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .tongue-judge-form .tj-field { flex: 1; min-width: 110px; }
+        .tongue-judge-form label { display: block; font-size: 0.82em; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+        .tongue-judge-form input { width: 100%; padding: 9px 12px; border-radius: 10px; border: 2px solid var(--border); font-size: 0.92em; background: #fffefb; outline: none; }
+        .tongue-judge-form input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(139,69,19,0.07); }
+        .tongue-badge { position: absolute; top: 10px; left: 10px; font-size: 0.72em; font-weight: 700; color: #fff; background: rgba(139,69,19,0.85); padding: 3px 10px; border-radius: 12px; letter-spacing: 0.04em; z-index: 5; }
+        .tongue-img-wrap { position: relative; display: inline-block; }
+        .wrong-card { padding: 14px; margin: 10px 0; background: #fffefb; border-radius: 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); font-size: 0.9em; line-height: 1.7; }
+        .wrong-card .wrong-title { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+        .wrong-card .wrong-meta { color: var(--text-muted); font-size: 0.8em; margin-bottom: 4px; }
+        .wrong-card .wrong-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .btn--sm { padding: 8px 16px; font-size: 0.85em; border-radius: 20px; }
+        .source-tag { display: inline-block; background: rgba(184,134,11,0.1); color: var(--gold); padding: 2px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -168,13 +182,27 @@
         <div class="tongue-sim" style="flex-direction:column;gap:14px;">
             <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
                 <button class="inspect-nav" id="inspectPrev" onclick="inspectPrev()" style="display:none;" aria-label="上一张">‹</button>
-                <img id="inspectionImg" class="tongue-img-lg" alt="舌象">
+                <div class="tongue-img-wrap">
+                    <span class="tongue-badge" id="tongueImageBadge">参考图</span>
+                    <img id="inspectionImg" class="tongue-img-lg" alt="舌象">
+                </div>
                 <button class="inspect-nav" id="inspectNext" onclick="inspectNext()" style="display:none;" aria-label="下一张">›</button>
             </div>
             <div id="inspectionCounter" style="text-align:center;color:var(--text-muted);font-size:0.85em;min-height:1em;"></div>
         </div>
-        <p style="text-align:center;color:var(--text-muted);font-size:0.9em;margin:14px 6px 4px;line-height:1.7;">请仔细观察舌色、舌形与舌苔特征，<br>观察完毕后在 <span style="color:var(--primary);font-weight:600;">「线索收集区」</span> 查看舌象描述。</p>
-        <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;" onclick="closeInspectionModal()">确认观察完毕</button>
+        <div id="inspectionNonTongue" style="background:#fdfaf5;border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:0.9em;color:var(--text-light);display:none;"></div>
+        <div class="card" style="margin-top:8px;padding:14px 16px;">
+            <div style="font-weight:700;color:var(--primary);margin-bottom:8px;">🔍 判断舌象 <span style="color:var(--text-muted);font-weight:400;font-size:0.85em;">（舌色，舌形，舌苔）</span></div>
+            <div class="tongue-judge-form">
+                <div class="tj-row">
+                    <div class="tj-field"><label>舌色</label><input type="text" id="tongueColorInput" placeholder="如：淡红"></div>
+                    <div class="tj-field"><label>舌形</label><input type="text" id="tongueShapeInput" placeholder="如：胖大有齿痕"></div>
+                    <div class="tj-field"><label>舌苔</label><input type="text" id="tongueCoatingInput" placeholder="如：黄腻"></div>
+                </div>
+                <button class="btn btn--primary" style="margin-top:6px;width:100%;padding:12px 20px;font-size:1em;animation:none;" onclick="submitTongueJudgment()">提交舌象判断</button>
+            </div>
+        </div>
+        <p style="text-align:center;color:var(--text-muted);font-size:0.85em;margin:10px 4px 2px;line-height:1.6;">提交舌象判断后，舌象答案将在「线索收集区」公布并判定对错；未提交则暂不公布舌象答案。</p>
     </div>
 </div>
 
@@ -198,8 +226,16 @@
 <div class="modal-overlay" id="recordsModal" style="display:none;">
     <div class="modal" style="max-width:600px;">
         <button class="modal-close" onclick="closeRecords()">✕</button>
-        <h3>📝 学习记录</h3>
+        <h3>📝 我的错题</h3>
         <div id="recordsContent"></div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="caseDetailModal" style="display:none;">
+    <div class="modal" style="max-width:650px; max-height:85vh; overflow-y:auto;">
+        <button class="modal-close" onclick="closeCaseDetail()">✕</button>
+        <h3 id="caseDetailTitle">📋 病例解析</h3>
+        <div id="caseDetailContent"></div>
     </div>
 </div>
 
@@ -222,9 +258,9 @@
                         <span class="arrow">▼</span>
                     </div>
                     <div class="difficulty-options" id="difficultyOptions" style="display:none;">
-                        <button type="button" class="difficulty-option" data-value="basic" onclick="selectDifficultyOption('basic', '🌱 基础（大一）', this)">🌱 基础（大一）</button>
-                        <button type="button" class="difficulty-option" data-value="intermediate" onclick="selectDifficultyOption('intermediate', '📖 进阶（内外妇儿）', this)">📖 进阶（内外妇儿）</button>
-                        <button type="button" class="difficulty-option" data-value="advanced" onclick="selectDifficultyOption('advanced', '🎓 考研病例', this)">🎓 考研病例</button>
+                        <button type="button" class="difficulty-option" data-value="basic" onclick="selectDifficultyOption('basic', '🌱 入门训练', this)">🌱 入门训练</button>
+                        <button type="button" class="difficulty-option" data-value="intermediate" onclick="selectDifficultyOption('intermediate', '🌿 综合训练', this)">🌿 综合训练</button>
+                        <button type="button" class="difficulty-option" data-value="advanced" onclick="selectDifficultyOption('advanced', '🌳 临床思维', this)">🌳 临床思维</button>
                     </div>
                 </div>
                 <input type="hidden" name="difficulty" id="subDifficulty" value="">
@@ -274,6 +310,10 @@
         'adv-005': 'tongue/adv-005.jpg',
         'adv-006': 'tongue/adv-006.jpg'
     };
+    const tongueImageTypeMap = {
+        'basic-001': '参考图', 'basic-002': '参考图', 'basic-003': '参考图', 'basic-004': '参考图',
+        'inter-002': '参考图', 'inter-003': '参考图', 'adv-001': '参考图'
+    };
     const genericAnswers = ["这个没什么特别的。","还好，没太注意。","有时有，有时没有。","和之前差不多。","好像没什么影响。","没感觉到什么异常。","就这样，老样子。","记不太清了。"];
     let currentDifficulty = null;
     let currentCase = null;
@@ -286,6 +326,8 @@
     let currentCaseIndex = 0;
     let inspectionImages = [];
     let inspectionIndex = 0;
+    let inspectionNonTongueAdded = false;
+    let lastAnswerWasCorrect = false;
 
     /* ===================== 数据加载 ===================== */
     async function loadCaseData() {
@@ -314,7 +356,7 @@
                     <button class="btn btn--primary" onclick="startChallenge()">🎯 开始闯关</button>
                     <div class="home-secondary">
                         <button class="btn btn--outline btn--equal" onclick="openCaseBank()">📚 病例题库</button>
-                        <button class="btn btn--ghost btn--equal" onclick="openRecords()">📝 学习记录</button>
+                        <button class="btn btn--ghost btn--equal" onclick="openRecords()">📝 我的错题</button>
                         <button class="btn btn--outline btn--equal" onclick="openSubmissionModal()" style="border-color: var(--gold); color: var(--gold);">📤 投稿病例</button>
                     </div>
                 </div>
@@ -323,9 +365,9 @@
                 <div class="card" style="padding:16px 20px;">
                     <div style="font-weight:700;color:var(--text-light);text-align:center;">📋 选择难度</div>
                     <div style="display:flex;gap:10px;flex-wrap:wrap;" id="difficultyBtns">
-                        <button class="btn btn--difficulty btn--basic" data-diff="basic" onclick="selectDifficulty('basic', this)">🌱 基础<br><small>（大一）</small></button>
-                        <button class="btn btn--difficulty btn--intermediate" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">📖 进阶<br><small>（内外妇儿）</small></button>
-                        <button class="btn btn--difficulty btn--advanced" data-diff="advanced" onclick="selectDifficulty('advanced', this)">🎓 考研病例</button>
+                        <button class="btn btn--difficulty btn--basic" data-diff="basic" onclick="selectDifficulty('basic', this)">🌱 入门训练<br><small>适合刚开始学习辨证的同学</small></button>
+                        <button class="btn btn--difficulty btn--intermediate" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">🌿 综合训练<br><small>适合已掌握基本证候、需综合四诊的同学</small></button>
+                        <button class="btn btn--difficulty btn--advanced" data-diff="advanced" onclick="selectDifficulty('advanced', this)">🌳 临床思维<br><small>适合希望挑战完整真实病例的同学</small></button>
                     </div>
                 </div>
                 <div class="card card--highlight" id="chiefComplaintCard" style="display:none;">
@@ -357,8 +399,12 @@
                     <div class="answer-area">
                         <input type="text" id="inputSyndrome" placeholder="证型">
                         <input type="text" id="inputDisease" placeholder="病名">
-                        <button class="btn btn--primary" style="padding:12px 22px;font-size:0.95em;animation:none;" onclick="submitAnswer()">提交答案</button>
                     </div>
+                    <div style="margin-top:12px;">
+                        <label style="font-weight:700;color:var(--text-light);font-size:0.9em;">请写出你的辩证依据 <span class="required-star">*</span></label>
+                        <textarea id="inputBasis" placeholder="请写出你的辩证依据（病机分析、辨证思路等）" style="width:100%;min-height:100px;margin-top:6px;padding:10px 14px;border-radius:10px;border:2px solid var(--border);font-size:0.95em;background:#fffefb;outline:none;resize:vertical;font-family:var(--font-body);"></textarea>
+                    </div>
+                    <button class="btn btn--primary" style="width:100%;margin-top:12px;padding:14px 22px;font-size:1em;animation:none;" onclick="submitAnswer()">提交答案</button>
                     <div id="answerFeedback"></div>
                     <div id="fullAnalysisArea"></div>
                 </div>
@@ -390,13 +436,31 @@
     function markCaseCompleted(caseId) {
         const arr = getCompletedCases();
         if (!arr.includes(caseId)) { arr.push(caseId); safeSetStorage('tcm_completed_cases', arr); }
-        removeCurrentCaseFromUnfinished();
     }
-    function saveRecord(correct) {
-        const records = safeGetStorage('tcm_learning_records', []);
-        records.push({date:new Date().toLocaleString(), case: currentCase ? currentCase.title : '未知', difficulty: currentDifficulty || '未知', correct});
-        if(records.length>50) records.shift();
-        safeSetStorage('tcm_learning_records', records);
+    function getWrongCases() { return safeGetStorage('tcm_wrong_cases', []); }
+    function saveWrongCase(data) {
+        if (!currentCase) return;
+        const wrongs = getWrongCases().filter(w => w.id !== currentCase.id);
+        wrongs.push({
+            id: currentCase.id,
+            title: currentCase.title,
+            chiefComplaint: currentCase.chiefComplaint,
+            difficulty: currentDifficulty,
+            date: new Date().toISOString(),
+            syndrome: data.syndrome,
+            disease: data.disease,
+            basis: data.basis
+        });
+        safeSetStorage('tcm_wrong_cases', wrongs);
+    }
+    function removeWrongCase(caseId) {
+        safeSetStorage('tcm_wrong_cases', getWrongCases().filter(w => w.id !== caseId));
+    }
+    function formatDate(iso) {
+        const d = new Date(iso);
+        if (isNaN(d)) return '';
+        const p = n => String(n).padStart(2, '0');
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
     }
 
     /* ===================== 页面导航 ===================== */
@@ -415,7 +479,7 @@
     /* ===================== 闯关逻辑 ===================== */
     function resetGameUI() {
         currentDifficulty = null; currentCase = null; collectedClues = []; exploredDiags = {}; gameStarted = false;
-        inquiryHistory = []; askedInquiryQuestions = []; unfinishedCases = []; currentCaseIndex = 0;
+        inquiryHistory = []; askedInquiryQuestions = []; unfinishedCases = []; currentCaseIndex = 0; inspectionNonTongueAdded = false; lastAnswerWasCorrect = false;
         document.getElementById('chiefComplaintCard').style.display = 'none';
         document.getElementById('fourDiagBtns').style.display = 'none';
         document.getElementById('btnOtherCheck').style.display = 'none';
@@ -428,6 +492,7 @@
         document.getElementById('fullAnalysisArea').innerHTML = '';
         document.getElementById('inputSyndrome').value = '';
         document.getElementById('inputDisease').value = '';
+        document.getElementById('inputBasis').value = '';
         document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
         ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
     }
@@ -454,7 +519,7 @@
         if (!unfinishedCases.length) return;
         currentCase = unfinishedCases[currentCaseIndex];
         collectedClues = []; exploredDiags = { inspection: false, auscultation: false, inquiry: false, pulse: false };
-        inquiryHistory = []; askedInquiryQuestions = []; gameStarted = true;
+        inquiryHistory = []; askedInquiryQuestions = []; gameStarted = true; inspectionNonTongueAdded = false; lastAnswerWasCorrect = false;
         document.getElementById('chiefComplaintCard').style.display = 'block';
         document.getElementById('chiefComplaintText').textContent = currentCase.chiefComplaint;
         document.getElementById('historyBtn').style.display = 'inline-flex';
@@ -467,6 +532,7 @@
         document.getElementById('fullAnalysisArea').innerHTML = '';
         document.getElementById('inputSyndrome').value = '';
         document.getElementById('inputDisease').value = '';
+        document.getElementById('inputBasis').value = '';
         ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
         document.getElementById('caseCounter').textContent = `病例 ${currentCaseIndex + 1} / ${unfinishedCases.length}`;
         document.getElementById('prevCaseBtn').style.display = (unfinishedCases.length > 1 && currentCaseIndex > 0) ? 'inline-flex' : 'none';
@@ -474,26 +540,6 @@
         const otherCheckBtn = document.getElementById('btnOtherCheck');
         otherCheckBtn.style.display = (currentDifficulty === 'basic') ? 'none' : 'block';
         document.getElementById('chiefComplaintCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
-    function removeCurrentCaseFromUnfinished() {
-        if (!unfinishedCases.length) return;
-        const currentId = currentCase.id;
-        unfinishedCases = unfinishedCases.filter(c => c.id !== currentId);
-        if (unfinishedCases.length === 0) {
-            openSimpleResultModal('🎉 闯关完毕', '该难度下所有病例均已完成，无新病例可学习。您可以在病例题库中复习已完成的病例。');
-            document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
-            currentDifficulty = null; currentCase = null; gameStarted = false;
-            document.getElementById('chiefComplaintCard').style.display = 'none';
-            document.getElementById('fourDiagBtns').style.display = 'none';
-            document.getElementById('btnOtherCheck').style.display = 'none';
-            document.getElementById('clueCollectionCard').style.display = 'none';
-            document.getElementById('answerCard').style.display = 'none';
-            document.getElementById('gameExtraBtns').style.display = 'none';
-        } else {
-            if (currentCaseIndex >= unfinishedCases.length) currentCaseIndex = unfinishedCases.length - 1;
-            showCurrentCase();
-        }
     }
 
     function prevCase() {
@@ -588,24 +634,40 @@
 
     /* ===================== 望诊 ===================== */
     function openInspectionModal() {
-    if (!currentCase) return;
-    inspectionImages = currentCase.inspectionImages || [tongueImages[currentCase.id] || ''];
-    inspectionIndex = 0;
-    document.getElementById('inspectionImg').src = '';
-    document.getElementById('inspectionImg').style.display = 'none';
-    document.getElementById('inspectionCounter').textContent = '图片加载中...';
-    renderInspection();
-    document.getElementById('inspectionModal').style.display = 'flex';
-    document.getElementById('inspectionImg').onload = function() {
-        this.style.display = 'block';
-        document.getElementById('inspectionCounter').textContent = inspectionImages.length > 1 ? (inspectionIndex + 1) + ' / ' + inspectionImages.length : '';
-    };
-    document.getElementById('inspectionImg').onerror = function() {
-        this.style.display = 'block';
-        this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="260" height="347" viewBox="0 0 260 347"%3E%3Crect width="260" height="347" fill="%23fdfaf5"/%3E%3Ctext x="130" y="170" font-size="14" fill="%23b5a595" text-anchor="middle"%3E图片加载失败%3C/text%3E%3C/svg%3E';
-        document.getElementById('inspectionCounter').textContent = '图片加载失败';
-    };
-}
+        if (!currentCase) return;
+        inspectionImages = currentCase.inspectionImages || [tongueImages[currentCase.id] || ''];
+        inspectionIndex = 0;
+        document.getElementById('inspectionImg').src = '';
+        document.getElementById('inspectionImg').style.display = 'none';
+        document.getElementById('inspectionCounter').textContent = '图片加载中...';
+        document.getElementById('tongueImageBadge').textContent = tongueImageTypeMap[currentCase.id] || '原始病例图片';
+        document.getElementById('tongueColorInput').value = '';
+        document.getElementById('tongueShapeInput').value = '';
+        document.getElementById('tongueCoatingInput').value = '';
+        const nonTongue = currentCase.clues.inspection.nonTongue || '';
+        const nonTongueEl = document.getElementById('inspectionNonTongue');
+        if (nonTongue) {
+            nonTongueEl.style.display = 'block';
+            nonTongueEl.innerHTML = '<strong>其他望诊：</strong>' + nonTongue;
+            if (!inspectionNonTongueAdded) {
+                inspectionNonTongueAdded = true;
+                addClue('inspection', nonTongue, '望诊·其他');
+            }
+        } else {
+            nonTongueEl.style.display = 'none';
+        }
+        renderInspection();
+        document.getElementById('inspectionModal').style.display = 'flex';
+        document.getElementById('inspectionImg').onload = function() {
+            this.style.display = 'block';
+            document.getElementById('inspectionCounter').textContent = inspectionImages.length > 1 ? (inspectionIndex + 1) + ' / ' + inspectionImages.length : '';
+        };
+        document.getElementById('inspectionImg').onerror = function() {
+            this.style.display = 'block';
+            this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="260" height="347" viewBox="0 0 260 347"%3E%3Crect width="260" height="347" fill="%23fdfaf5"/%3E%3Ctext x="130" y="170" font-size="14" fill="%23b5a595" text-anchor="middle"%3E图片加载失败%3C/text%3E%3C/svg%3E';
+            document.getElementById('inspectionCounter').textContent = '图片加载失败';
+        };
+    }
     function renderInspection() {
     document.getElementById('inspectionImg').src = inspectionImages[inspectionIndex] || '';
     const hasMultiple = inspectionImages.length > 1;
@@ -627,22 +689,48 @@ function preloadNextImage() {
     function inspectPrev() { if (inspectionIndex > 0) { inspectionIndex--; renderInspection(); } }
     function inspectNext() { if (inspectionIndex < inspectionImages.length - 1) { inspectionIndex++; renderInspection(); } }
     function closeInspectionModal() {
-    document.getElementById('inspectionModal').style.display = 'none';
-    // 关闭模态框后清空图片地址，释放内存
-    document.getElementById('inspectionImg').src = '';
-    if (!exploredDiags.inspection && currentCase) {
+        document.getElementById('inspectionModal').style.display = 'none';
+        // 关闭模态框后清空图片地址，释放内存
+        document.getElementById('inspectionImg').src = '';
+    }
+    function submitTongueJudgment() {
+        if (!currentCase) return;
+        const color = document.getElementById('tongueColorInput').value.trim();
+        const shape = document.getElementById('tongueShapeInput').value.trim();
+        const coating = document.getElementById('tongueCoatingInput').value.trim();
+        if (!color && !shape && !coating) { alert('请至少填写一项舌象判断。'); return; }
+        const tj = currentCase.clues.inspection.tongueJudgment || {};
+        const colorOk = judgeTongueField(color, tj.color);
+        const shapeOk = judgeTongueField(shape, tj.shape);
+        const coatingOk = judgeTongueField(coating, tj.coating);
+        const mark = ok => ok ? '✅' : '❌';
+        const correctText = `舌色${tj.color || '未述'}，舌形${tj.shape || '未述'}，舌苔${tj.coating || '未述'}`;
+        const html = `<strong>舌象判断</strong><br>舌色${mark(colorOk)} 舌形${mark(shapeOk)} 舌苔${mark(coatingOk)}<br><span style="color:var(--text-muted);font-size:0.9em;">正确答案：${correctText}</span>`;
+        addClue('inspection', html, '望诊·舌象');
         exploredDiags.inspection = true;
         markExplored('inspection');
-        addClue('inspection', currentCase.clues.inspection.textSummary);
+        closeInspectionModal();
     }
-}
+    function judgeTongueField(userVal, correctVal) {
+        if (!userVal || !correctVal) return false;
+        const u = userVal.trim();
+        const c = correctVal.trim();
+        if (c === '正常') {
+            return /正常|无异常|无明显异常|未见异常|无特殊/.test(u);
+        }
+        const strip = s => s.replace(/^舌(质|体|色|形|苔)?/, '').replace(/^苔/, '');
+        const uu = strip(u), cc = strip(c);
+        return uu === cc || uu.includes(cc) || cc.includes(uu);
+    }
 
     /* ===================== 提交辨证 ===================== */
     function submitAnswer() {
         if (!gameStarted || !currentCase) { alert('请先选择难度。'); return; }
         const syndrome = document.getElementById('inputSyndrome').value.trim();
         const disease = document.getElementById('inputDisease').value.trim();
+        const basis = document.getElementById('inputBasis').value.trim();
         if (!syndrome && !disease) { alert('请至少输入证型或病名。'); return; }
+        if (!basis) { alert('请写出你的辩证依据。'); return; }
         const correct = currentCase.correctAnswer;
         const fb = document.getElementById('answerFeedback');
         const analysis = document.getElementById('fullAnalysisArea');
@@ -654,13 +742,13 @@ function preloadNextImage() {
             correct.syndrome.includes('痰热壅肺') && syndrome.includes('痰热壅肺') ||
             syndrome === correct.syndrome || correct.syndrome.includes(syndrome) || syndrome.includes(correct.syndrome)
         );
-        if (dOk && sOk) {
-            fb.innerHTML = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${correct.disease} · ${correct.syndrome}</p></div>`;
-            showFullAnalysis(analysis);
-            saveRecord(true);
-            markCaseCompleted(currentCase.id);
+        const isCorrect = dOk && sOk;
+        lastAnswerWasCorrect = isCorrect;
+        let feedbackHtml = '';
+        if (isCorrect) {
+            feedbackHtml = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${correct.disease} · ${correct.syndrome}</p>`;
+            removeWrongCase(currentCase.id);
         } else {
-            let feedbackHtml = '';
             if (!dOk && !sOk) {
                 feedbackHtml = `<div class="result-box fail"><h4>🤔 辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
             } else {
@@ -669,35 +757,39 @@ function preloadNextImage() {
                 if (sOk) parts.push('✅ 证型判断准确'); else parts.push('⚠️ 证型需斟酌');
                 feedbackHtml = `<div class="result-box fail"><h4>🔍 部分正确</h4><p>${parts.join('，')}</p>`;
             }
-            feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">💡 查看答案</button></div>`;
-            fb.innerHTML = feedbackHtml;
-            analysis.innerHTML = '';
+            saveWrongCase({ syndrome, disease, basis });
         }
+        feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">💡 显示答案</button></div>`;
+        fb.innerHTML = feedbackHtml;
+        analysis.innerHTML = '';
         fb.scrollIntoView({ behavior: 'smooth' });
     }
     function viewAnswer() {
         if (!currentCase) return;
         showFullAnalysis(document.getElementById('fullAnalysisArea'));
-        markCaseCompleted(currentCase.id);
-        saveRecord(false);
+        if (lastAnswerWasCorrect) markCaseCompleted(currentCase.id);
     }
     function showFullAnalysis(el) {
         const fa = currentCase.fullAnalysis;
+        const sourceHtml = currentCase.source ? `<p><strong>病例来源：</strong><span class="source-tag">${currentCase.source}</span></p>` : '';
         el.innerHTML = `<div class="result-box success"><h4>📋 完整医案解析</h4>
             <p><strong>中医病证：</strong>${fa.disease}（${fa.syndrome}）</p>
             <p><strong>西医诊断：</strong>${fa.westernDiagnosis}</p>
+            ${sourceHtml}
             <hr><p><strong>病机分析：</strong>${fa.pathogenesis}</p>
             <hr><p><strong>推荐方药：</strong>${fa.prescription}</p>
-            <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${k}</li>`).join('')}</ul></div>`;
+            <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${k}</li>`).join('')}</ul>
+            <hr><p style="color:var(--text-muted);font-size:0.9em;">💡 提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
     }
     function resetCurrentCase() {
         if (!currentCase) return;
         if (confirm('确定重新探查吗？线索将清除。')) {
             collectedClues = []; exploredDiags = { inspection: false, auscultation: false, inquiry: false, pulse: false };
-            inquiryHistory = []; askedInquiryQuestions = [];
+            inquiryHistory = []; askedInquiryQuestions = []; inspectionNonTongueAdded = false; lastAnswerWasCorrect = false;
             document.getElementById('clueArea').innerHTML = '';
             document.getElementById('answerFeedback').innerHTML = '';
             document.getElementById('fullAnalysisArea').innerHTML = '';
+            document.getElementById('inputBasis').value = '';
             ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
         }
     }
@@ -729,7 +821,7 @@ function preloadNextImage() {
         const listEl = document.getElementById('caseBankList');
         const completedIds = getCompletedCases();
         let html = '';
-        const labels = { basic: '🌱 基础（大一）', intermediate: '📖 进阶（内外妇儿）', advanced: '🎓 考研病例' };
+        const labels = { basic: '🌱 入门训练', intermediate: '🌿 综合训练', advanced: '🌳 临床思维' };
         for (const [diff, cases] of Object.entries(casesDB)) {
             cases.forEach((c, index) => {
                 const caseNumber = index + 1;
@@ -764,23 +856,88 @@ function preloadNextImage() {
         if (c.otherCheck) html += `<div style="margin:6px 0 10px 0;"><strong>📋 其他检查：</strong><br>${c.otherCheck.replace(/\n/g, '<br>')}</div>`;
         html += `<div style="margin:6px 0 4px 0;"><strong>📋 辨证分析过程：</strong><br>中医病证：${fa.disease}（${fa.syndrome}）<br>`;
         if (fa.westernDiagnosis) html += `西医诊断：${fa.westernDiagnosis}<br>`;
+        if (c.source) html += `<span class="source-tag">病例来源：${c.source}</span><br>`;
         html += `病机分析：${fa.pathogenesis}<br>推荐方药：${fa.prescription}<br>`;
         if (fa.knowledgePoints && fa.knowledgePoints.length) html += `知识点：${fa.knowledgePoints.join('；')}`;
         html += `</div>`;
+        html += `<div style="margin-top:6px;color:var(--text-muted);font-size:0.88em;">💡 提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</div>`;
         return html;
     }
     function closeCaseBank() { document.getElementById('caseBankModal').style.display = 'none'; }
 
-    /* ===================== 学习记录 ===================== */
+    /* ===================== 我的错题 ===================== */
     function openRecords() {
-        const records = safeGetStorage('tcm_learning_records', []);
+        const wrongs = getWrongCases();
         const el = document.getElementById('recordsContent');
-        if (records.length === 0) el.innerHTML = '<p style="text-align:center;color:#b5a595;">📭 暂无学习记录</p>';
-        else el.innerHTML = records.reverse().map((r, i) => `<div style="padding:8px;margin:4px 0;background:#fdfaf5;border-radius:8px;">${r.date} ${r.case} (${r.difficulty}) ${r.correct ? '✅' : '⚠️'}</div>`).join('') + '<button class="btn btn--ghost" style="margin-top:10px;width:100%;" onclick="clearRecords()">🗑️ 清空记录</button>';
+        if (wrongs.length === 0) {
+            el.innerHTML = '<p style="text-align:center;color:#b5a595;">🎉 暂无错题，继续保持！</p>';
+        } else {
+            const items = wrongs.slice().reverse().map((w, i) => {
+                const answerParts = [];
+                if (w.syndrome) answerParts.push('证型：' + w.syndrome);
+                if (w.disease) answerParts.push('病名：' + w.disease);
+                const answerStr = answerParts.join('；') || '未填写';
+                return `<div class="wrong-card">
+                    <div class="wrong-title">错题${i + 1}：${w.title}</div>
+                    <div class="wrong-meta">${formatDate(w.date)}</div>
+                    <div><strong>主诉：</strong>${(w.chiefComplaint || '').replace(/\n/g, '<br>')}</div>
+                    <div><strong>我的答案：</strong>${answerStr}</div>
+                    <div><strong>错误原因：</strong>${w.basis || '未填写'}</div>
+                    <div class="wrong-actions">
+                        <button class="btn btn--outline btn--sm" onclick="rechallengeCase('${w.id}')">🔄 重新挑战</button>
+                        <button class="btn btn--ghost btn--sm" onclick="viewWrongCaseAnalysis('${w.id}')">💡 查看解析</button>
+                    </div>
+                </div>`;
+            }).join('');
+            el.innerHTML = items + '<button class="btn btn--ghost" style="margin-top:10px;width:100%;" onclick="clearRecords()">🗑️ 清空错题</button>';
+        }
         document.getElementById('recordsModal').style.display = 'flex';
     }
     function closeRecords() { document.getElementById('recordsModal').style.display = 'none'; }
-    function clearRecords() { if (confirm('清空学习记录？')) { try { localStorage.removeItem('tcm_learning_records'); } catch (e) {} closeRecords(); } }
+    function clearRecords() { if (confirm('清空我的错题？')) { try { localStorage.removeItem('tcm_wrong_cases'); } catch (e) {} closeRecords(); } }
+    function findCaseById(caseId) {
+        for (const diff of ['basic', 'intermediate', 'advanced']) {
+            const c = (casesDB[diff] || []).find(x => x.id === caseId);
+            if (c) return c;
+        }
+        return null;
+    }
+    function findCaseDifficulty(caseId) {
+        for (const diff of ['basic', 'intermediate', 'advanced']) {
+            if ((casesDB[diff] || []).some(x => x.id === caseId)) return diff;
+        }
+        return null;
+    }
+    function rechallengeCase(caseId) {
+        closeRecords();
+        const diff = findCaseDifficulty(caseId);
+        if (!diff) { alert('病例不存在。'); return; }
+        showPage('Game');
+        resetGameUI();
+        currentDifficulty = diff;
+        document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.toggle('selected', b.dataset.diff === diff));
+        const pool = casesDB[diff] || [];
+        const completed = getCompletedCases();
+        unfinishedCases = pool.filter(c => !completed.includes(c.id));
+        if (!unfinishedCases.some(c => c.id === caseId)) {
+            const c = pool.find(c => c.id === caseId);
+            if (c) unfinishedCases.push(c);
+        }
+        currentCaseIndex = unfinishedCases.findIndex(c => c.id === caseId);
+        if (currentCaseIndex < 0) currentCaseIndex = 0;
+        showCurrentCase();
+    }
+    function viewWrongCaseAnalysis(caseId) {
+        const c = findCaseById(caseId);
+        if (!c) { alert('病例不存在。'); return; }
+        openCaseDetail(c);
+    }
+    function openCaseDetail(c) {
+        document.getElementById('caseDetailTitle').textContent = '📋 ' + c.title;
+        document.getElementById('caseDetailContent').innerHTML = renderFullCase(c);
+        document.getElementById('caseDetailModal').style.display = 'flex';
+    }
+    function closeCaseDetail() { document.getElementById('caseDetailModal').style.display = 'none'; }
 
     /* ===================== 投稿表单 ===================== */
     function openSubmissionModal() {
