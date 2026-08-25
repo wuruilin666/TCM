@@ -280,6 +280,7 @@
                 </div>
                 <input type="hidden" name="difficulty" id="subDifficulty" value="">
             </div>
+            <div><label for="subCaseSource">病例来源 <span class="required-star">*</span></label><input type="text" id="subCaseSource" name="case_source" required placeholder="如：中国中医药临床案例成果库、某本医书、某个博主等"></div>
             <div><label for="subChiefComplaint">主诉 <span class="required-star">*</span></label><textarea id="subChiefComplaint" name="chief_complaint" required placeholder="患者主要症状、持续时间等"></textarea></div>
             <div><label for="subPastHistory">既往史 <span class="required-star">*</span></label><textarea id="subPastHistory" name="past_history" required placeholder="既往疾病、手术、过敏史等"></textarea></div>
             <div class="form-row">
@@ -471,7 +472,6 @@
                     <div class="data-actions">
                         <button onclick="resetAllProgress()">🔄 重置全部进度</button>
                         <button onclick="clearWrongOnly()">🗑️ 仅清空错题</button>
-                        <button onclick="exportLearning()">⬇️ 导出学习记录</button>
                     </div>
                 </div>
             </div>
@@ -501,18 +501,6 @@
         safeSetStorage('tcm_wrong_cases', []);
         renderDataStats();
         alert('错题本已清空。');
-    }
-    function exportLearning(){
-        const data = {
-            completed: getCompletedCases(),
-            wrong: getWrongCases(),
-            exportedAt: new Date().toISOString()
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'tcm-learning-' + new Date().toISOString().slice(0,10) + '.json';
-        a.click(); URL.revokeObjectURL(url);
     }
 
     /* ===================== 存储工具 ===================== */
@@ -705,15 +693,28 @@
         women:     '（患者）这方面没啥特别要说的。'
     };
     const GENERIC_VAGUE = '（患者）这个我倒没太留意，没什么不对劲的。';
+    // 命中关键词的得分：长词更能代表该维度，单字得分低以降低跨维度误判
+    function dimensionScore(text, keywords){
+        let score = 0;
+        for (const k of keywords){ if (text.includes(k)) score += k.length * k.length; }
+        return score;
+    }
     function detectQuestionDimension(qObj){
         const text = (qObj.q||'') + ' ' + (qObj.keywords||[]).join(' ');
-        for (const dim in TCM_SYNONYMS){ if (TCM_SYNONYMS[dim].some(k=>text.includes(k))) return dim; }
-        return null;
+        let bestDim = null, bestScore = 0;
+        for (const dim in TCM_SYNONYMS){
+            const s = dimensionScore(text, TCM_SYNONYMS[dim]);
+            if (s > bestScore){ bestScore = s; bestDim = dim; }
+        }
+        return bestDim;
     }
     function detectInputDimensions(text){
         const dims = [];
-        for (const dim in TCM_SYNONYMS){ if (TCM_SYNONYMS[dim].some(k=>text.includes(k))) dims.push(dim); }
-        return dims;
+        for (const dim in TCM_SYNONYMS){
+            const s = dimensionScore(text, TCM_SYNONYMS[dim]);
+            if (s > 0) dims.push({ dim, score: s });
+        }
+        return dims.sort((a, b) => b.score - a.score).map(d => d.dim);
     }
 
     /* ===================== 问诊 ===================== */
@@ -739,12 +740,16 @@
         inquiryHistory.push({ role: 'user', text: q }); appendChat('user', q);
         input.value = '';
         const questions = currentCase.clues.inquiry.questions;
+        // 先识别用户输入属于哪些维度（按得分排序）
+        const dims = detectInputDimensions(q);
         let best = -1, bestScore = 0;
         for (let i = 0; i < questions.length; i++) {
-            const dim = detectQuestionDimension(questions[i]);
-            const expanded = questions[i].keywords.concat(dim ? TCM_SYNONYMS[dim] : []);
+            const qDim = detectQuestionDimension(questions[i]);
+            // 约束：问题必须属于用户输入识别的维度，绝不串到别的维度
+            if (dims.length > 0 && qDim && !dims.includes(qDim)) continue;
+            // 在该维度内，用问题自身关键词与用户输入做精确命中打分
             let score = 0;
-            expanded.forEach(k => { if (q.includes(k)) score++; });
+            questions[i].keywords.forEach(k => { if (q.includes(k)) score += k.length * k.length; });
             if (score > bestScore) { bestScore = score; best = i; }
         }
         let answer = '';
@@ -754,9 +759,11 @@
                 askedInquiryQuestions.push(best);
                 addClue('inquiry', answer, '问诊·' + questions[best].q);
             } else { answer += '（这个问题刚才已经回答过了）'; }
+        } else if (dims.length > 0) {
+            // 识别到维度但该维度没有对应题目：返回该维度的模糊回答，绝不串到别的维度
+            answer = DIMENSION_VAGUE[dims[0]] || GENERIC_VAGUE;
         } else {
-            const dims = detectInputDimensions(q);
-            answer = dims.length ? DIMENSION_VAGUE[dims[0]] : GENERIC_VAGUE;
+            answer = GENERIC_VAGUE;
         }
         setTimeout(() => {
             inquiryHistory.push({ role: 'patient', text: answer }); appendChat('patient', answer);
@@ -902,7 +909,9 @@ function preloadNextImage() {
     function viewAnswer() {
         if (!currentCase) return;
         showFullAnalysis(document.getElementById('fullAnalysisArea'));
-        if (lastAnswerWasCorrect) markCaseCompleted(currentCase.id);
+        // 无论对错，做过的病例都标记为已完成，从闯关队列移除；
+        // 只有从"我的错题"点击"重新挑战"才能再次进入闯关练习。
+        markCaseCompleted(currentCase.id);
     }
     function showFullAnalysis(el) {
         const fa = currentCase.fullAnalysis;
@@ -1004,6 +1013,7 @@ function preloadNextImage() {
         if (!listEl) return;
         const keyword = (document.getElementById('caseSearchInput')?.value || '').trim().toLowerCase();
         const completedIds = getCompletedCases();
+        const wrongIds = getWrongCases().map(w => w.id);
         const cases = getAllCases();
 
         const filtered = cases.filter(c => {
@@ -1038,15 +1048,28 @@ function preloadNextImage() {
 
         filtered.forEach((c, i) => {
             const isCompleted = completedIds.includes(c.id);
+            const isWrong = wrongIds.includes(c.id);
             const diffMeta = diffMap[c.difficulty] || { name: c.difficulty, emoji: '' };
             const catMeta = categoryMap[c.category] || { name: c.category, emoji: '' };
             const tag = `<span class="case-tag">${diffMeta.emoji} ${diffMeta.name}</span> <span class="case-tag case-tag-cat">${catMeta.emoji} ${catMeta.name}</span>`;
-            if (isCompleted) {
+            if (isCompleted && !isWrong) {
+                // 已做对：直接展示完整医案
                 html += `<div class="case-bank-item done" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:10px;border:2px solid var(--gold-light);font-size:0.9em;line-height:1.7;">
                     <div style="font-weight:700;color:var(--accent);margin-bottom:6px;">✅ ${tag}：${c.title}</div>
                     <div class="case-full">${renderFullCase(c)}</div>
                 </div>`;
+            } else if (isCompleted && isWrong) {
+                // 做错过：提供"重新挑战"
+                html += `<div class="case-bank-item wrong" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;line-height:1.7;">
+                    <div style="font-weight:700;color:var(--accent);margin-bottom:4px;">⚠️ ${tag}：${c.title}</div>
+                    <div><strong>主诉：</strong>${c.chiefComplaint.replace(/\n/g, '<br>')}</div>
+                    <div style="margin-top:8px;">
+                        <button class="btn btn--primary btn--sm" onclick="challengeCaseFromBank('${c.id}')">🔄 重新挑战</button>
+                        <span style="color:var(--text-muted);font-size:0.85em;margin-left:8px;">⚠️ 本题作答有误，可重新挑战</span>
+                    </div>
+                </div>`;
             } else {
+                // 未做过：提供"挑战病例"
                 html += `<div class="case-bank-item todo" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;line-height:1.7;">
                     <div style="font-weight:700;color:var(--text-light);margin-bottom:4px;">${tag}：${c.title}</div>
                     <div><strong>主诉：</strong>${c.chiefComplaint.replace(/\n/g, '<br>')}</div>
@@ -1109,7 +1132,7 @@ function preloadNextImage() {
                 if (w.disease) answerParts.push('病名：' + w.disease);
                 const answerStr = answerParts.join('；') || '未填写';
                 return `<div class="wrong-card">
-                    <div class="wrong-title">错题${i + 1}：${w.title}</div>
+                    <div class="wrong-title">错题${i + 1}</div>
                     <div class="wrong-meta">${formatDate(w.date)}</div>
                     <div><strong>主诉：</strong>${(w.chiefComplaint || '').replace(/\n/g, '<br>')}</div>
                     <div><strong>我的答案：</strong>${answerStr}</div>
@@ -1189,7 +1212,7 @@ function preloadNextImage() {
     function validateSubmissionForm() {
         const form = document.getElementById('submissionForm');
         const feedback = document.getElementById('submissionFeedback');
-        const requiredFields = ['chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
+        const requiredFields = ['case_source', 'chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
         for (const fieldName of requiredFields) {
             const field = form.querySelector(`[name="${fieldName}"]`);
             if (!field || !field.value.trim()) { feedback.innerHTML = `<div class="result-box fail">请填写所有必填字段。</div>`; field?.focus(); return false; }
