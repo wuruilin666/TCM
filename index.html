@@ -261,7 +261,6 @@
         <p style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px;">请填写以下病例信息，带 <span class="required-star">*</span> 为必填项。</p>
         <form id="submissionForm" class="submission-form" action="https://formsubmit.co/1507238873@qq.com" method="POST" enctype="multipart/form-data" onsubmit="return validateSubmissionForm()">
             <input type="hidden" name="_subject" value="新病例投稿">
-            <input type="hidden" name="_captcha" value="false">
             <input type="hidden" name="_template" value="table">
             <input type="hidden" name="_next" id="formNext" value="">
             <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
@@ -299,7 +298,9 @@
             </div>
             <div><label for="subWesternDiagnosis">西医诊断 <span class="required-star">*</span></label><input type="text" id="subWesternDiagnosis" name="western_diagnosis" required placeholder="如：慢性胃炎"></div>
             <div><label for="subPrescription">推荐要方 <span class="form-hint">（如有则填写）</span></label><input type="text" id="subPrescription" name="prescription" placeholder="如：柴胡疏肝散加减"></div>
-            <div><label for="subTonguePhoto">舌象照片 <span class="form-hint">（如有则上传，大小不超过10MB）</span></label><div class="file-input"><input type="file" id="subTonguePhoto" name="attachment" accept="image/*"></div></div>
+            <div><label for="subTonguePhoto">舌象照片 <span class="form-hint">（如有则上传，大小不超过10MB，仅支持 JPG、PNG、WebP）</span></label><div class="file-input"><input type="file" id="subTonguePhoto" name="attachment" accept="image/jpeg,image/png,image/webp"></div></div>
+            <div class="form-hint" style="line-height:1.7;background:#fdfaf5;padding:10px 12px;border-radius:10px;">隐私提示：投稿内容会发送至第三方表单服务并转发给站点维护者。请勿填写姓名、电话、身份证号、精确住址等可识别个人信息；病例和图片须先完成脱敏。</div>
+            <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;"><input type="checkbox" id="submissionConsent" name="privacy_consent" value="confirmed" required style="margin-top:5px;flex:none;"> <span>我确认已对病例和图片完成脱敏，并同意按上述方式处理投稿内容。<span class="required-star">*</span></span></label>
             <button type="submit" class="btn-submit">📨 提交病例</button>
             <div id="submissionFeedback" style="margin-top:10px;"></div>
         </form>
@@ -369,17 +370,43 @@
     let inspectionNonTongueAdded = false;
     let lastAnswerWasCorrect = false;
 
+    /* ===================== 数据与输出安全 ===================== */
+    const SAFE_CASE_ID = /^[a-z]+-\d{3}$/;
+    const MAX_STORED_TEXT_LENGTH = 2000;
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+    }
+    function escapeHtmlWithBreaks(value) { return escapeHtml(value).replace(/\r?\n/g, '<br>'); }
+    function isNonEmptyString(value) { return typeof value === 'string' && value.trim().length > 0; }
+    function isSafeCaseId(value) { return typeof value === 'string' && SAFE_CASE_ID.test(value); }
+    function validateCaseData(data) {
+        if (!data || !Array.isArray(data.cases) || data.cases.length === 0) throw new Error('病例数据格式无效');
+        const ids = new Set();
+        for (const c of data.cases) {
+            if (!c || !isSafeCaseId(c.id) || ids.has(c.id)) throw new Error('病例 ID 无效或重复');
+            ids.add(c.id);
+            if (!isNonEmptyString(c.title) || !isNonEmptyString(c.chiefComplaint) || !categoryMap[c.category] || !diffMap[c.difficulty]) throw new Error(`病例 ${c.id} 缺少基础字段`);
+            const clues = c.clues;
+            if (!clues || !['inspection', 'auscultation', 'pulse'].every(key => clues[key] && isNonEmptyString(clues[key].displayTitle) && isNonEmptyString(clues[key].displayContent) && isNonEmptyString(clues[key].textSummary))) throw new Error(`病例 ${c.id} 的四诊字段无效`);
+            if (!clues.inquiry || !Array.isArray(clues.inquiry.questions) || clues.inquiry.questions.length === 0 || !clues.inquiry.questions.every(q => q && isNonEmptyString(q.q) && isNonEmptyString(q.a) && Array.isArray(q.keywords) && q.keywords.every(isNonEmptyString))) throw new Error(`病例 ${c.id} 的问诊字段无效`);
+            const answer = c.correctAnswer, analysis = c.fullAnalysis;
+            if (!answer || !['disease', 'syndrome', 'westernDiagnosis'].every(key => isNonEmptyString(answer[key])) || !analysis || !['disease', 'syndrome', 'westernDiagnosis', 'pathogenesis', 'prescription'].every(key => isNonEmptyString(analysis[key])) || !Array.isArray(analysis.knowledgePoints) || !analysis.knowledgePoints.every(isNonEmptyString)) throw new Error(`病例 ${c.id} 的答案或解析字段无效`);
+            if (c.inspectionImages && (!Array.isArray(c.inspectionImages) || !c.inspectionImages.every(path => typeof path === 'string' && /^tongue\/[\w-]+\.jpg$/.test(path)))) throw new Error(`病例 ${c.id} 的图片路径无效`);
+        }
+        return data;
+    }
+
     /* ===================== 数据加载 ===================== */
     async function loadCaseData() {
         try {
             const response = await fetch('cases.json');
             if (!response.ok) throw new Error('病例数据加载失败');
-            casesDB = await response.json();
+            casesDB = validateCaseData(await response.json());
             document.getElementById('loadingIndicator').style.display = 'none';
             initApp();
         } catch (error) {
             console.error('加载病例数据出错:', error);
-            document.getElementById('loadingIndicator').innerHTML = '<div style="font-size:1.2em;color:var(--accent);">❌ 病例数据加载失败，请刷新重试</div>';
+            document.getElementById('loadingIndicator').textContent = '❌ 病例数据加载失败，请刷新重试';
         }
     }
 
@@ -496,25 +523,37 @@
 
     /* ===================== 存储工具 ===================== */
     function safeGetStorage(key, fallback) { try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : fallback; } catch (e) { return fallback; } }
-    function safeSetStorage(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
-    function getCompletedCases() { return safeGetStorage('tcm_completed_cases', []); }
+    function safeSetStorage(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { console.warn('本地学习记录保存失败', e); } }
+    function getCompletedCases() {
+        const value = safeGetStorage('tcm_completed_cases', []);
+        return Array.isArray(value) ? [...new Set(value.filter(isSafeCaseId))].slice(0, 1000) : [];
+    }
     function markCaseCompleted(caseId) {
         const arr = getCompletedCases();
         if (!arr.includes(caseId)) { arr.push(caseId); safeSetStorage('tcm_completed_cases', arr); }
     }
-    function getWrongCases() { return safeGetStorage('tcm_wrong_cases', []); }
+    function sanitizeStoredText(value, maxLength = MAX_STORED_TEXT_LENGTH) { return typeof value === 'string' ? value.slice(0, maxLength) : ''; }
+    function getWrongCases() {
+        const value = safeGetStorage('tcm_wrong_cases', []);
+        if (!Array.isArray(value)) return [];
+        return value.filter(w => w && isSafeCaseId(w.id)).slice(-1000).map(w => ({
+            id: w.id, title: sanitizeStoredText(w.title, 200), chiefComplaint: sanitizeStoredText(w.chiefComplaint),
+            difficulty: diffMap[w.difficulty] ? w.difficulty : '', date: sanitizeStoredText(w.date, 40),
+            syndrome: sanitizeStoredText(w.syndrome, 200), disease: sanitizeStoredText(w.disease, 200), basis: sanitizeStoredText(w.basis)
+        }));
+    }
     function saveWrongCase(data) {
         if (!currentCase) return;
         const wrongs = getWrongCases().filter(w => w.id !== currentCase.id);
         wrongs.push({
             id: currentCase.id,
-            title: currentCase.title,
-            chiefComplaint: currentCase.chiefComplaint,
+            title: sanitizeStoredText(currentCase.title, 200),
+            chiefComplaint: sanitizeStoredText(currentCase.chiefComplaint),
             difficulty: currentDifficulty,
             date: new Date().toISOString(),
-            syndrome: data.syndrome,
-            disease: data.disease,
-            basis: data.basis
+            syndrome: sanitizeStoredText(data.syndrome, 200),
+            disease: sanitizeStoredText(data.disease, 200),
+            basis: sanitizeStoredText(data.basis)
         });
         safeSetStorage('tcm_wrong_cases', wrongs);
     }
@@ -646,7 +685,7 @@
 
     function renderClues() {
         const area = document.getElementById('clueArea');
-        area.innerHTML = collectedClues.map(c => `<div class="clue-item"><span class="clue-tag ${c.tagClass}">${c.tag}</span><span>${c.content}</span></div>`).join('');
+        area.innerHTML = collectedClues.map(c => `<div class="clue-item"><span class="clue-tag ${escapeHtml(c.tagClass)}">${escapeHtml(c.tag)}</span><span>${escapeHtmlWithBreaks(c.content)}</span></div>`).join('');
         area.scrollTop = area.scrollHeight;
     }
 
@@ -791,7 +830,7 @@
         const nonTongueEl = document.getElementById('inspectionNonTongue');
         if (nonTongue) {
             nonTongueEl.style.display = 'block';
-            nonTongueEl.innerHTML = '<strong>其他望诊：</strong>' + nonTongue;
+            nonTongueEl.textContent = '其他望诊：' + nonTongue;
             if (!inspectionNonTongueAdded) {
                 inspectionNonTongueAdded = true;
                 addClue('inspection', nonTongue, '望诊·其他');
@@ -845,8 +884,8 @@ function preloadNextImage() {
         // 正确答案直接用病例对舌象的原始描述，不自行补充「舌形正常」等原病例未提及的内容
         const correctText = (currentCase.clues.inspection.tongueDesc || '').trim()
             || `舌色${tj.color || '未述'}，舌苔${tj.coating || '未述'}`;
-        const html = `<strong>舌象判断</strong><br>${ok ? '✅' : '❌'} 你的描述：${userText}<br><span style="color:var(--text-muted);font-size:0.9em;">正确答案：${correctText}</span>`;
-        addClue('inspection', html, '望诊·舌象');
+        const clueText = `舌象判断\n${ok ? '✅' : '❌'} 你的描述：${userText}\n正确答案：${correctText}`;
+        addClue('inspection', clueText, '望诊·舌象');
         exploredDiags.inspection = true;
         markExplored('inspection');
         closeInspectionModal();
@@ -890,7 +929,7 @@ function preloadNextImage() {
         lastAnswerWasCorrect = isCorrect;
         let feedbackHtml = '';
         if (isCorrect) {
-            feedbackHtml = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${correct.disease} · ${correct.syndrome}</p>`;
+            feedbackHtml = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${escapeHtml(correct.disease)} · ${escapeHtml(correct.syndrome)}</p>`;
             removeWrongCase(currentCase.id);
         } else {
             if (!dOk && !sOk) {
@@ -917,14 +956,14 @@ function preloadNextImage() {
     }
     function showFullAnalysis(el) {
         const fa = currentCase.fullAnalysis;
-        const sourceHtml = currentCase.source ? `<p><strong>病例来源：</strong><span class="source-tag">${currentCase.source}</span></p>` : '';
+        const sourceHtml = currentCase.source ? `<p><strong>病例来源：</strong><span class="source-tag">${escapeHtml(currentCase.source)}</span></p>` : '';
         el.innerHTML = `<div class="result-box success"><h4>📋 完整医案解析</h4>
-            <p><strong>中医病证：</strong>${fa.disease}（${fa.syndrome}）</p>
-            <p><strong>西医诊断：</strong>${fa.westernDiagnosis}</p>
+            <p><strong>中医病证：</strong>${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）</p>
+            <p><strong>西医诊断：</strong>${escapeHtml(fa.westernDiagnosis)}</p>
             ${sourceHtml}
-            <hr><p><strong>病机分析：</strong>${fa.pathogenesis}</p>
-            <hr><p><strong>推荐方药：</strong>${fa.prescription}</p>
-            <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${k}</li>`).join('')}</ul>
+            <hr><p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
+            <hr><p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
+            <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
             <hr><p style="color:var(--text-muted);font-size:0.9em;">💡 提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
     }
     function resetCurrentCase() {
@@ -935,6 +974,8 @@ function preloadNextImage() {
             document.getElementById('clueArea').innerHTML = '';
             document.getElementById('answerFeedback').innerHTML = '';
             document.getElementById('fullAnalysisArea').innerHTML = '';
+            document.getElementById('inputSyndrome').value = '';
+            document.getElementById('inputDisease').value = '';
             document.getElementById('inputBasis').value = '';
             ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
         }
@@ -1059,7 +1100,7 @@ function preloadNextImage() {
             const diffMeta = diffMap[c.difficulty] || { name: c.difficulty, emoji: '' };
             const catMeta = categoryMap[c.category] || { name: c.category, emoji: '' };
             // 主标题：完整主诉（保留换行）；卡片不暴露诊断（病名/证型）
-            const fullComplaint = c.chiefComplaint.replace(/\n/g, '<br>');
+            const fullComplaint = escapeHtmlWithBreaks(c.chiefComplaint);
             // 右上角标签：分类 + 难度
             const tag = `<span class="case-tag case-tag-cat">${catMeta.emoji} ${catMeta.name}</span> <span class="case-tag">${diffMeta.emoji} ${diffMeta.name}</span>`;
             const header = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
@@ -1077,7 +1118,7 @@ function preloadNextImage() {
                 html += `<div class="case-bank-item wrong" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;line-height:1.7;">
                     ${header}
                     <div style="margin-top:8px;">
-                        <button class="btn btn--primary btn--sm" onclick="challengeCaseFromBank('${c.id}')">🔄 重新挑战</button>
+                        <button class="btn btn--primary btn--sm" onclick="challengeCaseFromBank('${escapeHtml(c.id)}')">🔄 重新挑战</button>
                         <span style="color:var(--text-muted);font-size:0.85em;margin-left:8px;">⚠️ 本题作答有误，可重新挑战</span>
                     </div>
                 </div>`;
@@ -1086,7 +1127,7 @@ function preloadNextImage() {
                 html += `<div class="case-bank-item todo" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;line-height:1.7;">
                     ${header}
                     <div style="margin-top:8px;">
-                        <button class="btn btn--primary btn--sm" onclick="challengeCaseFromBank('${c.id}')">⚔️ 挑战病例</button>
+                        <button class="btn btn--primary btn--sm" onclick="challengeCaseFromBank('${escapeHtml(c.id)}')">⚔️ 挑战病例</button>
                         <span style="color:var(--text-muted);font-size:0.85em;margin-left:8px;">❓ 完成挑战后可查看完整医案</span>
                     </div>
                 </div>`;
@@ -1113,18 +1154,18 @@ function preloadNextImage() {
     }
     function renderFullCase(c) {
         const fa = c.fullAnalysis; const cl = c.clues;
-        let html = `<div style="margin:6px 0 10px 0;"><strong>🩺 主诉 / 基本情况：</strong><br>${c.chiefComplaint.replace(/\n/g, '<br>')}</div>`;
-        if (c.history) html += `<div style="margin:6px 0 10px 0;"><strong>📜 既往史：</strong><br>${c.history.replace(/\n/g, '<br>')}</div>`;
+        let html = `<div style="margin:6px 0 10px 0;"><strong>🩺 主诉 / 基本情况：</strong><br>${escapeHtmlWithBreaks(c.chiefComplaint)}</div>`;
+        if (c.history) html += `<div style="margin:6px 0 10px 0;"><strong>📜 既往史：</strong><br>${escapeHtmlWithBreaks(c.history)}</div>`;
         html += `<div style="margin:6px 0 10px 0;"><strong>🔍 四诊情况：</strong><br>`;
-        html += `【望诊】${cl.inspection.displayContent}<br>【闻诊】${cl.auscultation.displayContent}<br>`;
-        if (cl.inquiry && cl.inquiry.questions) html += `【问诊】<br>` + cl.inquiry.questions.map(q => `· ${q.q}：${q.a}`).join('<br>') + `<br>`;
-        html += `【切诊】${cl.pulse.displayContent}</div>`;
-        if (c.otherCheck) html += `<div style="margin:6px 0 10px 0;"><strong>📋 其他检查：</strong><br>${c.otherCheck.replace(/\n/g, '<br>')}</div>`;
-        html += `<div style="margin:6px 0 4px 0;"><strong>📋 辨证分析过程：</strong><br>中医病证：${fa.disease}（${fa.syndrome}）<br>`;
-        if (fa.westernDiagnosis) html += `西医诊断：${fa.westernDiagnosis}<br>`;
-        if (c.source) html += `<span class="source-tag">病例来源：${c.source}</span><br>`;
-        html += `病机分析：${fa.pathogenesis}<br>推荐方药：${fa.prescription}<br>`;
-        if (fa.knowledgePoints && fa.knowledgePoints.length) html += `知识点：${fa.knowledgePoints.join('；')}`;
+        html += `【望诊】${escapeHtml(cl.inspection.displayContent)}<br>【闻诊】${escapeHtml(cl.auscultation.displayContent)}<br>`;
+        if (cl.inquiry && cl.inquiry.questions) html += `【问诊】<br>` + cl.inquiry.questions.map(q => `· ${escapeHtml(q.q)}：${escapeHtml(q.a)}`).join('<br>') + `<br>`;
+        html += `【切诊】${escapeHtml(cl.pulse.displayContent)}</div>`;
+        if (c.otherCheck) html += `<div style="margin:6px 0 10px 0;"><strong>📋 其他检查：</strong><br>${escapeHtmlWithBreaks(c.otherCheck)}</div>`;
+        html += `<div style="margin:6px 0 4px 0;"><strong>📋 辨证分析过程：</strong><br>中医病证：${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）<br>`;
+        if (fa.westernDiagnosis) html += `西医诊断：${escapeHtml(fa.westernDiagnosis)}<br>`;
+        if (c.source) html += `<span class="source-tag">病例来源：${escapeHtml(c.source)}</span><br>`;
+        html += `病机分析：${escapeHtml(fa.pathogenesis)}<br>推荐方药：${escapeHtml(fa.prescription)}<br>`;
+        if (fa.knowledgePoints && fa.knowledgePoints.length) html += `知识点：${fa.knowledgePoints.map(escapeHtml).join('；')}`;
         html += `</div>`;
         html += `<div style="margin-top:6px;color:var(--text-muted);font-size:0.88em;">💡 提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</div>`;
         return html;
@@ -1146,12 +1187,12 @@ function preloadNextImage() {
                 return `<div class="wrong-card">
                     <div class="wrong-title">错题${i + 1}</div>
                     <div class="wrong-meta">${formatDate(w.date)}</div>
-                    <div><strong>主诉：</strong>${(w.chiefComplaint || '').replace(/\n/g, '<br>')}</div>
-                    <div><strong>我的答案：</strong>${answerStr}</div>
-                    <div><strong>错误原因：</strong>${w.basis || '未填写'}</div>
+                    <div><strong>主诉：</strong>${escapeHtmlWithBreaks(w.chiefComplaint)}</div>
+                    <div><strong>我的答案：</strong>${escapeHtml(answerStr)}</div>
+                    <div><strong>错误原因：</strong>${escapeHtml(w.basis || '未填写')}</div>
                     <div class="wrong-actions">
-                        <button class="btn btn--outline btn--sm" onclick="rechallengeCase('${w.id}')">🔄 重新挑战</button>
-                        <button class="btn btn--ghost btn--sm" onclick="viewWrongCaseAnalysis('${w.id}')">💡 查看解析</button>
+                        <button class="btn btn--outline btn--sm" onclick="rechallengeCase('${escapeHtml(w.id)}')">🔄 重新挑战</button>
+                        <button class="btn btn--ghost btn--sm" onclick="viewWrongCaseAnalysis('${escapeHtml(w.id)}')">💡 查看解析</button>
                     </div>
                 </div>`;
             }).join('');
@@ -1235,7 +1276,9 @@ function preloadNextImage() {
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             if (file.size > 10 * 1024 * 1024) { feedback.innerHTML = `<div class="result-box fail">舌象照片大小不能超过10MB，请压缩后重新上传。</div>`; return false; }
+            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { feedback.innerHTML = `<div class="result-box fail">仅支持 JPG、PNG 或 WebP 格式的舌象照片。</div>`; return false; }
         }
+        if (!document.getElementById('submissionConsent').checked) { feedback.innerHTML = `<div class="result-box fail">请确认病例已脱敏并同意投稿数据处理方式。</div>`; return false; }
         feedback.innerHTML = '';
         return true;
     }
