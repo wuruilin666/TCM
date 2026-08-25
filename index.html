@@ -96,6 +96,12 @@
         .chat-input-area { display: flex; gap: 8px; }
         .chat-input-area input { flex: 1; padding: 12px 16px; border-radius: 24px; border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none; }
         .chat-input-area button { padding: 10px 20px; border-radius: 24px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 600; }
+        .inquiry-hint { font-size: 12px; color: #9b8579; margin: 10px 2px 0; line-height: 1.6; }
+        .data-card { background: #fff; border: 1px solid #e8dcc8; border-radius: 16px; padding: 18px; margin-top: 18px; }
+        .data-stats { font-size: 15px; color: #5b4636; margin: 8px 0 14px; }
+        .data-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        .data-actions button { padding: 10px 16px; border-radius: 12px; border: 2px solid var(--border); background: #fffefb; color: var(--text-light); font-size: 0.9em; cursor: pointer; font-family: var(--font-body); transition: var(--transition); }
+        .data-actions button:hover { border-color: var(--primary-light); color: var(--primary); }
         .site-header { width: 100%; max-width: 720px; position: relative; z-index: 1; margin-bottom: 4px; }
         .site-footer { position: fixed; bottom: 14px; right: 20px; z-index: 999; }
         .copyright { font-size: 0.8em; color: #b5a595; letter-spacing: 0.06em; font-family: var(--font-heading); pointer-events: none; background: rgba(253,248,243,0.7); padding: 4px 10px; border-radius: 12px; backdrop-filter: blur(4px); }
@@ -183,6 +189,7 @@
             <input type="text" id="inquiryInput" placeholder="输入您想问的问题..." onkeydown="if(event.key==='Enter')sendInquiry()">
             <button onclick="sendInquiry()">发送</button>
         </div>
+        <p class="inquiry-hint">提示：可从寒热、汗出、饮食、睡眠、二便、情志、口渴、疼痛等方面提问</p>
     </div>
 </div>
 
@@ -458,9 +465,54 @@
                     </div>
                 </div>
                 <div style="text-align:center;"><button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button></div>
+                <div class="data-card">
+                    <h3>📦 本地数据</h3>
+                    <p class="data-stats" id="dataStats"></p>
+                    <div class="data-actions">
+                        <button onclick="resetAllProgress()">🔄 重置全部进度</button>
+                        <button onclick="clearWrongOnly()">🗑️ 仅清空错题</button>
+                        <button onclick="exportLearning()">⬇️ 导出学习记录</button>
+                    </div>
+                </div>
             </div>
         `;
+        renderDataStats();
         showPage('Home');
+    }
+
+    /* ===================== 本地数据管理 ===================== */
+    function renderDataStats(){
+        const total = getAllCases().length;
+        const done = getCompletedCases().length;
+        const wrong = getWrongCases().length;
+        const remaining = Math.max(0, total - done);
+        const el = document.getElementById('dataStats');
+        if (el) el.textContent = `已完成 ${done} · 错题 ${wrong} · 未完成 ${remaining}`;
+    }
+    function resetAllProgress(){
+        if (!confirm('确定要清空所有学习进度和错题吗？此操作不可恢复。')) return;
+        safeSetStorage('tcm_completed_cases', []);
+        safeSetStorage('tcm_wrong_cases', []);
+        renderDataStats();
+        alert('已重置全部本地学习数据。');
+    }
+    function clearWrongOnly(){
+        if (!confirm('确定只清空错题本吗？')) return;
+        safeSetStorage('tcm_wrong_cases', []);
+        renderDataStats();
+        alert('错题本已清空。');
+    }
+    function exportLearning(){
+        const data = {
+            completed: getCompletedCases(),
+            wrong: getWrongCases(),
+            exportedAt: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'tcm-learning-' + new Date().toISOString().slice(0,10) + '.json';
+        a.click(); URL.revokeObjectURL(url);
     }
 
     /* ===================== 存储工具 ===================== */
@@ -508,7 +560,7 @@
     }
     function goHome() { showPage('Home'); }
     function startChallenge() { showPage('Game'); resetGameUI(); }
-    function showAbout() { showPage('About'); }
+    function showAbout() { renderDataStats(); showPage('About'); }
 
     /* ===================== 闯关逻辑 ===================== */
     function resetGameUI() {
@@ -619,6 +671,51 @@
         area.scrollTop = area.scrollHeight;
     }
 
+    /* ===================== 通用问诊同义词库 ===================== */
+    const TCM_SYNONYMS = {
+        chillHeat: ['寒','冷','热','怕','温','烧','恶寒','畏风','发烧','寒热','身热','怕冷','喜温'],
+        sweat:     ['汗','汗出','出汗','盗汗','自汗','流汗','无汗','少汗'],
+        diet:      ['食','吃','饭','纳','就餐','饿','饱','饮食','饭量','吃得下','吃东西','胃口','食欲','厌油','泛恶','恶心'],
+        sleep:     ['睡','眠','夜','休息','寐','夜休','睡眠','失眠','多梦','早醒'],
+        stool:     ['大便','便','溏','泻','拉','屎','秘','干结','排便','腹泻','便秘','完谷','里急后重'],
+        urine:     ['小便','尿','溺','尿频','尿急','尿痛','夜尿','尿色'],
+        emotion:   ['情','志','绪','烦','焦虑','郁','怒','紧张','心情','易怒','喜','悲','思','惊','恐'],
+        thirst:    ['渴','饮','口干','喝水','口苦','口黏','口淡','口咸'],
+        pain:      ['痛','疼','胀','酸','麻','木','痹','楚','不适','难受'],
+        head:      ['头','晕','眩','昏','头痛','头胀'],
+        breath:    ['喘','咳','嗽','痰','胸闷','气短','气促','呼吸','息'],
+        face:      ['面','色','苍白','潮红','萎黄','面色'],
+        energy:    ['乏','疲','倦','力','神','累','气短','无力','精神'],
+        women:     ['经','带','孕','产','月事','月经','白带','崩漏','妊娠','经期','痛经','经量']
+    };
+    const DIMENSION_VAGUE = {
+        chillHeat: '（患者）冷热都还行，没特别怕冷怕热。',
+        sweat:     '（患者）平时不怎么出汗，没觉得反常。',
+        diet:      '（患者）吃饭倒没什么问题，胃口跟平时差不多。',
+        sleep:     '（患者）睡觉还行，没什么特别。',
+        stool:     '（患者）大便挺正常的，一天一次，成形。',
+        urine:     '（患者）小便没什么异常。',
+        emotion:   '（患者）心情还好，没啥烦心的。',
+        thirst:    '（患者）不怎么口渴，喝水正常。',
+        pain:      '（患者）这个倒没太注意，身上没啥明显不舒服的。',
+        head:      '（患者）头不晕不痛，没什么不对劲。',
+        breath:    '（患者）呼吸顺畅，没觉着胸闷气短。',
+        face:      '（患者）气色看着还好。',
+        energy:    '（患者）精神还行，不觉得特别累。',
+        women:     '（患者）这方面没啥特别要说的。'
+    };
+    const GENERIC_VAGUE = '（患者）这个我倒没太留意，没什么不对劲的。';
+    function detectQuestionDimension(qObj){
+        const text = (qObj.q||'') + ' ' + (qObj.keywords||[]).join(' ');
+        for (const dim in TCM_SYNONYMS){ if (TCM_SYNONYMS[dim].some(k=>text.includes(k))) return dim; }
+        return null;
+    }
+    function detectInputDimensions(text){
+        const dims = [];
+        for (const dim in TCM_SYNONYMS){ if (TCM_SYNONYMS[dim].some(k=>text.includes(k))) dims.push(dim); }
+        return dims;
+    }
+
     /* ===================== 问诊 ===================== */
     function openInquiryModal() {
         if (!currentCase) return;
@@ -642,18 +739,25 @@
         inquiryHistory.push({ role: 'user', text: q }); appendChat('user', q);
         input.value = '';
         const questions = currentCase.clues.inquiry.questions;
-        let matched = -1;
+        let best = -1, bestScore = 0;
         for (let i = 0; i < questions.length; i++) {
-            if (questions[i].keywords.some(k => q.includes(k))) { matched = i; break; }
+            const dim = detectQuestionDimension(questions[i]);
+            const expanded = questions[i].keywords.concat(dim ? TCM_SYNONYMS[dim] : []);
+            let score = 0;
+            expanded.forEach(k => { if (q.includes(k)) score++; });
+            if (score > bestScore) { bestScore = score; best = i; }
         }
         let answer = '';
-        if (matched >= 0) {
-            answer = questions[matched].a;
-            if (!askedInquiryQuestions.includes(matched)) {
-                askedInquiryQuestions.push(matched);
-                addClue('inquiry', answer, '问诊·' + questions[matched].q);
+        if (best >= 0 && bestScore > 0) {
+            answer = questions[best].a;
+            if (!askedInquiryQuestions.includes(best)) {
+                askedInquiryQuestions.push(best);
+                addClue('inquiry', answer, '问诊·' + questions[best].q);
             } else { answer += '（这个问题刚才已经回答过了）'; }
-        } else { answer = genericAnswers[Math.floor(Math.random() * genericAnswers.length)]; }
+        } else {
+            const dims = detectInputDimensions(q);
+            answer = dims.length ? DIMENSION_VAGUE[dims[0]] : GENERIC_VAGUE;
+        }
         setTimeout(() => {
             inquiryHistory.push({ role: 'patient', text: answer }); appendChat('patient', answer);
             if (askedInquiryQuestions.length >= questions.length) { exploredDiags.inquiry = true; markExplored('inquiry'); }
