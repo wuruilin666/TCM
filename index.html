@@ -690,14 +690,20 @@
         for (const k of keywords){ if (text.includes(k)) score += k.length * k.length; }
         return score;
     }
-    function detectQuestionDimension(qObj){
-        const text = (qObj.q||'') + ' ' + (qObj.keywords||[]).join(' ');
-        let bestDim = null, bestScore = 0;
+    // 返回问题自身关键词命中的“维度集合”{ 维度: 得分 }。
+    // 只依据关键词（不含题目标题），避免标题里的单字（如“痰的情况”的“情”）
+    // 把问题误判到别的维度；复合题目（关键词跨多个维度）会同时属于多个维度。
+    function questionDimensionSet(qObj){
+        const keywords = qObj.keywords || [];
+        const set = {};
         for (const dim in TCM_SYNONYMS){
-            const s = dimensionScore(text, TCM_SYNONYMS[dim]);
-            if (s > bestScore){ bestScore = s; bestDim = dim; }
+            let s = 0;
+            for (const k of TCM_SYNONYMS[dim]){
+                for (const kw of keywords){ if (kw.includes(k)) s += k.length * k.length; }
+            }
+            if (s > 0) set[dim] = s;
         }
-        return bestDim;
+        return set;
     }
     function detectInputDimensions(text){
         const dims = [];
@@ -735,10 +741,13 @@
         const dims = detectInputDimensions(q);
         let best = -1, bestScore = 0;
         for (let i = 0; i < questions.length; i++) {
-            const qDim = detectQuestionDimension(questions[i]);
-            // 约束：问题必须属于用户输入识别的维度，绝不串到别的维度
-            if (dims.length > 0 && qDim && !dims.includes(qDim)) continue;
-            // 在该维度内，用问题自身关键词与用户输入做精确命中打分
+            // 用问题关键词的“维度集合”与用户输入维度做交集判定：
+            // 只要两者有重叠维度即允许命中，避免把复合题目（关键词跨维度）误拒，
+            // 同时仍能阻止“问小便却答大便”这类跨维度串题。
+            const qDims = Object.keys(questionDimensionSet(questions[i]));
+            const overlap = dims.length === 0 || qDims.some(d => dims.includes(d));
+            if (!overlap) continue;
+            // 在维度重叠内，用问题自身关键词与用户输入做精确命中打分
             let score = 0;
             questions[i].keywords.forEach(k => { if (q.includes(k)) score += k.length * k.length; });
             if (score > bestScore) { bestScore = score; best = i; }
