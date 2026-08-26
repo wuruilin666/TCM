@@ -2,29 +2,6 @@
 
 通过病例主诉（谜面）引导学习者自主选择「望、闻、问、切」获取线索，逐步完成辨证、病名和治法推演；提交后可查看完整医案解析。
 
-## 本地运行
-
-页面会通过 `fetch()` 读取 `cases.json`，请使用 HTTP 服务运行，而不要直接双击打开 `index.html`：
-
-```bash
-python3 -m http.server 8000
-```
-
-然后访问 <http://localhost:8000>。
-
-## 病例数据维护
-
-- 病例数据位于 `cases.json`，顶层必须为 `{ "cases": [] }`。
-- 每例必须使用唯一 ID，格式为 `basic-001`、`inter-001` 或 `adv-001` 等小写字母加三位数字。
-- `category` 必须是页面定义的分类，`difficulty` 只能是 `basic`、`intermediate` 或 `advanced`。
-- 每例必须包含完整的望、闻、问、切数据、正确答案及医案解析；页面在加载时会校验这些关键字段。
-- 舌象图片放在 `tongue/`，病例配置的图片路径只允许指向该目录下的 `.jpg` 文件。
-
-提交前可执行以下基础校验：
-
-```bash
-python3 -m json.tool cases.json >/dev/null
-```
 
 ## 隐私与投稿
 
