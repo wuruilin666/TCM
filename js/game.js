@@ -109,7 +109,7 @@ export function showCurrentCase() {
     document.getElementById('prevCaseBtn').style.display = (state.unfinishedCases.length > 1 && state.currentCaseIndex > 0) ? 'inline-flex' : 'none';
     document.getElementById('nextCaseBtn').style.display = (state.unfinishedCases.length > 1 && state.currentCaseIndex < state.unfinishedCases.length - 1) ? 'inline-flex' : 'none';
     const otherCheckBtn = document.getElementById('btnOtherCheck');
-    otherCheckBtn.style.display = (state.currentDifficulty === 'basic') ? 'none' : 'block';
+    otherCheckBtn.style.display = 'block';
     document.getElementById('chiefComplaintCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
