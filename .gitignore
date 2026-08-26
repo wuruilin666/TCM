@@ -1,0 +1,4 @@
+node_modules/
+submissions/*.json
+uploads/*
+!uploads/.gitkeep

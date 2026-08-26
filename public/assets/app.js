@@ -1,315 +1,8 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta property="og:title" content="中医辨证推演馆 - 海龟汤模式">
-<meta property="og:description" content="模拟门诊看病，通过望闻问切四诊探寻线索，逐步推理完成辨证论治。">
-<meta property="og:type" content="website">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>中医辨证推演馆 - 海龟汤模式</title>
-    <meta name="description" content="中医辨证推演馆，通过海龟汤模式进行四诊探案，学习中医辨证论治。">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%238b4513'/%3E%3Ctext x='50' y='52' font-family='KaiTi,STKaiti,serif' font-size='48' fill='%23fdf8f3' text-anchor='middle' dominant-baseline='central'%3E%E8%BE%A8%3C/text%3E%3C/svg%3E">
-    <style>
-        :root {
-            --bg: #fdf8f3; --card: #fffefb; --primary: #8b4513; --primary-light: #a0522d; --accent: #c0392b; --accent-light: #e74c3c; --gold: #b8860b; --gold-light: #d4a745; --text: #3e2723; --text-light: #5d4037; --text-muted: #7b5b4e; --border: #e0d5c7; --shadow: 0 4px 20px rgba(139, 69, 19, 0.10); --shadow-lg: 0 12px 40px rgba(139, 69, 19, 0.15); --radius: 16px; --radius-sm: 10px; --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); --font-heading: 'STSong', 'Songti SC', 'Noto Serif SC', 'KaiTi', 'STKaiti', '楷体', 'SimSun', '宋体', serif; --font-body: 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', 'Noto Sans SC', sans-serif;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: var(--font-body); background: var(--bg); background-image: radial-gradient(ellipse at 20% 20%, rgba(184, 134, 11, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 80% 60%, rgba(139, 69, 19, 0.04) 0%, transparent 60%), radial-gradient(ellipse at 50% 80%, rgba(160, 82, 45, 0.03) 0%, transparent 50%); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; line-height: 1.6; }
-        body::before { content: ''; position: fixed; top: -120px; right: -120px; width: 400px; height: 400px; border-radius: 50%; border: 1px solid rgba(184,134,11,0.08); pointer-events: none; z-index: 0; }
-        body::after { content: ''; position: fixed; bottom: -80px; left: -100px; width: 300px; height: 300px; border-radius: 50%; border: 1px solid rgba(139,69,19,0.06); pointer-events: none; z-index: 0; }
-        .app-container { width: 100%; max-width: 720px; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 0; }
-        .page { display: none; flex-direction: column; gap: 20px; animation: fadeSlideIn 0.45s ease; }
-        .page.active { display: flex; }
-        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes popIn { 0% { opacity: 0; transform: scale(0.88); } 60% { transform: scale(1.03); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.35); } 50% { box-shadow: 0 0 0 18px rgba(192, 57, 43, 0); } }
-        .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px 30px; border: 1px solid var(--border); transition: var(--transition); position: relative; }
-        .card:hover { box-shadow: var(--shadow-lg); }
-        .card--accent { border-left: 5px solid var(--accent); }
-        .card--gold { border-left: 5px solid var(--gold); }
-        .card--highlight { background: linear-gradient(135deg, #fffefb 0%, #fef9f2 100%); border: 2px solid var(--gold-light); box-shadow: 0 6px 28px rgba(184, 134, 11, 0.18); }
-        .hero-title { font-family: var(--font-heading); font-size: 2.6em; font-weight: 700; color: var(--primary); text-align: center; letter-spacing: 0.04em; margin-bottom: 4px; line-height: 1.3; }
-        .hero-title .icon { display: inline-block; font-size: 1.1em; animation: popIn 0.6s ease; }
-        .hero-subtitle { text-align: center; color: var(--text-muted); font-size: 1.05em; margin-bottom: 8px; font-family: var(--font-heading); letter-spacing: 0.03em; }
-        .hero-desc { text-align: center; color: var(--text-light); font-size: 0.95em; background: rgba(184,134,11,0.05); border-radius: 20px; padding: 14px 20px; line-height: 1.7; }
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 28px; border-radius: 28px; border: none; cursor: pointer; font-size: 1.05em; font-weight: 600; letter-spacing: 0.03em; transition: var(--transition); font-family: var(--font-body); white-space: nowrap; position: relative; text-decoration: none; user-select: none; }
-        .btn:active { transform: scale(0.96); }
-        .btn--primary { background: var(--accent); color: #fff; font-size: 1.4em; padding: 18px 48px; border-radius: 36px; letter-spacing: 0.05em; box-shadow: 0 6px 22px rgba(192,57,43,0.35); animation: pulse 2.5s infinite; }
-        .btn--primary:hover { background: #a93226; box-shadow: 0 10px 30px rgba(192,57,43,0.45); transform: translateY(-2px); animation: none; }
-        .btn--primary:active { animation: none; }
-        .btn--outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); padding: 12px 20px; font-size: 1em; border-radius: 24px; }
-        .btn--outline:hover { background: rgba(139,69,19,0.06); border-color: var(--primary-light); }
-        .btn--ghost { background: rgba(139,69,19,0.04); color: var(--text-light); padding: 12px 20px; font-size: 1em; border-radius: 24px; border: 1px solid transparent; }
-        .btn--ghost:hover { background: rgba(139,69,19,0.1); border-color: var(--border); }
-        .btn--equal { flex: 1 1 0; min-width: 0; padding: 12px 16px; font-size: 1em; border-radius: 24px; justify-content: center; }
-        .home-buttons { display: flex; flex-direction: column; gap: 16px; align-items: center; }
-        .home-secondary { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; width: 100%; }
-        .btn--difficulty { flex: 1; min-width: 100px; padding: 16px 18px; border-radius: var(--radius-sm); font-weight: 700; font-size: 1em; border: 2px solid transparent; transition: var(--transition); font-family: var(--font-heading); }
-        .btn--difficulty.btn--basic { background: #f0faf0; color: #2d6a4f; border-color: #b7d7c5; }
-        .btn--difficulty.btn--basic:hover { background: #d8f0e0; border-color: #6aaf8a; }
-        .btn--difficulty.btn--intermediate { background: #fef9ee; color: #8b6914; border-color: #e0d0a0; }
-        .btn--difficulty.btn--intermediate:hover { background: #fdf3d6; border-color: #c9a84c; }
-        .btn--difficulty.btn--advanced { background: #fdf4f4; color: #8b1a1a; border-color: #dbb5b5; }
-        .btn--difficulty.btn--advanced:hover { background: #fce8e8; border-color: #c45a5a; }
-        .btn--difficulty.selected { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.2) !important; border-width: 3px !important; }
-        .btn--basic.selected { border-color: #2d6a4f !important; background: #c8e8d4 !important; }
-        .btn--intermediate.selected { border-color: #8b6914 !important; background: #fcecb8 !important; }
-        .btn--advanced.selected { border-color: #8b1a1a !important; background: #fad4d4 !important; }
-        .four-diagnosis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        @media (max-width: 500px) { .four-diagnosis { grid-template-columns: repeat(2, 1fr); } .hero-title { font-size: 1.8em; } .btn--primary { font-size: 1.2em; padding: 14px 28px; } .card { padding: 18px 16px; } .home-secondary { flex-direction: column; } .btn--equal { width: 100%; } }
-        .btn--diag { padding: 16px 12px; border-radius: var(--radius-sm); font-weight: 700; font-size: 1.05em; border: 2px solid var(--border); background: var(--card); color: var(--primary); cursor: pointer; transition: var(--transition); font-family: var(--font-heading); display: flex; flex-direction: column; align-items: center; gap: 6px; }
-        .btn--diag:hover { border-color: var(--primary-light); box-shadow: 0 6px 20px rgba(139,69,19,0.18); transform: translateY(-2px); background: #fffdf9; }
-        .btn--diag:active { transform: scale(0.94); }
-        .btn--diag.explored { background: #f9f5ef; border-color: #c9b896; color: #6b4d34; cursor: default; opacity: 0.75; }
-        .btn--diag.explored::after { content: '✓'; font-size: 0.75em; color: #6b9e6b; position: absolute; top: 6px; right: 10px; }
-        .btn--diag .diag-icon { font-size: 1.6em; line-height: 1; }
-        .btn--diag .diag-label { font-size: 0.85em; }
-        .clue-area { background: #fdfaf5; border-radius: var(--radius-sm); padding: 16px 18px; border: 1px dashed var(--border); min-height: 60px; max-height: 280px; overflow-y: auto; }
-        .clue-area:empty::before { content: '🔍 线索收集区：点击上方四诊按钮探查线索...'; color: #c5b5a0; font-style: italic; font-size: 0.9em; display: block; text-align: center; padding: 20px 0; }
-        .clue-item { display: flex; gap: 10px; padding: 10px 14px; margin: 6px 0; background: #fffefb; border-radius: 8px; border-left: 3px solid var(--gold); animation: popIn 0.35s ease; font-size: 0.93em; }
-        .clue-item .clue-tag { font-weight: 700; font-size: 0.8em; padding: 3px 10px; border-radius: 12px; color: #fff; }
-        .tag-wang { background: #5b8c5a; } .tag-wen { background: #b8860b; } .tag-ask { background: #7b5ea7; } .tag-pulse { background: #c0392b; }
-        .answer-area { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        .answer-area input { flex: 1; min-width: 140px; padding: 12px 16px; border-radius: 24px; border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none; }
-        .answer-area input:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(139,69,19,0.07); }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(30,15,5,0.55); z-index: 1000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.25s; padding: 20px; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .modal { background: var(--card); border-radius: var(--radius); padding: 28px 26px; max-width: 560px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg); animation: popIn 0.4s; position: relative; border: 1px solid var(--border); }
-        .modal-close { position: absolute; top: 12px; right: 16px; width: 36px; height: 36px; border-radius: 50%; border: none; background: rgba(0,0,0,0.05); cursor: pointer; font-size: 1.2em; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
-        .modal-close:hover { background: rgba(0,0,0,0.12); color: var(--text); }
-        .modal h3 { font-family: var(--font-heading); color: var(--primary); margin-bottom: 14px; }
-        .tongue-sim { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; margin: 10px 0; align-items: center; }
-        .tongue-visual { width: 80px; height: 110px; border-radius: 40px 40px 30px 30px; background: linear-gradient(180deg, #f0c8c0 30%, #e8b4b0 60%, #e0a8a0 100%); border: 3px solid #d4a098; box-shadow: inset 0 0 20px rgba(180,130,120,0.3); position: relative; }
-        .tongue-visual::after { content: ''; position: absolute; top: 25%; left: 15%; width: 70%; height: 45%; background: rgba(220,195,150,0.55); border-radius: 35px 35px 20px 20px; background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(200,170,120,0.3) 3px, rgba(200,170,120,0.3) 5px); }
-        .tongue-img { width: 130px; height: 175px; border-radius: 40px 40px 30px 30px; border: 3px solid #d4a098; box-shadow: inset 0 0 20px rgba(180,130,120,0.3); object-fit: cover; background: #fdfaf5; }
-        .tongue-img-lg { width: 260px; height: 347px; border-radius: 80px 80px 55px 55px; border: 4px solid #d4a098; box-shadow: inset 0 0 24px rgba(180,130,120,0.3), 0 8px 24px rgba(139,69,19,0.14); object-fit: cover; background: #fdfaf5; }
-        .inspect-nav { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--border); background: var(--card); cursor: pointer; font-size: 1.6em; color: var(--primary); display: flex; align-items: center; justify-content: center; transition: var(--transition); flex: none; }
-        .inspect-nav:hover { background: rgba(139,69,19,0.06); border-color: var(--primary-light); }
-        .tongue-desc { max-width: 220px; font-size: 0.92em; color: var(--text-light); line-height: 1.7; }
-        .result-box { padding: 20px; border-radius: var(--radius-sm); margin: 12px 0; animation: popIn 0.4s; line-height: 1.7; }
-        .result-box.success { background: #f0faf4; border: 2px solid #6aaf8a; color: #1e4d34; }
-        .result-box.fail { background: #fef9f4; border: 2px solid #e0b060; color: #6b4d20; }
-        .chat-area { flex: 1; overflow-y: auto; min-height: 160px; max-height: 300px; background: #fdfaf5; border-radius: 12px; padding: 14px; margin-bottom: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
-        .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 18px; line-height: 1.5; font-size: 0.93em; animation: popIn 0.25s; }
-        .chat-bubble.user { align-self: flex-end; background: #e8f0fe; color: #1a3a5c; }
-        .chat-bubble.patient { align-self: flex-start; background: #f5eee0; color: #4a3b2c; }
-        .chat-input-area { display: flex; gap: 8px; }
-        .chat-input-area input { flex: 1; padding: 12px 16px; border-radius: 24px; border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none; }
-        .chat-input-area button { padding: 10px 20px; border-radius: 24px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 600; }
-        .inquiry-hint { font-size: 12px; color: #9b8579; margin: 10px 2px 0; line-height: 1.6; }
-        .data-card { background: #fff; border: 1px solid #e8dcc8; border-radius: 16px; padding: 18px; margin-top: 18px; }
-        .data-stats { font-size: 15px; color: #5b4636; margin: 8px 0 14px; }
-        .data-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-        .data-actions button { padding: 10px 16px; border-radius: 12px; border: 2px solid var(--border); background: #fffefb; color: var(--text-light); font-size: 0.9em; cursor: pointer; font-family: var(--font-body); transition: var(--transition); }
-        .data-actions button:hover { border-color: var(--primary-light); color: var(--primary); }
-        .site-header { width: 100%; max-width: 720px; position: relative; z-index: 1; margin-bottom: 4px; }
-        .site-footer { position: fixed; bottom: 14px; right: 20px; z-index: 999; }
-        .copyright { font-size: 0.8em; color: #b5a595; letter-spacing: 0.06em; font-family: var(--font-heading); pointer-events: none; background: rgba(253,248,243,0.7); padding: 4px 10px; border-radius: 12px; backdrop-filter: blur(4px); }
-        .top-nav { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 4px; }
-        .top-nav .nav-link { font-size: 0.85em; color: var(--text-muted); cursor: pointer; padding: 6px 14px; border-radius: 16px; font-family: var(--font-heading); border: 1px solid transparent; background: transparent; }
-        .top-nav .nav-link:hover { color: var(--primary); background: rgba(139,69,19,0.05); }
-        .top-nav .nav-link.nav-active { color: var(--accent); font-weight: 700; background: rgba(192,57,43,0.06); border-color: rgba(192,57,43,0.2); }
-        .case-full { font-size: 0.92em; line-height: 1.7; color: var(--text-light); }
-        .case-full strong { color: var(--primary); }
-        .bank-block { margin: 6px 0 10px; }
-        .bank-label { font-weight: 700; color: var(--primary); font-size: 0.82em; margin-bottom: 6px; }
-        .bank-nav-wrap, .bank-chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
-        .bank-nav { border: 2px solid var(--border); background: #fffefb; color: var(--text-light); border-radius: 20px; padding: 6px 12px; font-size: 0.85em; cursor: pointer; font-family: var(--font-body); transition: var(--transition); }
-        .bank-nav:hover { border-color: var(--primary-light); color: var(--primary); }
-        .bank-nav.active { background: rgba(139,69,19,0.12); border-color: var(--primary); color: var(--primary); font-weight: 700; }
-        .bank-chip { border: 1px solid var(--border); background: #fffefb; color: var(--text-muted); border-radius: 14px; padding: 4px 10px; font-size: 0.8em; cursor: pointer; font-family: var(--font-body); transition: var(--transition); }
-        .bank-chip:hover { border-color: var(--primary-light); color: var(--primary); }
-        .bank-chip.active { background: rgba(139,69,19,0.1); border-color: var(--primary-light); color: var(--primary); font-weight: 600; }
-        .bank-summary { font-size: 0.85em; color: var(--text-muted); margin: 4px 0 8px; }
-        .case-tag { display: inline-block; background: rgba(139,69,19,0.08); color: var(--primary); padding: 1px 8px; border-radius: 10px; font-size: 0.8em; font-weight: 600; margin-right: 4px; }
-        .case-tag-cat { background: rgba(184,134,11,0.1); color: var(--gold); }
-        .btn--sm { padding: 6px 12px; font-size: 0.85em; }
-        .case-bank-item .btn--sm { animation: none; }
-        .submission-form { display: flex; flex-direction: column; gap: 12px; }
-        .submission-form label { font-weight: 600; color: var(--text-light); font-size: 0.9em; }
-        .submission-form input[type="text"], .submission-form textarea { width: 100%; padding: 10px 14px; border-radius: 10px; border: 2px solid var(--border); font-size: 0.95em; background: #fffefb; outline: none; transition: var(--transition); font-family: var(--font-body); }
-        .submission-form input[type="text"]:focus, .submission-form textarea:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(139,69,19,0.07); }
-        .submission-form textarea { min-height: 80px; resize: vertical; }
-        .submission-form .required-star { color: var(--accent); }
-        .submission-form .form-row { display: flex; gap: 12px; flex-wrap: wrap; }
-        .submission-form .form-row > div { flex: 1; min-width: 160px; }
-        .submission-form .file-input { border: 2px dashed var(--border); padding: 10px; border-radius: 10px; background: #fdfaf5; }
-        .submission-form .file-input input[type="file"] { width: 100%; }
-        .submission-form .btn-submit { width: 100%; padding: 14px; font-size: 1.1em; border-radius: 28px; background: var(--primary); color: #fff; border: none; cursor: pointer; font-weight: 700; transition: var(--transition); }
-        .submission-form .btn-submit:hover { background: var(--primary-light); }
-        .submission-form .form-hint { font-size: 0.8em; color: var(--text-muted); }
-        .difficulty-select { position: relative; }
-        .difficulty-select-display { padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; background: #fffefb; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: var(--transition); }
-        .difficulty-select-display:hover { border-color: var(--primary-light); }
-        .difficulty-select-display .arrow { color: var(--text-muted); font-size: 0.8em; }
-        .difficulty-options { position: absolute; top: 100%; left: 0; right: 0; background: #fffefb; border: 2px solid var(--border); border-top: none; border-radius: 0 0 10px 10px; z-index: 10; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
-        .difficulty-option { display: block; width: 100%; padding: 10px 14px; border: none; background: none; text-align: left; cursor: pointer; font-family: var(--font-body); font-size: 0.95em; color: var(--text); transition: background 0.2s; }
-        .difficulty-option:hover { background: rgba(139,69,19,0.06); }
-        .difficulty-option.selected { background: rgba(139,69,19,0.1); font-weight: 600; }
-        .tongue-judge-form { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 0; }
-        .tongue-judge-form textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--border); font-size: 0.95em; font-family: var(--font-body); line-height: 1.7; background: #fffefb; outline: none; resize: vertical; box-sizing: border-box; }
-        .tongue-judge-form textarea:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(139,69,19,0.07); }
-        .tongue-badge { position: absolute; top: 10px; left: 10px; font-size: 0.72em; font-weight: 700; color: #fff; background: rgba(139,69,19,0.85); padding: 3px 10px; border-radius: 12px; letter-spacing: 0.04em; z-index: 5; }
-        .tongue-img-wrap { position: relative; display: inline-block; }
-        .wrong-card { padding: 14px; margin: 10px 0; background: #fffefb; border-radius: 12px; border: 1px solid var(--border); border-left: 4px solid var(--accent); font-size: 0.9em; line-height: 1.7; }
-        .wrong-card .wrong-title { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
-        .wrong-card .wrong-meta { color: var(--text-muted); font-size: 0.8em; margin-bottom: 4px; }
-        .wrong-card .wrong-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .btn--sm { padding: 8px 16px; font-size: 0.85em; border-radius: 20px; }
-        .source-tag { display: inline-block; background: rgba(184,134,11,0.1); color: var(--gold); padding: 2px 10px; border-radius: 12px; font-size: 0.85em; font-weight: 600; }
-    </style>
-</head>
-<body>
 
-<header class="site-header">
-    <nav class="top-nav" id="topNav">
-        <span class="nav-link nav-active" id="navHome" onclick="goHome()">🏠 首页</span>
-        <span class="nav-link" id="navGame" onclick="startChallenge()">🎯 闯关</span>
-        <span class="nav-link" id="navAbout" onclick="showAbout()">📖 关于</span>
-    </nav>
-</header>
-
-<main class="app-container" id="appContainer">
-    <div id="loadingIndicator" style="text-align:center;padding:40px;">
-        <div style="font-size:1.2em;color:var(--text-muted);">📚 病例数据加载中...</div>
-    </div>
-</main>
-
-<footer class="site-footer">
-    <div class="copyright">© wuruilin</div>
-</footer>
-
-<!-- 模态框 -->
-<div class="modal-overlay" id="inquiryModal" style="display:none;">
-    <div class="modal" style="max-width:600px;">
-        <button class="modal-close" onclick="closeInquiryModal()">✕</button>
-        <h3>💬 问诊 — 请向患者提问</h3>
-        <div class="chat-area" id="inquiryChatArea"></div>
-        <div class="chat-input-area">
-            <input type="text" id="inquiryInput" placeholder="输入您想问的问题..." onkeydown="if(event.key==='Enter')sendInquiry()">
-            <button onclick="sendInquiry()">发送</button>
-        </div>
-        <p class="inquiry-hint">提示：可从寒热、汗出、饮食、睡眠、二便、情志、口渴、疼痛等方面提问</p>
-    </div>
-</div>
-
-<div class="modal-overlay" id="inspectionModal" style="display:none;">
-    <div class="modal" style="max-width:720px;">
-        <button class="modal-close" onclick="closeInspectionModal()">✕</button>
-        <h3>👁️ 望诊 — 舌象观察</h3>
-        <div class="tongue-sim" style="flex-direction:column;gap:14px;">
-            <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
-                <button class="inspect-nav" id="inspectPrev" onclick="inspectPrev()" style="display:none;" aria-label="上一张">‹</button>
-                <div class="tongue-img-wrap">
-                    <span class="tongue-badge" id="tongueImageBadge">参考图</span>
-                    <img id="inspectionImg" class="tongue-img-lg" alt="舌象">
-                </div>
-                <button class="inspect-nav" id="inspectNext" onclick="inspectNext()" style="display:none;" aria-label="下一张">›</button>
-            </div>
-            <div id="inspectionCounter" style="text-align:center;color:var(--text-muted);font-size:0.85em;min-height:1em;"></div>
-        </div>
-        <div id="inspectionNonTongue" style="background:#fdfaf5;border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:0.9em;color:var(--text-light);display:none;"></div>
-        <div class="card" style="margin-top:8px;padding:14px 16px;">
-            <div style="font-weight:700;color:var(--primary);margin-bottom:8px;">🔍 判断舌象</div>
-            <div class="tongue-judge-form">
-                <textarea id="tongueJudgmentInput" rows="3" placeholder="请从舌色、舌形、舌苔等方面综合描述该舌象特征"></textarea>
-                <div style="color:var(--text-muted);font-size:0.82em;margin:2px 2px 0;line-height:1.6;">小提示：可从 <span style="color:var(--text-light);">舌色、舌形、舌苔</span> 等方面观察后进行整体描述。</div>
-                <button class="btn btn--primary" style="margin-top:2px;width:100%;padding:12px 20px;font-size:1em;animation:none;" onclick="submitTongueJudgment()">提交舌象判断</button>
-            </div>
-        </div>
-        <p style="text-align:center;color:var(--text-muted);font-size:0.85em;margin:10px 4px 2px;line-height:1.6;">提交舌象判断后，舌象答案将在「线索收集区」公布并判定对错；未提交则暂不公布舌象答案。</p>
-    </div>
-</div>
-
-<div class="modal-overlay" id="simpleResultModal" style="display:none;">
-    <div class="modal">
-        <button class="modal-close" onclick="closeSimpleResultModal()">✕</button>
-        <h3 id="simpleResultTitle"></h3>
-        <div id="simpleResultContent"></div>
-        <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;" onclick="closeSimpleResultModal()">知道了</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="caseBankModal" style="display:none;">
-    <div class="modal" style="max-width:600px; max-height:80vh; overflow-y:auto;">
-        <button class="modal-close" onclick="closeCaseBank()">✕</button>
-        <h3>📚 病例题库</h3>
-        <div id="caseBankContent"></div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="recordsModal" style="display:none;">
-    <div class="modal" style="max-width:600px;">
-        <button class="modal-close" onclick="closeRecords()">✕</button>
-        <h3>📝 我的错题</h3>
-        <div id="recordsContent"></div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="caseDetailModal" style="display:none;">
-    <div class="modal" style="max-width:650px; max-height:85vh; overflow-y:auto;">
-        <button class="modal-close" onclick="closeCaseDetail()">✕</button>
-        <h3 id="caseDetailTitle">📋 病例解析</h3>
-        <div id="caseDetailContent"></div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="submissionModal" style="display:none;">
-    <div class="modal" style="max-width:650px; max-height:90vh; overflow-y:auto;">
-        <button class="modal-close" onclick="closeSubmissionModal()">✕</button>
-        <h3>📤 投稿病例</h3>
-        <p style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px;">请填写以下病例信息，带 <span class="required-star">*</span> 为必填项。</p>
-        <form id="submissionForm" class="submission-form" action="https://formsubmit.co/1507238873@qq.com" method="POST" enctype="multipart/form-data" onsubmit="return validateSubmissionForm()">
-            <input type="hidden" name="_subject" value="新病例投稿">
-            <input type="hidden" name="_template" value="table">
-            <input type="hidden" name="_next" id="formNext" value="">
-            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
-            <div>
-                <label>选择难度 <span class="required-star">*</span></label>
-                <div class="difficulty-select" id="difficultySelect">
-                    <div class="difficulty-select-display" onclick="toggleDifficultyOptions()">
-                        <span id="difficultyDisplay">点击选择难度</span>
-                        <span class="arrow">▼</span>
-                    </div>
-                    <div class="difficulty-options" id="difficultyOptions" style="display:none;">
-                        <button type="button" class="difficulty-option" data-value="basic" onclick="selectDifficultyOption('basic', '🌱 入门训练', this)">🌱 入门训练</button>
-                        <button type="button" class="difficulty-option" data-value="intermediate" onclick="selectDifficultyOption('intermediate', '🌿 综合训练', this)">🌿 综合训练</button>
-                        <button type="button" class="difficulty-option" data-value="advanced" onclick="selectDifficultyOption('advanced', '🌳 临床思维', this)">🌳 临床思维</button>
-                    </div>
-                </div>
-                <input type="hidden" name="difficulty" id="subDifficulty" value="">
-            </div>
-            <div><label for="subCaseSource">病例来源 <span class="required-star">*</span></label><input type="text" id="subCaseSource" name="case_source" required placeholder="如：中国中医药临床案例成果库、某本医书、某个博主等"></div>
-            <div><label for="subChiefComplaint">主诉 <span class="required-star">*</span></label><textarea id="subChiefComplaint" name="chief_complaint" required placeholder="患者主要症状、持续时间等"></textarea></div>
-            <div><label for="subPastHistory">既往史 <span class="required-star">*</span></label><textarea id="subPastHistory" name="past_history" required placeholder="既往疾病、手术、过敏史等"></textarea></div>
-            <div class="form-row">
-                <div><label for="subInspection">望诊 <span class="required-star">*</span></label><textarea id="subInspection" name="inspection" required placeholder="面色、舌象、形态等"></textarea></div>
-                <div><label for="subAuscultation">闻诊 <span class="required-star">*</span></label><textarea id="subAuscultation" name="auscultation" required placeholder="声音、气味等"></textarea></div>
-            </div>
-            <div class="form-row">
-                <div><label for="subInquiry">问诊 <span class="required-star">*</span></label><textarea id="subInquiry" name="inquiry" required placeholder="寒热、汗出、饮食、二便、睡眠等"></textarea></div>
-                <div><label for="subPulse">切诊 <span class="required-star">*</span></label><textarea id="subPulse" name="pulse" required placeholder="脉象、按诊等"></textarea></div>
-            </div>
-            <div><label for="subOtherCheck">其他检查 <span class="form-hint">（如有则填写）</span></label><textarea id="subOtherCheck" name="other_check" placeholder="如体格检查、实验室检查、影像学检查等"></textarea></div>
-            <div><label for="subAnalysis">辩证分析过程 <span class="required-star">*</span></label><textarea id="subAnalysis" name="analysis" required placeholder="病机分析、辨证思路等"></textarea></div>
-            <div class="form-row">
-                <div><label for="subSyndrome">证型 <span class="required-star">*</span></label><input type="text" id="subSyndrome" name="syndrome" required placeholder="如：肝郁脾虚证"></div>
-                <div><label for="subDisease">病名 <span class="required-star">*</span></label><input type="text" id="subDisease" name="disease" required placeholder="如：胃脘痛"></div>
-            </div>
-            <div><label for="subWesternDiagnosis">西医诊断 <span class="required-star">*</span></label><input type="text" id="subWesternDiagnosis" name="western_diagnosis" required placeholder="如：慢性胃炎"></div>
-            <div><label for="subPrescription">推荐要方 <span class="form-hint">（如有则填写）</span></label><input type="text" id="subPrescription" name="prescription" placeholder="如：柴胡疏肝散加减"></div>
-            <div><label for="subTonguePhoto">舌象照片 <span class="form-hint">（如有则上传，大小不超过10MB，仅支持 JPG、PNG、WebP）</span></label><div class="file-input"><input type="file" id="subTonguePhoto" name="attachment" accept="image/jpeg,image/png,image/webp"></div></div>
-            <div class="form-hint" style="line-height:1.7;background:#fdfaf5;padding:10px 12px;border-radius:10px;">隐私提示：投稿内容会发送至第三方表单服务并转发给站点维护者。请勿填写姓名、电话、身份证号、精确住址等可识别个人信息；病例和图片须先完成脱敏。</div>
-            <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;"><input type="checkbox" id="submissionConsent" name="privacy_consent" value="confirmed" required style="margin-top:5px;flex:none;"> <span>我确认已对病例和图片完成脱敏，并同意按上述方式处理投稿内容。<span class="required-star">*</span></span></label>
-            <button type="submit" class="btn-submit">📨 提交病例</button>
-            <div id="submissionFeedback" style="margin-top:10px;"></div>
-        </form>
-    </div>
-</div>
-
-<script>
     /* ===================== 全局状态 ===================== */
     let casesDB = null;
+    const caseDetails = new Map();
+    const loadedDifficulties = new Set();
     const tongueImages = {
         'basic-001': 'tongue/basic-001.jpg',
         'inter-001': 'tongue/inter-001.jpg',
@@ -398,16 +91,39 @@
 
     /* ===================== 数据加载 ===================== */
     async function loadCaseData() {
+        const indicator = document.getElementById('loadingIndicator');
         try {
-            const response = await fetch('cases.json');
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 10_000);
+            const response = await fetch('/api/cases?limit=50', { signal: controller.signal });
+            clearTimeout(timer);
             if (!response.ok) throw new Error('病例数据加载失败');
-            casesDB = validateCaseData(await response.json());
-            document.getElementById('loadingIndicator').style.display = 'none';
+            const page = await response.json();
+            casesDB = { cases: page.items || [] };
+            if (!casesDB.cases.length) throw new Error('病例索引为空');
+            indicator.style.display = 'none';
             initApp();
         } catch (error) {
             console.error('加载病例数据出错:', error);
-            document.getElementById('loadingIndicator').textContent = '❌ 病例数据加载失败，请刷新重试';
+            reportClientError('case-load', error);
+            indicator.innerHTML = '<div class="load-error" role="alert">❌ 网络不佳，病例数据暂时无法加载。<button class="btn btn--outline" type="button" data-action="retryLoad">刷新重试</button></div>';
         }
+    }
+    function retryLoad() { document.getElementById('loadingIndicator').textContent = '📚 正在重新加载病例数据…'; loadCaseData(); }
+    async function reportClientError(kind, error) {
+        try { await fetch('/api/client-errors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true, body: JSON.stringify({ kind, message: error?.message || String(error) }) }); } catch (_) { /* reporting must never affect learning */ }
+    }
+    async function ensureDifficultyLoaded(diff) {
+        if (loadedDifficulties.has(diff)) return;
+        const response = await fetch(`/api/cases?difficulty=${encodeURIComponent(diff)}&limit=50`);
+        if (!response.ok) throw new Error('病例加载失败');
+        const summaryPage = await response.json();
+        const details = await Promise.all(summaryPage.items.map(async item => {
+            const r = await fetch(`/api/cases/${encodeURIComponent(item.id)}`); if (!r.ok) throw new Error('病例详情加载失败'); return r.json();
+        }));
+        details.forEach(item => caseDetails.set(item.id, item));
+        casesDB.cases = casesDB.cases.map(item => caseDetails.get(item.id) || item);
+        loadedDifficulties.add(diff);
     }
 
     function initApp() {
@@ -601,11 +317,12 @@
         ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
     }
 
-    function selectDifficulty(diff, btnEl) {
+    async function selectDifficulty(diff, btnEl) {
         document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
         btnEl.classList.add('selected');
         currentDifficulty = diff;
-        const pool = getAllCases().filter(c => c.difficulty === diff);
+        try { await ensureDifficultyLoaded(diff); } catch (error) { reportClientError('difficulty-load', error); openSimpleResultModal('加载失败', '网络不佳，请稍后重试。'); return; }
+        const pool = getAllCases().filter(c => c.difficulty === diff && caseDetails.has(c.id));
         if (!pool || pool.length === 0) { alert('该难度暂无病例。'); return; }
         const completed = getCompletedCases();
         unfinishedCases = pool.filter(c => !completed.includes(c.id));
@@ -1137,7 +854,9 @@ function preloadNextImage() {
     }
 
     // 从题库点击"挑战病例"：跳转到闯关页并练习该病例
-    function challengeCaseFromBank(caseId) {
+    async function challengeCaseFromBank(caseId) {
+        const summary = findCaseById(caseId);
+        if (summary) await ensureDifficultyLoaded(summary.difficulty);
         const c = findCaseById(caseId);
         if (!c) { alert('病例不存在。'); return; }
         closeCaseBank();
@@ -1209,10 +928,11 @@ function preloadNextImage() {
         const c = findCaseById(caseId);
         return c ? c.difficulty : null;
     }
-    function rechallengeCase(caseId) {
+    async function rechallengeCase(caseId) {
         closeRecords();
         const diff = findCaseDifficulty(caseId);
         if (!diff) { alert('病例不存在。'); return; }
+        await ensureDifficultyLoaded(diff);
         showPage('Game');
         resetGameUI();
         currentDifficulty = diff;
@@ -1228,7 +948,9 @@ function preloadNextImage() {
         if (currentCaseIndex < 0) currentCaseIndex = 0;
         showCurrentCase();
     }
-    function viewWrongCaseAnalysis(caseId) {
+    async function viewWrongCaseAnalysis(caseId) {
+        const summary = findCaseById(caseId);
+        if (summary) await ensureDifficultyLoaded(summary.difficulty);
         const c = findCaseById(caseId);
         if (!c) { alert('病例不存在。'); return; }
         openCaseDetail(c);
@@ -1244,7 +966,6 @@ function preloadNextImage() {
     function openSubmissionModal() {
         document.getElementById('submissionModal').style.display = 'flex';
         document.getElementById('submissionFeedback').innerHTML = '';
-        document.getElementById('formNext').value = window.location.href.split('?')[0] + '?submitted=true';
         document.getElementById('difficultyDisplay').textContent = '点击选择难度';
         document.getElementById('subDifficulty').value = '';
         document.getElementById('difficultyOptions').style.display = 'none';
@@ -1282,7 +1003,41 @@ function preloadNextImage() {
         feedback.innerHTML = '';
         return true;
     }
+    async function submitSubmission(event) {
+        event.preventDefault();
+        if (!validateSubmissionForm()) return;
+        const form = document.getElementById('submissionForm');
+        const feedback = document.getElementById('submissionFeedback');
+        const values = Object.fromEntries(new FormData(form).entries());
+        values.privacy_consent = document.getElementById('submissionConsent').checked;
+        const file = document.getElementById('subTonguePhoto').files[0];
+        if (file) values.image = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onerror = reject; reader.onload = () => resolve(reader.result); reader.readAsDataURL(file); });
+        try {
+            const response = await fetch('/api/submissions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });
+            if (!response.ok) throw new Error(response.status === 429 ? '提交过于频繁，请稍后再试。' : '提交失败，请稍后重试。');
+            form.reset(); feedback.innerHTML = '<div class="result-box success">✅ 投稿已收到，等待人工审核和脱敏复核后才会发布。</div>';
+        } catch (error) { reportClientError('submission', error); feedback.innerHTML = `<div class="result-box fail">${escapeHtml(error.message)}</div>`; }
+    }
 
+    /* ===================== CSP-compatible event delegation ===================== */
+    function migrateInlineHandlers(scope = document) {
+        scope.querySelectorAll?.('[onclick],[oninput],[onkeydown]').forEach(el => {
+            if (el.hasAttribute('onclick')) { el.dataset.action = el.getAttribute('onclick'); el.removeAttribute('onclick'); }
+            if (el.hasAttribute('oninput')) { el.dataset.inputAction = el.getAttribute('oninput'); el.removeAttribute('oninput'); }
+            if (el.hasAttribute('onkeydown')) { const source = el.getAttribute('onkeydown'); const match = /Enter'\)([\w]+)\(\)/.exec(source); if (match) el.dataset.enterAction = `${match[1]}()`; el.removeAttribute('onkeydown'); }
+        });
+    }
+    function invokeAction(source, element) {
+        const match = /^\s*([A-Za-z_$][\w$]*)\((.*)\)\s*$/.exec(source || ''); if (!match) return;
+        const args = match[2].trim() ? match[2].split(/\s*,\s*/).map(value => value === 'this' ? element : value.replace(/^['"]|['"]$/g, '')) : [];
+        const fn = window[match[1]]; if (typeof fn === 'function') return fn(...args);
+    }
+    migrateInlineHandlers();
+    new MutationObserver(records => records.forEach(record => record.addedNodes.forEach(node => { if (node.nodeType === Node.ELEMENT_NODE) { migrateInlineHandlers(node); node.querySelectorAll && migrateInlineHandlers(node); } }))).observe(document.documentElement, { childList: true, subtree: true });
+    document.addEventListener('click', event => { const target = event.target.closest?.('[data-action]'); if (target) { event.preventDefault(); invokeAction(target.dataset.action, target); } });
+    document.addEventListener('input', event => { if (event.target.dataset.inputAction) invokeAction(event.target.dataset.inputAction, event.target); });
+    document.addEventListener('keydown', event => { if (event.key === 'Enter' && event.target.dataset.enterAction) { event.preventDefault(); invokeAction(event.target.dataset.enterAction, event.target); } });
+    document.addEventListener('submit', event => { if (event.target.id === 'submissionForm') submitSubmission(event); });
     /* ===================== 全局事件 ===================== */
     document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) e.target.style.display = 'none'; });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); });
@@ -1296,6 +1051,3 @@ function preloadNextImage() {
 
     /* ===================== 启动 ===================== */
     loadCaseData();
-</script>
-</body>
-</html>
