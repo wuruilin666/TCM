@@ -42,7 +42,7 @@ function initApp() {
             <div class="card card--accent" style="text-align:center;">
                 <div class="hero-title"><span class="icon">🏥</span> 中医辨证推演馆</div>
                 <div class="hero-subtitle">—— 海龟汤式 · 四诊探案 ——</div>
-                <div class="hero-desc">模拟门诊看病，如同海龟汤解谜。<br>仅凭<strong>主诉</strong>，通过<strong>望、闻、问、切</strong>四诊探寻线索，逐步推理，完成辨证论治。</div>
+                <div class="hero-desc">你是一名接诊医生。仅凭一句主诉，通过<strong>望、闻、问、切</strong>四诊探案，独立完成辨证论治。</div>
             </div>
             <div class="home-buttons">
                 <button class="btn btn--primary" onclick="startChallenge()">🎯 开始闯关</button>
@@ -109,12 +109,11 @@ function initApp() {
             <div class="card card--gold" style="text-align:center;">
                 <div style="font-size:1.6em;color:var(--primary);">📖 关于本站</div>
                 <div style="margin-top:16px;line-height:1.8;color:var(--text-light);">
-                    <strong>中医辨证推演馆</strong> 是一款中医趣味学习工具。<br><br>
-                    灵感来源于「海龟汤」解谜游戏，仅给出<strong>病例主诉</strong>，学习者需主动运用望闻问切，逐步收集线索，推理证型与病名。<br>
-                    适合中医备考、记忆辨证思路。<br><br>
+                    <strong>中医辨证推演馆</strong> 是一个通过「海龟汤式」的线索解锁机制，按照 <strong>望 → 闻 → 问 → 切</strong> 的顺序收集证据，尝试把传统病例学习变成一个可以主动探索的推演过程的网站。<br><br>
                     <span style="color:var(--accent);font-weight:700;">@wuruilin</span>
                 </div>
             </div>
+            <div style="margin-top:14px;text-align:center;font-size:0.8em;color:var(--text-muted);line-height:1.7;">本站内容仅供中医学习与病例推演，不构成诊断、处方或医疗建议。如有身体不适，请及时前往正规医疗机构就诊。</div>
             <div style="text-align:center;"><button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button></div>
             <div class="data-card">
                 <h3>📦 本地数据</h3>
