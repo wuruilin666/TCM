@@ -13,6 +13,7 @@ export const caseDiffFiles = {
 export const tongueImages = {
     'basic-001': 'tongue/basic-001.jpg',
     'basic-002': 'tongue/basic-002.jpg',
+    'basic-003': 'tongue/basic-003.jpg',
     'inter-001': 'tongue/inter-001.jpg',
     'inter-002': 'tongue/inter-002.jpg',
     'inter-003': 'tongue/inter-003.jpg',
