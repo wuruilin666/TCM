@@ -14,6 +14,7 @@ export const tongueImages = {
     'basic-001': 'tongue/basic-001.jpg',
     'basic-002': 'tongue/basic-002.jpg',
     'basic-003': 'tongue/basic-003.jpg',
+    'basic-004': 'tongue/basic-004.jpg',
     'inter-001': 'tongue/inter-001.jpg',
     'inter-002': 'tongue/inter-002.jpg',
     'inter-003': 'tongue/inter-003.jpg',
@@ -32,7 +33,7 @@ export const tongueImages = {
 };
 
 export const tongueImageTypeMap = {
-    'basic-001': '参考图', 'inter-001': '参考图', 'inter-002': '参考图', 'inter-003': '参考图', 'inter-004': '参考图', 'inter-005': '参考图', 'adv-001': '参考图'
+    'basic-001': '参考图', 'inter-001': '参考图', 'inter-002': '参考图', 'inter-003': '参考图', 'inter-004': '参考图', 'inter-005': '参考图', 'adv-001': '参考图', 'basic-004': '参考图'
 };
 
 // 一级分类映射：代码 -> {名称, emoji}
