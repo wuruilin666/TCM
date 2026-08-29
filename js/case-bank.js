@@ -208,7 +208,7 @@ function openRecords() {
                 <div class="wrong-meta">${formatDate(w.date)}</div>
                 <div><strong>主诉：</strong>${escapeHtmlWithBreaks(w.chiefComplaint)}</div>
                 <div><strong>我的答案：</strong>${escapeHtml(answerStr)}</div>
-                <div><strong>错误原因：</strong>${escapeHtml(w.basis || '未填写')}</div>
+                <div><strong>我的辨证依据：</strong>${escapeHtml(w.basis || '未填写')}</div>
                 <div class="wrong-actions">
                     <button class="btn btn--outline btn--sm" onclick="rechallengeCase('${escapeHtml(w.id)}')">🔄 重新挑战</button>
                     <button class="btn btn--ghost btn--sm" onclick="viewWrongCaseAnalysis('${escapeHtml(w.id)}')">💡 查看解析</button>
