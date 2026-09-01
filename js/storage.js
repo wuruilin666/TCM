@@ -197,7 +197,8 @@ function showImportError(msg) {
     const body = document.getElementById('importModalBody');
     const m = document.getElementById('importModal');
     if (!body || !m) { alert('❌ ' + msg); return; }
-    body.innerHTML = '<div class="result-box fail" style="margin:6px 0;">❌ ' + escapeHtml(msg) + '</div>' +
+    const html = escapeHtml(msg).replace(/\n/g, '<br>');
+    body.innerHTML = '<div class="result-box fail" style="margin:6px 0;">❌ ' + html + '</div>' +
         '<div style="text-align:center;margin-top:12px;"><button class="btn btn--outline btn--sm" onclick="closeImportModal()">知道了</button></div>';
     openImportModal();
 }
@@ -296,10 +297,64 @@ function base64UrlToUtf8(b64url) {
     }
 }
 
+// ============ 备份码健壮性辅助（跨设备聊天软件传输） ============
+// 备份码只使用 ASCII 安全的 Base64URL 字符集 [A-Za-z0-9_-]，不出现 + / = 与任何 Unicode。
+const MSG_FORMAT = '这不是有效的学习进度备份码';
+const MSG_MODIFIED = '备份码内容不完整或已被修改\n请从原设备重新复制备份码。如果通过微信传输失败，可以尝试：先保存到备忘录、文本文件或其他不会修改内容的方式，再复制。';
+const MSG_LEGACY = '该备份码属于旧版格式，当前版本不再支持直接读取。\n请在生成它的旧版网站中恢复后，重新「备份」生成新的备份码；也可以尝试使用原来的备份文件恢复。';
+
+// 规范化校验对象（排除 checksum 字段），保证生成与校验使用相同序列化顺序
+function canonicalizePayload(obj) {
+    return JSON.stringify({
+        app: obj.app,
+        type: obj.type,
+        version: obj.version,
+        exportedAt: obj.exportedAt,
+        completedCases: obj.completedCases,
+        wrongCases: obj.wrongCases
+    });
+}
+// 完整性校验：优先 SHA-256（crypto.subtle），非安全上下文回退 FNV-1a 32 位（仅用于本地完整性检测，非加密）
+async function computeChecksum(canonicalJson) {
+    const data = new TextEncoder().encode(canonicalJson);
+    if (globalThis.crypto && globalThis.crypto.subtle && globalThis.crypto.subtle.digest) {
+        try {
+            const buf = await globalThis.crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch (e) { /* 回退 */ }
+    }
+    let h = 0x811c9dc5;
+    for (let i = 0; i < data.length; i++) { h ^= data[i]; h = Math.imul(h, 0x01000193); }
+    return ('00000000' + (h >>> 0).toString(16)).slice(-8);
+}
+// 清理聊天软件可能附带的无害格式字符（BOM / 零宽 / 换行 / 制表 / 空格）；不修改任何有效载荷字符
+function normalizeBackupInput(raw) {
+    return String(raw)
+        .replace(/[\uFEFF\u200B\u200C\u200D\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, '')
+        .replace(/[\r\n\t\f\v]+/g, '')
+        .replace(/ +/g, '')
+        .trim();
+}
+// 仅 console 输出，便于定位“微信是否修改了内容”，不展示给用户
+function debugBackup(stage, raw, normalized, expect, actual) {
+    try {
+        const verified = (expect && actual) ? (String(expect).toLowerCase() === String(actual).toLowerCase()) : null;
+        console.log('[TCM Backup Debug]', stage,
+            'originalLength=' + (raw ? raw.length : 0),
+            'normalizedLength=' + (normalized ? normalized.length : 0),
+            expect ? 'expect=' + expect : '',
+            actual ? 'actual=' + actual : '',
+            verified !== null ? 'verified=' + verified : '');
+    } catch (e) {}
+}
+
 // 生成当前进度的备份码（统一数据源：与备份文件同一份 payload）。
-// 只产生 TCM1: 编码（UTF-8 → Base64URL），不压缩，确保电脑 / 手机 / 平板之间稳定复制粘贴恢复。
-export function createProgressBackupCode() {
-    return BACKUP_PREFIX + utf8ToBase64Url(JSON.stringify(buildProgressPayload()));
+// 只产生 TCM1: 编码（UTF-8 → Base64URL），不压缩，确保电脑 / 手机 / 平板之间稳定复制粘贴恢复；
+// 额外写入 checksum 用于恢复时完整性校验（聊天软件若真正修改内容会被检出，而非误恢复）。
+export async function createProgressBackupCode() {
+    const payload = buildProgressPayload();
+    payload.checksum = await computeChecksum(canonicalizePayload(payload));
+    return BACKUP_PREFIX + utf8ToBase64Url(JSON.stringify(payload));
 }
 
 // 备份码 UTF-8 字节大小（用于提示，而非硬性限制）
@@ -319,31 +374,48 @@ function sizeHintHtml(bytes) {
     return '';
 }
 
-// 解析并校验备份码，返回 { ok, data?, error? }
-export function parseProgressBackupCode(raw) {
-    if (typeof raw !== 'string') return { ok: false, error: '备份码无效' };
-    const code = raw.trim();
-    if (code.length > MAX_BACKUP_CODE_LEN) return { ok: false, error: '备份码无效' };
-    // 识别旧版 TCM2（gzip）备份码：已停用，给出明确提示，不尝试解压
+// 解析并校验备份码，返回 { ok, data?, error?, kind? }
+// kind: format(非备份码) / modified(内容被改或损坏) / legacy(旧版TCM2) / version(高版本)
+export async function parseProgressBackupCode(raw) {
+    if (typeof raw !== 'string') return { ok: false, error: MSG_FORMAT, kind: 'format' };
+    const code = normalizeBackupInput(raw);
+    if (code.length > MAX_BACKUP_CODE_LEN) return { ok: false, error: MSG_FORMAT, kind: 'format' };
+    // 旧版 TCM2（gzip）已停用，给出明确提示，不尝试解压
     if (code.indexOf(BACKUP_PREFIX_V2) === 0) {
-        return { ok: false, error: '该备份码属于旧版格式，当前版本不再支持直接读取。\n请在生成它的旧版网站中恢复后，重新「备份」生成新的备份码；也可以尝试使用原来的备份文件恢复。' };
+        return { ok: false, error: MSG_LEGACY, kind: 'legacy' };
     }
+    // 必须以 TCM1: 开头，否则根本不是有效备份码
     if (code.indexOf(BACKUP_PREFIX) !== 0) {
-        return { ok: false, error: '备份码无效，请检查复制内容是否完整。' };
+        return { ok: false, error: MSG_FORMAT, kind: 'format' };
     }
     const body = code.slice(BACKUP_PREFIX.length);
-    if (!body) return { ok: false, error: '备份码无效，请检查复制内容是否完整。' };
+    // payload 只允许 Base64URL 字符集；出现其他字符说明内容被修改，不猜测、不强行恢复
+    if (!/^[A-Za-z0-9_-]+$/.test(body)) {
+        debugBackup('charset-invalid', raw, code);
+        return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+    }
     let jsonStr;
     try { jsonStr = base64UrlToUtf8(body); }
-    catch (e) { return { ok: false, error: '备份码损坏或格式不正确' }; }
+    catch (e) { debugBackup('decode-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
     let parsed;
     try { parsed = JSON.parse(jsonStr); }
-    catch (e) { return { ok: false, error: '备份码损坏或格式不正确' }; }
+    catch (e) { debugBackup('json-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
     if (parsed && typeof parsed.version === 'number' && parsed.version > PROGRESS_VERSION) {
-        return { ok: false, error: '这个备份来自更新版本的网站，当前版本暂时无法读取。请先更新网站后再尝试恢复。' };
+        return { ok: false, error: '这个备份来自更新版本的网站，当前版本暂时无法读取。请先更新网站后再尝试恢复。', kind: 'version' };
     }
     const res = validateProgressData(parsed);
-    if (!res.ok) return { ok: false, error: '备份码损坏或格式不正确' };
+    if (!res.ok) { debugBackup('validate-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
+    // checksum 完整性校验（旧备份无 checksum 时跳过，仅做结构校验，保持兼容）
+    if (typeof parsed.checksum === 'string') {
+        const actual = await computeChecksum(canonicalizePayload(parsed));
+        if (parsed.checksum.toLowerCase() !== actual.toLowerCase()) {
+            debugBackup('checksum-mismatch', raw, code, parsed.checksum, actual);
+            return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+        }
+        debugBackup('verified', raw, code, parsed.checksum, actual);
+    } else {
+        debugBackup('no-checksum(legacy)', raw, code);
+    }
     return { ok: true, data: res.data };
 }
 
@@ -387,7 +459,10 @@ export function copyBackupCode() {
     const code = ta ? ta.value : '';
     if (!code) return;
     const hint = sizeHintHtml(getBackupCodeBytes(code));
-    const done = () => { if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>' + hint; };
+    const done = () => {
+        if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>' + hint;
+        verifyClipboard(code, msg, hint);
+    };
     const fallback = () => {
         if (ta) { ta.removeAttribute('readonly'); ta.focus(); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.setAttribute('readonly', ''); }
         if (msg) msg.innerHTML = '<div class="form-hint" style="margin:0;">已选中备份码，请长按复制，或按 Ctrl/⌘ + C 复制。</div>' + hint;
@@ -395,6 +470,21 @@ export function copyBackupCode() {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(code).then(done, fallback);
     } else { fallback(); }
+}
+
+// 复制后尽力回读剪贴板做一致性校验（浏览器可能拒绝读权限，拒绝则忽略，不阻塞）
+function verifyClipboard(code, msg, hint) {
+    if (!navigator.clipboard || !navigator.clipboard.readText) return;
+    try {
+        navigator.clipboard.readText().then(text => {
+            if (typeof text !== 'string') return;
+            const norm = text.replace(/[\uFEFF\u200B\u200C\u200D\u200E\u200F\u202A-\u202E\u2066-\u2069]\r\n\t\f\v ]+/g, '');
+            if (norm && norm !== code) {
+                if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>' +
+                    '<div class="form-hint" style="margin-top:8px;">⚠️ 剪贴板内容可能发生变化，请使用下方备份码手动复制。</div>' + hint;
+            }
+        }).catch(() => {});
+    } catch (e) { /* 忽略 */ }
 }
 export function saveBackupFile() { exportProgress(); }
 
