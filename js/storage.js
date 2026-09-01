@@ -924,9 +924,21 @@ export function openRestoreChoice() {
     if (!body) return;
     body.innerHTML =
         '<div class="backup-options">' +
-        '<button type="button" class="backup-option" onclick="startCodeRestore()"><div class="backup-option-icon">📋</div><div class="backup-option-title">粘贴备份码</div><div class="backup-option-desc">跨设备最方便</div></button>' +
-        '<button type="button" class="backup-option" onclick="triggerFileRestore()"><div class="backup-option-icon">📄</div><div class="backup-option-title">从备份文件恢复</div><div class="backup-option-desc">适合长期保存</div></button>' +
+        // 第一张：从备份文件恢复（推荐方式，作为主要恢复选项）
+        '<button type="button" class="backup-option" style="border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);" onclick="triggerFileRestore()">' +
+            '<span style="display:inline-block;background:var(--accent);color:#fff;font-size:0.72em;font-weight:700;line-height:1;padding:3px 9px;border-radius:999px;margin-bottom:8px;">⭐ 推荐</span>' +
+            '<div class="backup-option-icon">📄</div>' +
+            '<div class="backup-option-title">从备份文件恢复</div>' +
+            '<div class="backup-option-desc">适合换设备、大量学习记录和长期保存。</div>' +
+        '</button>' +
+        // 第二张：使用备份码恢复（备用方案，快速跨设备）
+        '<button type="button" class="backup-option" onclick="startCodeRestore()">' +
+            '<div class="backup-option-icon">📋</div>' +
+            '<div class="backup-option-title">使用备份码恢复</div>' +
+            '<div class="backup-option-desc">快速跨设备恢复，备份码较长时会自动支持分段。</div>' +
+        '</button>' +
         '</div>' +
+        '<p class="form-hint" style="margin:14px 2px 0;font-size:0.85em;line-height:1.6;">💡 提示：备份文件通常更方便、可靠；若暂时没有备份文件，也可以使用备份码恢复。</p>' +
         '<div style="text-align:center;margin-top:12px;"><button type="button" class="btn btn--ghost btn--sm" onclick="closeImportModal()">取消</button></div>';
 }
 export function startCodeRestore() {
