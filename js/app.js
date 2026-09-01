@@ -5,7 +5,7 @@
 //   3) 将各模块的函数统一暴露到 window，供内联 onclick 使用（ES Module 下函数默认不挂全局）
 
 import { loadCaseData, getAllCases } from './data.js';
-import { renderDataStats, resetAllProgress } from './storage.js';
+import { renderDataStats, resetAllProgress, exportProgress, importProgress, applyImportMode, confirmCoverImport, closeImportModal } from './storage.js';
 import {
     startChallenge, resetGameUI, selectDifficulty, showCurrentCase, prevCase, nextCase,
     exploreDiag, showOtherCheck, submitAnswer, viewAnswer, resetCurrentCase, showHistory,
@@ -118,9 +118,18 @@ function initApp() {
             <div class="data-card">
                 <h3>📦 本地数据</h3>
                 <p class="data-stats" id="dataStats"></p>
+                <div class="form-hint" style="line-height:1.7;margin:10px 0 14px;background:#fdfaf5;padding:10px 12px;border-radius:10px;">
+                    💡 数据说明<br>
+                    你的学习进度仅保存在当前浏览器的本地存储中，不会自动同步到其他设备或浏览器。<br>
+                    清除浏览器网站数据、使用其他浏览器或更换设备后，学习记录可能无法保留。<br>
+                    建议定期使用「导出进度」备份，换设备后再通过「导入进度」恢复。
+                </div>
                 <div class="data-actions">
+                    <button onclick="exportProgress()">📤 导出进度</button>
+                    <button onclick="document.getElementById('importFileInput').click()">📥 导入进度</button>
                     <button onclick="resetAllProgress()">🔄 重置全部进度</button>
                 </div>
+                <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;" onchange="if(this.files[0]) importProgress(this.files[0]); this.value='';">
             </div>
         </div>
     `;
@@ -232,6 +241,11 @@ window.toggleDifficultyOptions = toggleDifficultyOptions;
 window.selectDifficultyOption = selectDifficultyOption;
 window.validateSubmissionForm = validateSubmissionForm;
 window.resetAllProgress = resetAllProgress;
+window.exportProgress = exportProgress;
+window.importProgress = importProgress;
+window.applyImportMode = applyImportMode;
+window.confirmCoverImport = confirmCoverImport;
+window.closeImportModal = closeImportModal;
 
 // 仅用于调试 / 兼容（避免未使用导入告警）
 window._getAllCases = getAllCases;
