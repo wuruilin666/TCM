@@ -299,16 +299,16 @@ function doApplyImport(mode) {
 }
 
 /* ===================== 学习进度备份码（复制 / 粘贴，纯前端，不依赖服务器） ===================== */
-// 备份码统一采用 TCM1: 前缀 + 同一份统一备份数据的紧凑编码（UTF-8 → Base64URL）。
-// 不压缩、不加密、不含 HTML、不含不可见字符，兼容电脑 / 手机 / 平板，适合在微信 / QQ / 邮箱 / 备忘录中复制粘贴传输。
+// 备份码统一采用 TCM1: 前缀 + 同一份备份数据：JSON → gzip 压缩 → Base64URL（浏览器原生，无依赖）。
+// 不支持 gzip 时退回旧的非压缩 TCM1（UTF-8 → Base64URL），两种格式均可恢复。不含加密、不含 HTML、不含不可见字符。
 // 注：旧版的 TCM2（gzip）备份码已停用，解析时给出“旧版格式”提示，不影响 TCM1 与备份文件。
 const BACKUP_PREFIX = 'TCM1:';
 const BACKUP_PREFIX_V2 = 'TCM2:'; // 仅用于识别旧版备份码并提示，不再生成
 const MAX_BACKUP_CODE_LEN = 6000000;
 const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
-// 备份码字节大小分级（按 UTF-8 字节数，而非字符数）
-const SIZE_SMALL = 8000;     // < 8KB：直接复制，无额外提示
-const SIZE_LARGE = 40000;    // > 40KB：建议使用备份文件
+// 备份码长度分级（按字符数，用于提示聊天软件截断风险，不阻止复制）
+const LEN_OK = 1800;     // <= 1800：直接复制，无额外提示
+const LEN_WARN = 2048;   // 1800~2048：提示聊天长度限制；> 2048：重点提示
 
 function utf8ToBase64Url(str) {
     let b64;
@@ -339,11 +339,67 @@ function base64UrlToUtf8(b64url) {
     }
 }
 
+// 二进制 ↔ Base64URL（分块处理，避免大数组一次性 fromCharCode 导致栈溢出）
+function bytesToBase64Url(bytes) {
+    let bin = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function base64UrlToBytes(b64url) {
+    let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
+
+// gzip 压缩 / 解压（浏览器原生 CompressionStream / DecompressionStream，纯前端，无依赖）。
+// 不支持或失败时：gzipBytes 返回 null（调用方退回旧非压缩格式）；gunzipBytes 抛错（调用方按损坏处理）。
+async function gzipBytes(bytes) {
+    if (typeof CompressionStream === 'undefined') return null;
+    try {
+        const cs = new CompressionStream('gzip');
+        const writer = cs.writable.getWriter();
+        const writeChain = writer.write(bytes).then(() => writer.close()).catch(() => {});
+        const ab = await new Response(cs.readable).arrayBuffer().catch(() => null);
+        await writeChain.catch(() => {});
+        if (!ab) return null;
+        return new Uint8Array(ab);
+    } catch (e) { return null; }
+}
+async function gunzipBytes(bytes) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('DecompressionStream unsupported');
+    const ds = new DecompressionStream('gzip');
+    const writer = ds.writable.getWriter();
+    // 显式接住写端 promise，避免可读流报错导致的未处理 rejection
+    const writeChain = writer.write(bytes).then(() => writer.close()).catch(() => {});
+    let ab;
+    try {
+        ab = await new Response(ds.readable).arrayBuffer();
+    } catch (e) {
+        await writeChain.catch(() => {});
+        throw new Error('gunzip failed');
+    }
+    await writeChain.catch(() => {});
+    return new Uint8Array(ab);
+}
+
 // ============ 备份码健壮性辅助（跨设备聊天软件传输） ============
 // 备份码只使用 ASCII 安全的 Base64URL 字符集 [A-Za-z0-9_-]，不出现 + / = 与任何 Unicode。
 const MSG_FORMAT = '这不是有效的学习进度备份码';
 const MSG_MODIFIED = '备份码内容不完整或已被修改\n请从原设备重新复制备份码。如果通过微信传输失败，可以尝试：先保存到备忘录、文本文件或其他不会修改内容的方式，再复制。';
 const MSG_LEGACY = '该备份码属于旧版格式，当前版本不再支持直接读取。\n请在生成它的旧版网站中恢复后，重新「备份」生成新的备份码；也可以尝试使用原来的备份文件恢复。';
+const MSG_TRUNCATED = '备份码可能被聊天工具截断。\n请重新复制完整备份码，或使用「保存备份文件」进行恢复。';
+
+// 聊天工具常见的“整条消息长度上限”参考值（不写死唯一值，未来不同平台/版本可能不同）
+const TRUNC_LIMITS = [1024, 1400, 1536, 1800, 2000, 2048, 4096, 8192, 16000];
+function nearTruncationLimit(len) {
+    return typeof len === 'number' && TRUNC_LIMITS.some(L => Math.abs(len - L) <= 12);
+}
 
 // 规范化校验对象（排除 checksum 字段），保证生成与校验使用相同序列化顺序
 function canonicalizePayload(obj) {
@@ -455,12 +511,18 @@ function debugBackup(stage, raw, normalized, extra) {
 }
 
 // 生成当前进度的备份码（统一数据源：与备份文件同一份 payload）。
-// 只产生 TCM1: 编码（UTF-8 → Base64URL），不压缩，确保电脑 / 手机 / 平板之间稳定复制粘贴恢复；
-// 额外写入 checksum 用于恢复时完整性校验（聊天软件若真正修改内容会被检出，而非误恢复）。
+// 流程：JSON → 计算 checksum → UTF-8 → gzip 压缩 → Base64URL → TCM1:
+// 不支持 gzip 或压缩后并未更短时，退回旧的非压缩 TCM1（UTF-8 → Base64URL），保证兼容与尽量短。
 export async function createProgressBackupCode() {
     const payload = buildProgressPayload();
     payload.checksum = await computeChecksum(canonicalizePayload(payload));
-    return BACKUP_PREFIX + utf8ToBase64Url(JSON.stringify(payload));
+    const jsonStr = JSON.stringify(payload);
+    const bytes = new TextEncoder().encode(jsonStr);
+    const gz = await gzipBytes(bytes);
+    const compB64 = gz ? bytesToBase64Url(gz) : null;
+    const rawB64 = utf8ToBase64Url(jsonStr);
+    // 选择更短的输出：压缩不一定更短（极小数据可能原样更短），但都能被新解析器恢复
+    return BACKUP_PREFIX + (compB64 && compB64.length <= rawB64.length ? compB64 : rawB64);
 }
 
 // 备份码 UTF-8 字节大小（用于提示，而非硬性限制）
@@ -469,15 +531,14 @@ export function getBackupCodeBytes(code) {
     catch (e) { return code.length; }
 }
 
-// 根据字节大小给出可选的轻量提示（不阻止使用）
-function sizeHintHtml(bytes) {
-    if (bytes > SIZE_LARGE) {
-        return '<div class="form-hint" style="margin:0;">⚠️ 当前学习记录较多，备份码较长，建议使用「保存备份文件」进行保存。</div>';
+// 根据备份码字符长度给出可选提示（不阻止复制），用于规避聊天软件消息长度截断
+function sizeHintHtml(code) {
+    const n = code ? code.length : 0;
+    if (n <= LEN_OK) return '';
+    if (n <= LEN_WARN) {
+        return '<div class="form-hint" style="margin:0;">⚠️ 当前备份码较长，直接发送到聊天软件可能存在长度限制。建议使用「保存备份文件」长期保存。</div>';
     }
-    if (bytes > SIZE_SMALL) {
-        return '<div class="form-hint" style="margin:0;">当前记录较多，也可以使用「保存备份文件」进行备份。</div>';
-    }
-    return '';
+    return '<div class="form-hint" style="margin:0;">⚠️ 当前备份码较长，不建议直接粘贴到聊天消息中。建议使用「保存备份文件」进行跨设备传输。</div>';
 }
 
 // 解析并校验备份码，返回 { ok, data?, error?, kind? }
@@ -532,21 +593,42 @@ export async function parseProgressBackupCode(raw) {
         debugBackup('empty-body', raw, code, { body, cleanBody });
         return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
     }
-    // Base64URL 解码
-    let jsonStr;
-    try { jsonStr = base64UrlToUtf8(cleanBody); diag.decodeOk = true; }
+    // Base64URL → 二进制（分块安全）
+    let bytes;
+    try { bytes = base64UrlToBytes(cleanBody); diag.decodeOk = true; }
     catch (e) {
         diag.kind = 'modified'; diag.decodeOk = false; fail('decode-fail');
-        debugBackup('decode-fail', raw, code, { body, cleanBody, note: '可能发生截断/字符损坏' });
+        debugBackup('decode-fail', raw, code, { body, cleanBody, note: 'Base64URL 解码失败，可能发生截断/字符损坏' });
         return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+    }
+    // 解压：先判断是否 gzip（魔术字节 0x1f 0x8b）；是则解压得到 JSON，否则按旧版非压缩 TCM1（UTF-8 JSON）处理。
+    // gzip 解压失败不立即判损坏——它可能是旧版非压缩 TCM1，但这里 gzip 魔术字节已命中，失败即视为损坏。
+    let jsonStr = null;
+    const looksGzip = bytes.length >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b;
+    if (looksGzip) {
+        try {
+            const gz = await gunzipBytes(bytes);
+            jsonStr = new TextDecoder().decode(gz);
+            debugBackup('gunzip', raw, code, { body, cleanBody, note: 'gzip 解压成功' });
+        } catch (e) {
+            diag.kind = 'modified'; fail('gunzip-fail');
+            debugBackup('gunzip-fail', raw, code, { body, cleanBody, note: 'gzip 解压失败' });
+            return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+        }
+    } else {
+        jsonStr = new TextDecoder().decode(bytes); // 旧版非压缩 TCM1
     }
     // JSON 解析
     let parsed;
     try { parsed = JSON.parse(jsonStr); diag.jsonOk = true; }
     catch (e) {
         diag.kind = 'modified'; diag.jsonOk = false; fail('json-fail');
-        debugBackup('json-fail', raw, code, { body, cleanBody, note: 'Base64URL 可解码但 JSON 解析失败' });
-        return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+        const truncated = nearTruncationLimit(raw.length);
+        const note = truncated
+            ? '可能被聊天工具截断（Base64URL 可解码但 JSON 解析失败）'
+            : 'Base64URL 可解码但 JSON 解析失败';
+        debugBackup('json-fail', raw, code, { body, cleanBody, note });
+        return { ok: false, error: truncated ? MSG_TRUNCATED : MSG_MODIFIED, kind: 'modified' };
     }
     // 版本检查（高版本备份不应误判为“损坏”）
     if (parsed && typeof parsed.version === 'number' && parsed.version > PROGRESS_VERSION) {
@@ -622,7 +704,7 @@ export function copyBackupCode() {
     // 诊断：记录本次复制的备份码摘要（仅内存，不写 localStorage、不上传）
     lastGeneratedBackupCode = code;
     sha256Hex(code).then(d => { lastGeneratedSummary = { length: code.length, digest: d }; }).catch(() => {});
-    const hint = sizeHintHtml(getBackupCodeBytes(code));
+    const hint = sizeHintHtml(code);
     const done = () => {
         if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>' + hint;
         verifyClipboard(code, msg, hint);
