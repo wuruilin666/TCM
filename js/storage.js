@@ -309,6 +309,8 @@ const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
 // 备份码长度分级（按字符数，用于提示聊天软件截断风险，不阻止复制）
 const LEN_OK = 1800;     // <= 1800：直接复制，无额外提示
 const LEN_WARN = 2048;   // 1800~2048：提示聊天长度限制；> 2048：重点提示
+const PARTS_FILE_RECOMMEND = 5;          // >=5 段：主动推荐“保存备份文件”
+const PARTS_FILE_STRONGLY_RECOMMEND = 10; // >=10 段：明显推荐“保存备份文件”
 
 function utf8ToBase64Url(str) {
     let b64;
@@ -788,20 +790,49 @@ export async function showBackupCode() {
     if (!body) return;
     const { code, parts } = await createProgressBackupParts();
     currentBackup = { code, parts, isSegmented: parts.length > 1 };
-    const segNote = currentBackup.isSegmented
-        ? '<div class="form-hint" style="margin:0 0 10px;">⚠️ 备份码较长，已自动分成 ' + parts.length + ' 段。请将全部 ' + parts.length + ' 段一起发送到目标设备。</div>'
-        : '';
-    const copyLabel = currentBackup.isSegmented ? '📋 复制全部分段' : '📋 复制备份码';
-    const disp = currentBackup.isSegmented ? parts.join('\n') : code;
+    // 单码模式（未超长）：与原有行为一致
+    if (!currentBackup.isSegmented) {
+        body.innerHTML =
+            '<textarea id="backupCodeArea" readonly class="backup-code-area">' + escapeHtml(code) + '</textarea>' +
+            '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">' +
+            '<button type="button" class="btn btn--primary btn--sm" onclick="copyBackupCode()">📋 复制备份码</button>' +
+            '<button type="button" class="btn btn--ghost btn--sm" onclick="renderBackupChoice()">返回</button></div>' +
+            '<div id="backupCodeMsg" style="margin-top:10px;"></div>';
+        const ta = document.getElementById('backupCodeArea');
+        if (ta) { ta.focus(); ta.select(); }
+        return;
+    }
+    // 分段模式：每一段分别复制、分别发送（每段都低于聊天软件单条消息上限）
+    const total = parts.length;
+    const fileStrong = total >= PARTS_FILE_STRONGLY_RECOMMEND;
+    let note;
+    if (fileStrong) {
+        note = '📄 当前备份数据较大，已自动分成 ' + total + ' 段。\n\n为了避免逐段发送带来的不便，建议优先使用“保存备份文件”进行跨设备传输。\n\n如果仍需通过聊天工具传输，请将每一段分别发送。收到全部分段后，再一起粘贴到恢复框即可。';
+    } else if (total >= PARTS_FILE_RECOMMEND) {
+        note = '⚠️ 备份数据较多，已自动分成 ' + total + ' 段。\n\n由于聊天工具可能限制单条消息长度，请将每一段分别发送。也建议使用“保存备份文件”进行更方便的跨设备传输和长期保存。';
+    } else {
+        note = '⚠️ 备份码较长，已自动分成 ' + total + ' 段。\n\n部分聊天工具可能限制单条消息长度，因此请将每一段分别发送到目标设备。\n\n收到全部分段后，再将它们一起粘贴到网站恢复框中即可。网站会自动识别并恢复。';
+    }
+    let blocks = '';
+    for (let i = 0; i < total; i++) {
+        blocks +=
+            '<div style="margin-top:12px;">' +
+            '<div style="font-size:0.9em;color:var(--text-muted);margin-bottom:4px;">第 ' + (i + 1) + ' 段 / 共 ' + total + ' 段</div>' +
+            '<textarea readonly class="backup-code-area" style="min-height:90px;max-height:140px;">' + escapeHtml(parts[i]) + '</textarea>' +
+            '<div style="margin-top:6px;"><button type="button" class="btn btn--primary btn--sm" onclick="copyBackupPart(' + i + ')">📋 复制第 ' + (i + 1) + ' 段</button></div>' +
+            '</div>';
+    }
+    const fileBtn = '<button type="button" class="' + (fileStrong ? 'btn btn--primary btn--sm' : 'btn btn--ghost btn--sm') +
+        '" style="' + (fileStrong ? 'background:var(--accent);' : '') + '" onclick="saveBackupFile()">📄 ' +
+        (fileStrong ? '推荐：保存备份文件' : '保存备份文件') + '</button>';
     body.innerHTML =
-        segNote +
-        '<textarea id="backupCodeArea" readonly class="backup-code-area">' + escapeHtml(disp) + '</textarea>' +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">' +
-        '<button type="button" class="btn btn--primary btn--sm" onclick="copyBackupCode()">' + copyLabel + '</button>' +
-        '<button type="button" class="btn btn--ghost btn--sm" onclick="renderBackupChoice()">返回</button></div>' +
-        '<div id="backupCodeMsg" style="margin-top:10px;"></div>';
-    const ta = document.getElementById('backupCodeArea');
-    if (ta) { ta.focus(); ta.select(); }
+        '<div class="form-hint" style="margin:0 0 6px;white-space:pre-line;">' + escapeHtml(note) + '</div>' +
+        '<div id="backupCodeMsg" style="margin-top:8px;"></div>' +
+        blocks +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">' +
+        fileBtn +
+        '<button type="button" class="btn btn--ghost btn--sm" onclick="renderBackupChoice()">返回</button>' +
+        '</div>';
 }
 export function copyBackupCode() {
     const ta = document.getElementById('backupCodeArea');
@@ -820,7 +851,7 @@ export function copyBackupCode() {
             ? '<div class="form-hint" style="margin:0;">已自动分成 ' + currentBackup.parts.length + ' 段，请全部发送。若某一段丢失将无法恢复。</div>'
             : sizeHintHtml(code);
         if (msg) msg.innerHTML = success + hint;
-        verifyClipboard(code, msg, hint);
+        verifyClipboard(code, success + hint);
     };
     const fallback = () => {
         if (ta) { ta.removeAttribute('readonly'); ta.focus(); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.setAttribute('readonly', ''); }
@@ -830,18 +861,42 @@ export function copyBackupCode() {
         navigator.clipboard.writeText(code).then(done, fallback);
     } else { fallback(); }
 }
+// 复制单条分段（TCM1P）：仅把 currentBackup.parts[index] 写入剪贴板，不复制其他分段。
+// 复用页面已有的分段 textarea 与 verifyClipboard，不另起一套剪贴板逻辑。
+export function copyBackupPart(index) {
+    const parts = currentBackup.parts;
+    if (!parts || index < 0 || index >= parts.length) return;
+    const part = parts[index];
+    const msg = document.getElementById('backupCodeMsg');
+    // 诊断摘要（仅内存、不可逆，不含学习内容）
+    lastGeneratedBackupCode = part;
+    sha256Hex(part).then(d => { lastGeneratedSummary = { length: part.length, digest: d }; }).catch(() => {});
+    const success = '<div class="result-box success" style="margin:0;">✅ 第 ' + (index + 1) + ' 段已复制<br>请将这一段单独发送到目标设备。</div>';
+    const done = () => { if (msg) msg.innerHTML = success; verifyClipboard(part, success); };
+    const fallback = () => {
+        // 分段模式下每个段对应一个只读 textarea（按出现顺序），临时可编辑后 execCommand 复制
+        const tas = document.querySelectorAll('textarea.backup-code-area');
+        const ta = tas[index];
+        if (ta) { ta.removeAttribute('readonly'); ta.focus(); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.setAttribute('readonly', ''); }
+        if (msg) msg.innerHTML = '<div class="form-hint" style="margin:0;">已选中本段，请长按复制，或按 Ctrl/⌘ + C 复制。</div>';
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(part).then(done, fallback);
+    } else { fallback(); }
+}
 
 // 复制后尽力回读剪贴板做一致性校验（浏览器可能拒绝读权限，拒绝则忽略，不阻塞）
-function verifyClipboard(code, msg, hint) {
+function verifyClipboard(code, successHtml) {
     if (!navigator.clipboard || !navigator.clipboard.readText) return;
     try {
         navigator.clipboard.readText().then(text => {
             if (typeof text !== 'string') return;
             // 与恢复端共用同一套规范化规则，确保复制端与恢复端判断一致
             const norm = normalizeBackupInput(text);
-            if (norm && norm !== code) {
-                if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>' +
-                    '<div class="form-hint" style="margin-top:8px;">⚠️ 剪贴板内容可能发生变化，请使用下方备份码手动复制。</div>' + hint;
+            const msg = document.getElementById('backupCodeMsg');
+            if (norm && norm !== code && msg) {
+                msg.innerHTML = successHtml +
+                    '<div class="form-hint" style="margin-top:8px;">⚠️ 剪贴板内容可能发生变化，请使用下方备份码手动复制。</div>';
             }
         }).catch(() => {});
     } catch (e) { /* 忽略 */ }

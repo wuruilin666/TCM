@@ -9,7 +9,7 @@ import {
     renderDataStats, resetAllProgress, exportProgress, importProgress,
     applyImportMode, confirmCoverImport, closeImportModal,
     createProgressBackupCode, parseProgressBackupCode,
-    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, renderBackupChoice, saveBackupFile,
+    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart, renderBackupChoice, saveBackupFile,
     openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo
 } from './storage.js';
 import {
@@ -253,6 +253,7 @@ window.openBackupModal = openBackupModal;
 window.closeBackupModal = closeBackupModal;
 window.showBackupCode = showBackupCode;
 window.copyBackupCode = copyBackupCode;
+window.copyBackupPart = copyBackupPart;
 window.renderBackupChoice = renderBackupChoice;
 window.saveBackupFile = saveBackupFile;
 window.openRestoreChoice = openRestoreChoice;
