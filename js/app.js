@@ -124,19 +124,11 @@ function initApp() {
             <div class="data-card">
                 <h3>📦 学习数据</h3>
                 <p class="data-stats" id="dataStats"></p>
-                <div class="form-hint" style="line-height:1.7;margin:10px 0 14px;background:#fdfaf5;padding:10px 12px;border-radius:10px;">
-                    💡 数据说明<br>
-                    你的学习进度目前只保存在你正在使用的浏览器中，不会自动同步到其他设备。<br>
-                    例如：电脑上的学习记录不会自动出现在手机上。<br>
-                    换设备、换浏览器，或者清除浏览器网站数据后，原来的学习记录可能无法保留。<br>
-                    建议定期备份学习进度。<br><br>
-                    📋 跨设备最方便的方法：<br>
-                    点击「复制备份码」，把备份码发到微信、QQ、邮箱或保存到备忘录。在另一台设备打开本站，点击「从备份码恢复」即可。
-                </div>
+                <p class="form-hint" style="line-height:1.7;margin:8px 0 14px;">💡 学习记录只保存在当前浏览器，换设备或其他浏览器前建议先备份。</p>
                 <div class="data-actions">
-                    <button onclick="openBackupModal()">📤 备份学习进度</button>
-                    <button onclick="openRestoreChoice()">📥 恢复学习进度</button>
-                    <button onclick="resetAllProgress()">🔄 重置全部进度</button>
+                    <button onclick="openBackupModal()">📤 备份</button>
+                    <button onclick="openRestoreChoice()">📥 恢复</button>
+                    <button onclick="resetAllProgress()">🔄 重置进度</button>
                 </div>
                 <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;" onchange="if(this.files[0]) importProgress(this.files[0]); this.value='';">
             </div>

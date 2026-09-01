@@ -196,8 +196,8 @@ function openImportModal() { const m = document.getElementById('importModal'); i
 function showImportError(msg) {
     const body = document.getElementById('importModalBody');
     const m = document.getElementById('importModal');
-    if (!body || !m) { alert('❌ 无法导入：' + msg); return; }
-    body.innerHTML = '<div class="result-box fail" style="margin:6px 0;">❌ 无法导入：' + escapeHtml(msg) + '</div>' +
+    if (!body || !m) { alert('❌ ' + msg); return; }
+    body.innerHTML = '<div class="result-box fail" style="margin:6px 0;">❌ ' + escapeHtml(msg) + '</div>' +
         '<div style="text-align:center;margin-top:12px;"><button class="btn btn--outline btn--sm" onclick="closeImportModal()">知道了</button></div>';
     openImportModal();
 }
@@ -207,17 +207,17 @@ function showImportConfirm(data) {
     if (!body) return;
     const dateStr = data.exportedAt ? formatDate(data.exportedAt) : '';
     body.innerHTML =
-        '<p style="color:var(--text-light);line-height:1.7;margin-bottom:10px;">检测到导入文件：</p>' +
+        '<div style="font-size:1.15em;color:var(--accent);font-weight:700;margin-bottom:10px;">✅ 找到学习进度</div>' +
         '<div style="background:#fdfaf5;border:1px dashed var(--border);border-radius:10px;padding:12px 14px;font-size:0.92em;line-height:1.8;">' +
-        '已完成病例：<strong>' + data.completedCases.length + '</strong> 例<br>' +
-        '错题记录：<strong>' + data.wrongCases.length + '</strong> 条<br>' +
-        '导出时间：' + (dateStr || '未知') + '</div>' +
-        '<p style="color:var(--text-muted);font-size:0.9em;margin:12px 0 14px;line-height:1.6;">请选择导入方式：</p>' +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+        '已完成：<strong>' + data.completedCases.length + '</strong> 例<br>' +
+        '错题：<strong>' + data.wrongCases.length + '</strong> 条<br>' +
+        '备份时间：' + (dateStr || '未知') + '</div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">' +
         '<button class="btn btn--primary btn--sm" style="animation:none;" onclick="applyImportMode(\'merge\')">🤝 合并到当前进度</button>' +
         '<button class="btn btn--outline btn--sm" onclick="applyImportMode(\'cover\')">♻️ 覆盖当前进度</button>' +
         '<button class="btn btn--ghost btn--sm" onclick="closeImportModal()">取消</button>' +
-        '</div>';
+        '</div>' +
+        '<p style="color:var(--text-muted);font-size:0.85em;margin:12px 0 0;line-height:1.6;">合并：保留当前记录　覆盖：使用备份中的记录替换当前记录</p>';
     openImportModal();
 }
 
@@ -256,11 +256,17 @@ function doApplyImport(mode) {
 }
 
 /* ===================== 学习进度备份码（复制 / 粘贴，纯前端，不依赖服务器） ===================== */
-// 备份码 = 前缀 "TCM1:" + UTF-8 → Base64URL 编码的同一份统一备份数据。
-// 不加密、不含 HTML、不含不可见字符，适合在微信 / QQ / 邮箱 / 备忘录中复制粘贴传输。
+// 备份码 = 前缀 + 同一份统一备份数据的紧凑编码，适合在微信 / QQ / 邮箱 / 备忘录中复制粘贴传输。
+//   TCM1: 未压缩（UTF-8 → Base64URL），兼容性最好，作为不支持压缩时的回退。
+//   TCM2: Gzip 压缩（浏览器原生 CompressionStream）→ Base64URL，数据量大时明显更短。
+// 不加密、不含 HTML、不含不可见字符。旧版 TCM1 备份码仍可正常解析。
 const BACKUP_PREFIX = 'TCM1:';
+const BACKUP_PREFIX_V2 = 'TCM2:';
 const MAX_BACKUP_CODE_LEN = 6000000; // 约 4.5MB JSON 的 Base64URL 长度上限
 const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
+// 备份码字节大小分级（按 UTF-8 字节数，而非字符数）
+const SIZE_SMALL = 8000;     // < 8KB：直接复制，无额外提示
+const SIZE_LARGE = 40000;    // > 40KB：建议使用备份文件
 
 function utf8ToBase64Url(str) {
     let b64;
@@ -291,23 +297,88 @@ function base64UrlToUtf8(b64url) {
     }
 }
 
-// 生成当前进度的备份码
-export function createProgressBackupCode() {
-    return BACKUP_PREFIX + utf8ToBase64Url(JSON.stringify(buildProgressPayload()));
+function bytesToBase64Url(bytes) {
+    let bin = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function base64UrlToBytes(b64url) {
+    let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+}
+
+function supportsCompression() {
+    return typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
+}
+
+async function gzipCompress(str) {
+    const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function gzipDecompress(bytes) {
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+// 生成当前进度的备份码（统一数据源：与备份文件同一份 payload）
+// 小备份直接使用兼容性最好的 TCM1:；仅当未压缩码明显偏长时改用 TCM2: 压缩，
+// 兼顾跨设备兼容性与体积，浏览器不支持压缩时回退 TCM1:。
+export async function createProgressBackupCode() {
+    const json = JSON.stringify(buildProgressPayload());
+    const plain = BACKUP_PREFIX + utf8ToBase64Url(json);
+    if (plain.length > 4000 && supportsCompression()) {
+        try {
+            return BACKUP_PREFIX_V2 + bytesToBase64Url(await gzipCompress(json));
+        } catch (e) { /* 压缩失败则回退未压缩 */ }
+    }
+    return plain;
+}
+
+// 备份码 UTF-8 字节大小（用于提示，而非硬性限制）
+export function getBackupCodeBytes(code) {
+    try { return new TextEncoder().encode(code).length; }
+    catch (e) { return code.length; }
+}
+
+// 根据字节大小给出可选的轻量提示（不阻止使用）
+function sizeHintHtml(bytes) {
+    if (bytes > SIZE_LARGE) {
+        return '<div class="form-hint" style="margin:0;">⚠️ 当前学习记录较多，备份码较长，建议使用「保存备份文件」进行保存。</div>';
+    }
+    if (bytes > SIZE_SMALL) {
+        return '<div class="form-hint" style="margin:0;">当前记录较多，也可以使用「保存备份文件」进行备份。</div>';
+    }
+    return '';
 }
 
 // 解析并校验备份码，返回 { ok, data?, error? }
-export function parseProgressBackupCode(raw) {
+export async function parseProgressBackupCode(raw) {
     if (typeof raw !== 'string') return { ok: false, error: '备份码无效' };
     const code = raw.trim();
     if (code.length > MAX_BACKUP_CODE_LEN) return { ok: false, error: '备份码无效' };
-    let body = code;
-    if (code.indexOf(BACKUP_PREFIX) === 0) body = code.slice(BACKUP_PREFIX.length);
+    let body = code, v2 = false;
+    if (code.indexOf(BACKUP_PREFIX_V2) === 0) { body = code.slice(BACKUP_PREFIX_V2.length); v2 = true; }
+    else if (code.indexOf(BACKUP_PREFIX) === 0) { body = code.slice(BACKUP_PREFIX.length); }
     else return { ok: false, error: '备份码无效' };
     if (!body) return { ok: false, error: '备份码无效' };
     let jsonStr;
-    try { jsonStr = base64UrlToUtf8(body); }
-    catch (e) { return { ok: false, error: '备份码损坏或格式不正确' }; }
+    try {
+        if (v2) {
+            if (!supportsCompression()) return { ok: false, error: '这个备份码来自更新版本的网站，当前浏览器暂不支持读取，请改用「从备份文件恢复」。' };
+            jsonStr = new TextDecoder().decode(await gzipDecompress(base64UrlToBytes(body)));
+        } else {
+            jsonStr = base64UrlToUtf8(body);
+        }
+    } catch (e) { return { ok: false, error: '备份码损坏或格式不正确' }; }
     let parsed;
     try { parsed = JSON.parse(jsonStr); }
     catch (e) { return { ok: false, error: '备份码损坏或格式不正确' }; }
@@ -334,19 +405,17 @@ export function renderBackupChoice() {
     const body = document.getElementById('backupModalBody');
     if (!body) return;
     body.innerHTML =
-        '<p style="color:var(--text-light);line-height:1.7;margin-bottom:8px;">当前：已完成 <strong>' + getCompletedCases().length + '</strong> 例 · 错题 <strong>' + getWrongCases().length + '</strong> 条</p>' +
-        '<p style="color:var(--text-muted);font-size:0.9em;margin-bottom:12px;">选择一种备份方式：</p>' +
+        '<p style="color:var(--text-light);line-height:1.7;margin-bottom:12px;">当前：已完成 <strong>' + getCompletedCases().length + '</strong> 例 · 错题 <strong>' + getWrongCases().length + '</strong> 条</p>' +
         '<div class="backup-options">' +
-        '<button type="button" class="backup-option" onclick="showBackupCode()"><div class="backup-option-icon">📋</div><div class="backup-option-title">复制备份码</div><div class="backup-option-desc">适合手机、平板、电脑之间迁移，微信、QQ、邮箱、备忘录都能用</div></button>' +
-        '<button type="button" class="backup-option" onclick="saveBackupFile()"><div class="backup-option-icon">📄</div><div class="backup-option-title">保存备份文件</div><div class="backup-option-desc">适合长期保存到电脑、网盘</div></button>' +
+        '<button type="button" class="backup-option" onclick="showBackupCode()"><div class="backup-option-icon">📋</div><div class="backup-option-title">复制备份码</div><div class="backup-option-desc">跨设备最方便</div></button>' +
+        '<button type="button" class="backup-option" onclick="saveBackupFile()"><div class="backup-option-icon">📄</div><div class="backup-option-title">保存备份文件</div><div class="backup-option-desc">适合长期保存</div></button>' +
         '</div>';
 }
-export function showBackupCode() {
+export async function showBackupCode() {
     const body = document.getElementById('backupModalBody');
     if (!body) return;
-    const code = createProgressBackupCode();
+    const code = await createProgressBackupCode();
     body.innerHTML =
-        '<p style="color:var(--text-light);line-height:1.7;margin-bottom:8px;">📋 复制下面的备份码，发到自己的微信 / QQ / 邮箱或保存到备忘录。</p>' +
         '<textarea id="backupCodeArea" readonly class="backup-code-area">' + escapeHtml(code) + '</textarea>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">' +
         '<button type="button" class="btn btn--primary btn--sm" onclick="copyBackupCode()">📋 复制备份码</button>' +
@@ -360,10 +429,11 @@ export function copyBackupCode() {
     const msg = document.getElementById('backupCodeMsg');
     const code = ta ? ta.value : '';
     if (!code) return;
-    const done = () => { if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 备份码已复制<br>可以把备份码发送到自己的微信、QQ、邮箱，或保存到备忘录。<br>换设备后打开本站，选择「从备份码恢复」即可。</div>'; };
+    const hint = sizeHintHtml(getBackupCodeBytes(code));
+    const done = () => { if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>' + hint; };
     const fallback = () => {
         if (ta) { ta.removeAttribute('readonly'); ta.focus(); ta.select(); try { document.execCommand('copy'); } catch (e) {} ta.setAttribute('readonly', ''); }
-        if (msg) msg.innerHTML = '<div class="form-hint" style="margin:0;">已选中备份码，请长按复制，或按 Ctrl/⌘ + C 复制。</div>';
+        if (msg) msg.innerHTML = '<div class="form-hint" style="margin:0;">已选中备份码，请长按复制，或按 Ctrl/⌘ + C 复制。</div>' + hint;
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(code).then(done, fallback);
@@ -377,10 +447,9 @@ export function openRestoreChoice() {
     const body = document.getElementById('importModalBody');
     if (!body) return;
     body.innerHTML =
-        '<p style="color:var(--text-light);line-height:1.7;margin-bottom:12px;">请选择恢复方式：</p>' +
         '<div class="backup-options">' +
-        '<button type="button" class="backup-option" onclick="startCodeRestore()"><div class="backup-option-icon">📋</div><div class="backup-option-title">从备份码恢复</div><div class="backup-option-desc">适合跨设备迁移，粘贴备份码即可</div></button>' +
-        '<button type="button" class="backup-option" onclick="triggerFileRestore()"><div class="backup-option-icon">📄</div><div class="backup-option-title">从备份文件恢复</div><div class="backup-option-desc">适合从电脑、网盘等恢复</div></button>' +
+        '<button type="button" class="backup-option" onclick="startCodeRestore()"><div class="backup-option-icon">📋</div><div class="backup-option-title">粘贴备份码</div><div class="backup-option-desc">跨设备最方便</div></button>' +
+        '<button type="button" class="backup-option" onclick="triggerFileRestore()"><div class="backup-option-icon">📄</div><div class="backup-option-title">从备份文件恢复</div><div class="backup-option-desc">适合长期保存</div></button>' +
         '</div>' +
         '<div style="text-align:center;margin-top:12px;"><button type="button" class="btn btn--ghost btn--sm" onclick="closeImportModal()">取消</button></div>';
 }
@@ -389,7 +458,7 @@ export function startCodeRestore() {
     if (!body) return;
     body.innerHTML =
         '<p style="color:var(--text-light);line-height:1.7;margin-bottom:8px;">请粘贴之前备份的学习进度码。</p>' +
-        '<p class="form-hint" style="margin-bottom:10px;line-height:1.6;">备份码不会上传到服务器，只会在当前浏览器中处理。</p>' +
+        '<p class="form-hint" style="margin-bottom:10px;line-height:1.6;">备份码只在当前设备上处理，不会上传到服务器。</p>' +
         '<textarea id="progressCodeInput" class="backup-code-area" placeholder="在此粘贴备份码..."></textarea>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">' +
         '<button type="button" class="btn btn--primary btn--sm" onclick="checkBackupCode()">检查备份码</button>' +
@@ -398,10 +467,10 @@ export function startCodeRestore() {
     const ta = document.getElementById('progressCodeInput');
     if (ta) ta.focus();
 }
-export function checkBackupCode() {
+export async function checkBackupCode() {
     const ta = document.getElementById('progressCodeInput');
     if (!ta) return;
-    const res = parseProgressBackupCode(ta.value);
+    const res = await parseProgressBackupCode(ta.value);
     if (!res.ok) { showImportError(res.error); return; }
     pendingImport = res.data;
     showImportConfirm(res.data);
