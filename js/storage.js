@@ -193,14 +193,56 @@ export function closeImportModal() { pendingImport = null; const m = document.ge
 
 function openImportModal() { const m = document.getElementById('importModal'); if (m) m.style.display = 'flex'; }
 
-function showImportError(msg) {
+function showImportError(msg, showDiag) {
     const body = document.getElementById('importModalBody');
     const m = document.getElementById('importModal');
     if (!body || !m) { alert('❌ ' + msg); return; }
     const html = escapeHtml(msg).replace(/\n/g, '<br>');
+    // 仅备份码恢复失败时，提供“复制诊断信息”按钮（复制内容不含备份码 / 学习数据）
+    const diagBtn = (showDiag && lastRestoreDiag)
+        ? '<div style="text-align:center;margin-top:10px;"><button type="button" class="btn btn--ghost btn--sm" onclick="copyDiagnosticInfo()">📋 复制诊断信息</button></div>'
+        : '';
     body.innerHTML = '<div class="result-box fail" style="margin:6px 0;">❌ ' + html + '</div>' +
-        '<div style="text-align:center;margin-top:12px;"><button class="btn btn--outline btn--sm" onclick="closeImportModal()">知道了</button></div>';
+        '<div style="text-align:center;margin-top:12px;"><button class="btn btn--outline btn--sm" onclick="closeImportModal()">知道了</button></div>' + diagBtn;
     openImportModal();
+}
+
+// 将最近一次恢复诊断整理为安全文本（不含备份码、JSON、学习数据），供用户复制后发给我
+function buildDiagnosticText(diag) {
+    if (!diag) return '';
+    const stage = v => (v === true ? '成功' : (v === false ? '失败' : '未执行'));
+    const yn = v => (v === true ? '一致' : (v === false ? '失败' : '未校验'));
+    return [
+        'TCM1备份诊断',
+        '前缀：' + (diag.prefixFound ? '已找到' : '未找到'),
+        '原始输入长度：' + diag.rawLength,
+        '规范化后长度：' + diag.normalizedLength,
+        'Base64URL长度：' + diag.base64Length,
+        '解码：' + stage(diag.decodeOk),
+        'JSON：' + stage(diag.jsonOk),
+        '数据结构：' + stage(diag.validateOk),
+        'checksum：' + yn(diag.checksumOk),
+        '失败阶段：' + (diag.stage || '-')
+    ].join('\n');
+}
+
+export function copyDiagnosticInfo() {
+    const text = buildDiagnosticText(lastRestoreDiag);
+    if (!text) { alert('暂无可复制的诊断信息'); return; }
+    const ok = () => alert('✅ 诊断信息已复制（不含备份码内容）');
+    const fail = () => {
+        try {
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.focus(); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta); ok();
+        } catch (e) { alert(text); }
+    };
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(ok, fail);
+        } else { fail(); }
+    } catch (e) { fail(); }
 }
 
 function showImportConfirm(data) {
@@ -335,16 +377,80 @@ function normalizeBackupInput(raw) {
         .replace(/ +/g, '')
         .trim();
 }
-// 仅 console 输出，便于定位“微信是否修改了内容”，不展示给用户
-function debugBackup(stage, raw, normalized, expect, actual) {
+// 诊断状态（仅内存，不写 localStorage、不上传服务器）
+let lastGeneratedBackupCode = '';        // 本次复制的备份码原文（仅用于同设备对比，不持久化）
+let lastGeneratedSummary = { length: 0, digest: '' }; // 不可逆摘要，用于调试
+let lastRestoreDiag = null;              // 最近一次恢复诊断（安全，不含备份码内容）
+
+// 对字符串做 SHA-256（仅用于诊断摘要，不可逆，不含学习内容）
+async function sha256Hex(str) {
     try {
-        const verified = (expect && actual) ? (String(expect).toLowerCase() === String(actual).toLowerCase()) : null;
-        console.log('[TCM Backup Debug]', stage,
-            'originalLength=' + (raw ? raw.length : 0),
-            'normalizedLength=' + (normalized ? normalized.length : 0),
-            expect ? 'expect=' + expect : '',
-            actual ? 'actual=' + actual : '',
-            verified !== null ? 'verified=' + verified : '');
+        const data = new TextEncoder().encode(String(str));
+        if (globalThis.crypto && globalThis.crypto.subtle && globalThis.crypto.subtle.digest) {
+            const buf = await globalThis.crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+    } catch (e) {}
+    return '';
+}
+
+// 字符类别（不输出字符本身，只输出类别，避免泄露备份码）
+function diffCategory(ch) {
+    if (/[A-Z]/.test(ch)) return 'uppercase';
+    if (/[a-z]/.test(ch)) return 'lowercase';
+    if (/[0-9]/.test(ch)) return 'digit';
+    if (ch === '-') return '-';
+    if (ch === '_') return '_';
+    return 'other';
+}
+// 同设备诊断：比较原始码与粘贴码的“第一处差异”，只输出位置与类别
+function diagnoseFirstDiff(orig, pasted) {
+    const a = orig || '', b = pasted || '';
+    const minLen = Math.min(a.length, b.length);
+    let diffPos = -1;
+    for (let i = 0; i < minLen; i++) {
+        if (a[i] !== b[i]) { diffPos = i; break; }
+    }
+    if (diffPos < 0) diffPos = minLen; // 共同长度内无差异 -> 差异在结尾（截断/追加）
+    return {
+        originalLength: a.length,
+        pastedLength: b.length,
+        firstDiffPos: diffPos,
+        originalCharCat: diffPos < a.length ? diffCategory(a[diffPos]) : '(none)',
+        pastedCharCat: diffPos < b.length ? diffCategory(b[diffPos]) : '(none)'
+    };
+}
+
+// 安全诊断：仅输出元数据（长度 / 前缀位置 / 是否存在非 Base64URL 字符 / 各阶段成败 / checksum 前 8 位），
+// 绝不输出完整备份码、完整 JSON 或学习记录内容。
+function debugBackup(stage, raw, normalized, extra) {
+    extra = extra || {};
+    try {
+        const rawStr = typeof raw === 'string' ? raw : '';
+        const normStr = typeof normalized === 'string' ? normalized : '';
+        const prefixIndex = normStr.indexOf(BACKUP_PREFIX);
+        const body = typeof extra.body === 'string' ? extra.body
+            : (prefixIndex >= 0 ? normStr.slice(prefixIndex + BACKUP_PREFIX.length) : '');
+        const cleanBody = typeof extra.cleanBody === 'string' ? extra.cleanBody : body.replace(/[^A-Za-z0-9_-]/g, '');
+        const metrics = {
+            stage,
+            rawLength: rawStr.length,
+            normalizedLength: normStr.length,
+            prefixFound: prefixIndex >= 0,
+            prefixIndex: prefixIndex < 0 ? null : prefixIndex,
+            bodyLength: body.length,
+            cleanBodyLength: cleanBody.length,
+            nonBase64Chars: Math.max(0, body.length - cleanBody.length),
+            base64LengthChanged: (typeof extra.expectedBase64Len === 'number') ? (cleanBody.length !== extra.expectedBase64Len) : null,
+            decodeOk: extra.decodeOk,
+            jsonOk: extra.jsonOk,
+            validateOk: extra.validateOk,
+            checksumMatch: extra.checksumMatch,
+            note: extra.note || ''
+        };
+        if (extra.expect) metrics.checksumExpected = String(extra.expect).slice(0, 8) + '…';
+        if (extra.actual) metrics.checksumActual = String(extra.actual).slice(0, 8) + '…';
+        console.log('[TCM Backup Debug]', JSON.stringify(metrics));
     } catch (e) {}
 }
 
@@ -377,60 +483,100 @@ function sizeHintHtml(bytes) {
 // 解析并校验备份码，返回 { ok, data?, error?, kind? }
 // kind: format(非备份码) / modified(内容被改或损坏) / legacy(旧版TCM2) / version(高版本)
 export async function parseProgressBackupCode(raw) {
-    if (typeof raw !== 'string') return { ok: false, error: MSG_FORMAT, kind: 'format' };
-    // 第 2 步：统一清理无害格式字符（BOM / 零宽 / 双向控制 / 换行 / Tab / 普通空格）。
-    // normalizeBackupInput 只做文本清洗，不做合法性判断。
+    // 本函数“宽容输入、严格验真”：先定位 TCM1: 前缀并提取其后合法 Base64URL 字符，
+    // 再逐阶段校验。每一步都写入安全诊断（不含备份码/学习数据内容）。
+    const diag = {
+        prefixFound: false, rawLength: 0, normalizedLength: 0, base64Length: 0,
+        decodeOk: null, jsonOk: null, validateOk: null, checksumOk: null, stage: '', kind: ''
+    };
+    const fail = (stage) => { diag.stage = stage; lastRestoreDiag = diag; };
+
+    if (typeof raw !== 'string') {
+        diag.kind = 'format'; fail('type-error');
+        debugBackup('type-error', raw, '');
+        return { ok: false, error: MSG_FORMAT, kind: 'format' };
+    }
+    // 统一清理无害格式字符（BOM / 零宽 / 双向控制 / 换行 / Tab / 空格）
     const code = normalizeBackupInput(raw);
-    debugBackup('normalized', raw, code);
-    if (code.length > MAX_BACKUP_CODE_LEN) { debugBackup('too-long', raw, code); return { ok: false, error: MSG_FORMAT, kind: 'format' }; }
-    // 第 3 步：旧版 TCM2（gzip）已停用，给出明确提示，不尝试解压
+    diag.rawLength = raw.length;
+    diag.normalizedLength = code.length;
+    // 同设备参考：若本会话复制过备份码，可用其 Base64URL 长度做变化比对（跨设备通常无此值）
+    const expectedBase64Len = (lastGeneratedBackupCode && lastGeneratedBackupCode.indexOf(BACKUP_PREFIX) === 0)
+        ? lastGeneratedBackupCode.length - BACKUP_PREFIX.length : undefined;
+    debugBackup('normalized', raw, code, { expectedBase64Len });
+    if (code.length > MAX_BACKUP_CODE_LEN) {
+        diag.kind = 'format'; fail('too-long');
+        debugBackup('too-long', raw, code);
+        return { ok: false, error: MSG_FORMAT, kind: 'format' };
+    }
+    // 旧版 TCM2（gzip）已停用，给出明确提示，不尝试解压
     if (code.indexOf(BACKUP_PREFIX_V2) === 0) {
+        diag.kind = 'legacy'; fail('legacy');
         return { ok: false, error: MSG_LEGACY, kind: 'legacy' };
     }
-    // 第 4 步：查找 TCM1: 前缀。前缀前允许出现无害空白 / BOM / 零宽字符（已在 normalize 阶段清理），
-    // 不要求“从第一个字符开始就是 TCM1:”。找不到任何有效前缀才视为格式错误。
+    // 查找 TCM1: 前缀（前缀前允许无害空白 / BOM / 零宽字符，已在 normalize 阶段清理）
     const prefixIndex = code.indexOf(BACKUP_PREFIX);
     if (prefixIndex < 0) {
+        diag.kind = 'format'; fail('prefix-not-found');
         debugBackup('prefix-not-found', raw, code);
         return { ok: false, error: MSG_FORMAT, kind: 'format' };
     }
-    // 第 5 步：只处理 TCM1: 之后的内容，绝不对整段文本做全局 Base64URL 拼接，
-    // 以免把前缀前的说明文字也误当成正文。
+    diag.prefixFound = true;
+    // 只处理 TCM1: 之后的内容，绝不对整段文本做全局 Base64URL 拼接
     const body = code.slice(prefixIndex + BACKUP_PREFIX.length);
-    // 提取合法 Base64URL 字符，忽略中间夹杂的空格 / 换行 / Tab / 零宽字符等无害格式字符。
     const cleanBody = body.replace(/[^A-Za-z0-9_-]/g, '');
-    debugBackup('extracted', raw, code);
+    diag.base64Length = cleanBody.length;
+    debugBackup('extracted', raw, code, { body, cleanBody, expectedBase64Len });
     if (!cleanBody) {
-        debugBackup('empty-body', raw, code);
+        diag.kind = 'modified'; fail('empty-body');
+        debugBackup('empty-body', raw, code, { body, cleanBody });
         return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
     }
-    // 第 6 步：Base64URL 解码
+    // Base64URL 解码
     let jsonStr;
-    try { jsonStr = base64UrlToUtf8(cleanBody); }
-    catch (e) { debugBackup('decode-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
-    // 第 7 步：JSON 解析
+    try { jsonStr = base64UrlToUtf8(cleanBody); diag.decodeOk = true; }
+    catch (e) {
+        diag.kind = 'modified'; diag.decodeOk = false; fail('decode-fail');
+        debugBackup('decode-fail', raw, code, { body, cleanBody, note: '可能发生截断/字符损坏' });
+        return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+    }
+    // JSON 解析
     let parsed;
-    try { parsed = JSON.parse(jsonStr); }
-    catch (e) { debugBackup('json-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
-    // 第 8 步：版本检查（高版本备份不应误判为“损坏”）
+    try { parsed = JSON.parse(jsonStr); diag.jsonOk = true; }
+    catch (e) {
+        diag.kind = 'modified'; diag.jsonOk = false; fail('json-fail');
+        debugBackup('json-fail', raw, code, { body, cleanBody, note: 'Base64URL 可解码但 JSON 解析失败' });
+        return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+    }
+    // 版本检查（高版本备份不应误判为“损坏”）
     if (parsed && typeof parsed.version === 'number' && parsed.version > PROGRESS_VERSION) {
+        diag.stage = 'version'; diag.kind = 'version'; lastRestoreDiag = diag;
         return { ok: false, error: '这个备份来自更新版本的网站，当前版本暂时无法读取。请先更新网站后再尝试恢复。', kind: 'version' };
     }
-    // 第 9 步：严格校验数据结构
+    // 数据结构校验
     const res = validateProgressData(parsed);
-    if (!res.ok) { debugBackup('validate-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
-    // 第 10 步：checksum 完整性校验（旧备份无 checksum 时跳过，仅做结构校验，保持兼容）。
-    // checksum 是判断“微信等传输是否真正改变了有效载荷”的最终保险，绝不跳过。
+    if (!res.ok) {
+        diag.kind = 'modified'; diag.validateOk = false; fail('validate-fail');
+        debugBackup('validate-fail', raw, code, { body, cleanBody, note: '数据结构校验失败' });
+        return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+    }
+    diag.validateOk = true;
+    // checksum 完整性校验（旧备份无 checksum 时跳过，仅做结构校验，保持兼容）。
+    // checksum 是判断“微信等传输是否真正改变了有效载荷”的最终保险，绝不跳过、绝不猜测。
     if (typeof parsed.checksum === 'string') {
         const actual = await computeChecksum(canonicalizePayload(parsed));
         if (parsed.checksum.toLowerCase() !== actual.toLowerCase()) {
-            debugBackup('checksum-mismatch', raw, code, parsed.checksum, actual);
+            diag.kind = 'modified'; diag.checksumOk = false; fail('checksum-mismatch');
+            debugBackup('checksum-mismatch', raw, code, { body, cleanBody, expect: parsed.checksum, actual, note: 'Base64URL 可以解码，但有效载荷已经发生改变' });
             return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
         }
-        debugBackup('verified', raw, code, parsed.checksum, actual);
+        diag.checksumOk = true;
+        debugBackup('verified', raw, code, { body, cleanBody, expect: parsed.checksum, actual });
     } else {
-        debugBackup('no-checksum(legacy)', raw, code);
+        diag.checksumOk = null;
+        debugBackup('no-checksum(legacy)', raw, code, { body, cleanBody });
     }
+    lastRestoreDiag = diag;
     return { ok: true, data: res.data };
 }
 
@@ -473,6 +619,9 @@ export function copyBackupCode() {
     const msg = document.getElementById('backupCodeMsg');
     const code = ta ? ta.value : '';
     if (!code) return;
+    // 诊断：记录本次复制的备份码摘要（仅内存，不写 localStorage、不上传）
+    lastGeneratedBackupCode = code;
+    sha256Hex(code).then(d => { lastGeneratedSummary = { length: code.length, digest: d }; }).catch(() => {});
     const hint = sizeHintHtml(getBackupCodeBytes(code));
     const done = () => {
         if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>' + hint;
@@ -533,8 +682,17 @@ export function startCodeRestore() {
 export async function checkBackupCode() {
     const ta = document.getElementById('progressCodeInput');
     if (!ta) return;
-    const res = await parseProgressBackupCode(ta.value);
-    if (!res.ok) { showImportError(res.error); return; }
+    const pasted = ta.value || '';
+    // 同设备诊断：若本会话复制过备份码（电脑 / 手机通常是不同浏览器，故跨设备一般无此值），
+    // 比较原始码与粘贴码的“第一处差异”，帮助判断传输是否改动了字符。跨设备场景依赖下面的 Console 诊断。
+    if (lastGeneratedBackupCode) {
+        try {
+            const d = diagnoseFirstDiff(lastGeneratedBackupCode, pasted);
+            console.log('[TCM Backup Debug]', JSON.stringify({ stage: 'same-device-diff', ...d }));
+        } catch (e) {}
+    }
+    const res = await parseProgressBackupCode(pasted);
+    if (!res.ok) { showImportError(res.error, true); return; }
     pendingImport = res.data;
     showImportConfirm(res.data);
 }

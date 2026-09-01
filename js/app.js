@@ -10,7 +10,7 @@ import {
     applyImportMode, confirmCoverImport, closeImportModal,
     createProgressBackupCode, parseProgressBackupCode,
     openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, renderBackupChoice, saveBackupFile,
-    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore
+    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo
 } from './storage.js';
 import {
     startChallenge, resetGameUI, selectDifficulty, showCurrentCase, prevCase, nextCase,
@@ -259,6 +259,7 @@ window.openRestoreChoice = openRestoreChoice;
 window.startCodeRestore = startCodeRestore;
 window.checkBackupCode = checkBackupCode;
 window.triggerFileRestore = triggerFileRestore;
+window.copyDiagnosticInfo = copyDiagnosticInfo;
 
 // 仅用于调试 / 兼容（避免未使用导入告警）
 window._getAllCases = getAllCases;
