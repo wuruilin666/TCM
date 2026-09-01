@@ -778,12 +778,26 @@ export function closeBackupModal() {
 export function renderBackupChoice() {
     const body = document.getElementById('backupModalBody');
     if (!body) return;
+    const doneCount = getCompletedCases().length;
+    const wrongCount = getWrongCases().length;
     body.innerHTML =
-        '<p style="color:var(--text-light);line-height:1.7;margin-bottom:12px;">当前：已完成 <strong>' + getCompletedCases().length + '</strong> 例 · 错题 <strong>' + getWrongCases().length + '</strong> 条</p>' +
+        '<p style="color:var(--text-light);line-height:1.7;margin-bottom:12px;">当前：已完成 <strong>' + doneCount + '</strong> 例 · 错题 <strong>' + wrongCount + '</strong> 条</p>' +
         '<div class="backup-options">' +
-        '<button type="button" class="backup-option" onclick="showBackupCode()"><div class="backup-option-icon">📋</div><div class="backup-option-title">复制备份码</div><div class="backup-option-desc">跨设备最方便</div></button>' +
-        '<button type="button" class="backup-option" onclick="saveBackupFile()"><div class="backup-option-icon">📄</div><div class="backup-option-title">保存备份文件</div><div class="backup-option-desc">适合长期保存</div></button>' +
-        '</div>';
+        // 第一张：保存备份文件（推荐方式，作为主要备份选项）
+        '<button type="button" class="backup-option" style="border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);" onclick="saveBackupFile()">' +
+            '<span style="display:inline-block;background:var(--accent);color:#fff;font-size:0.72em;font-weight:700;line-height:1;padding:3px 9px;border-radius:999px;margin-bottom:8px;">推荐</span>' +
+            '<div class="backup-option-icon">📄</div>' +
+            '<div class="backup-option-title">保存备份文件</div>' +
+            '<div class="backup-option-desc">适合换设备、大量学习记录和长期保存。</div>' +
+        '</button>' +
+        // 第二张：使用备份码（备用方案，快速跨设备传输）
+        '<button type="button" class="backup-option" onclick="showBackupCode()">' +
+            '<div class="backup-option-icon">📋</div>' +
+            '<div class="backup-option-title">使用备份码</div>' +
+            '<div class="backup-option-desc">复制后可通过微信等聊天工具传输。数据较多时会自动分段。</div>' +
+        '</button>' +
+        '</div>' +
+        '<p class="form-hint" style="margin:14px 2px 0;font-size:0.85em;line-height:1.6;">💡 提示：若暂时不方便保存或找不到备份文件的位置，也可以使用备份码进行跨设备备份。</p>';
 }
 export async function showBackupCode() {
     const body = document.getElementById('backupModalBody');
