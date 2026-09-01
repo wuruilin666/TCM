@@ -256,13 +256,12 @@ function doApplyImport(mode) {
 }
 
 /* ===================== 学习进度备份码（复制 / 粘贴，纯前端，不依赖服务器） ===================== */
-// 备份码 = 前缀 + 同一份统一备份数据的紧凑编码，适合在微信 / QQ / 邮箱 / 备忘录中复制粘贴传输。
-//   TCM1: 未压缩（UTF-8 → Base64URL），兼容性最好，作为不支持压缩时的回退。
-//   TCM2: Gzip 压缩（浏览器原生 CompressionStream）→ Base64URL，数据量大时明显更短。
-// 不加密、不含 HTML、不含不可见字符。旧版 TCM1 备份码仍可正常解析。
+// 备份码统一采用 TCM1: 前缀 + 同一份统一备份数据的紧凑编码（UTF-8 → Base64URL）。
+// 不压缩、不加密、不含 HTML、不含不可见字符，兼容电脑 / 手机 / 平板，适合在微信 / QQ / 邮箱 / 备忘录中复制粘贴传输。
+// 注：旧版的 TCM2（gzip）备份码已停用，解析时给出“旧版格式”提示，不影响 TCM1 与备份文件。
 const BACKUP_PREFIX = 'TCM1:';
-const BACKUP_PREFIX_V2 = 'TCM2:';
-const MAX_BACKUP_CODE_LEN = 6000000; // 约 4.5MB JSON 的 Base64URL 长度上限
+const BACKUP_PREFIX_V2 = 'TCM2:'; // 仅用于识别旧版备份码并提示，不再生成
+const MAX_BACKUP_CODE_LEN = 6000000;
 const MAX_IMPORT_FILE_BYTES = 5 * 1024 * 1024;
 // 备份码字节大小分级（按 UTF-8 字节数，而非字符数）
 const SIZE_SMALL = 8000;     // < 8KB：直接复制，无额外提示
@@ -297,50 +296,10 @@ function base64UrlToUtf8(b64url) {
     }
 }
 
-function bytesToBase64Url(bytes) {
-    let bin = '';
-    const chunk = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunk) {
-        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-    }
-    return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function base64UrlToBytes(b64url) {
-    let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-    while (b64.length % 4) b64 += '=';
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes;
-}
-
-function supportsCompression() {
-    return typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
-}
-
-async function gzipCompress(str) {
-    const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'));
-    return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-
-async function gzipDecompress(bytes) {
-    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
-    return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-
-// 生成当前进度的备份码（统一数据源：与备份文件同一份 payload）
-// 小备份直接使用兼容性最好的 TCM1:；仅当未压缩码明显偏长时改用 TCM2: 压缩，
-// 兼顾跨设备兼容性与体积，浏览器不支持压缩时回退 TCM1:。
-export async function createProgressBackupCode() {
-    const json = JSON.stringify(buildProgressPayload());
-    const plain = BACKUP_PREFIX + utf8ToBase64Url(json);
-    if (plain.length > 4000 && supportsCompression()) {
-        try {
-            return BACKUP_PREFIX_V2 + bytesToBase64Url(await gzipCompress(json));
-        } catch (e) { /* 压缩失败则回退未压缩 */ }
-    }
-    return plain;
+// 生成当前进度的备份码（统一数据源：与备份文件同一份 payload）。
+// 只产生 TCM1: 编码（UTF-8 → Base64URL），不压缩，确保电脑 / 手机 / 平板之间稳定复制粘贴恢复。
+export function createProgressBackupCode() {
+    return BACKUP_PREFIX + utf8ToBase64Url(JSON.stringify(buildProgressPayload()));
 }
 
 // 备份码 UTF-8 字节大小（用于提示，而非硬性限制）
@@ -361,24 +320,22 @@ function sizeHintHtml(bytes) {
 }
 
 // 解析并校验备份码，返回 { ok, data?, error? }
-export async function parseProgressBackupCode(raw) {
+export function parseProgressBackupCode(raw) {
     if (typeof raw !== 'string') return { ok: false, error: '备份码无效' };
     const code = raw.trim();
     if (code.length > MAX_BACKUP_CODE_LEN) return { ok: false, error: '备份码无效' };
-    let body = code, v2 = false;
-    if (code.indexOf(BACKUP_PREFIX_V2) === 0) { body = code.slice(BACKUP_PREFIX_V2.length); v2 = true; }
-    else if (code.indexOf(BACKUP_PREFIX) === 0) { body = code.slice(BACKUP_PREFIX.length); }
-    else return { ok: false, error: '备份码无效' };
-    if (!body) return { ok: false, error: '备份码无效' };
+    // 识别旧版 TCM2（gzip）备份码：已停用，给出明确提示，不尝试解压
+    if (code.indexOf(BACKUP_PREFIX_V2) === 0) {
+        return { ok: false, error: '该备份码属于旧版格式，当前版本不再支持直接读取。\n请在生成它的旧版网站中恢复后，重新「备份」生成新的备份码；也可以尝试使用原来的备份文件恢复。' };
+    }
+    if (code.indexOf(BACKUP_PREFIX) !== 0) {
+        return { ok: false, error: '备份码无效，请检查复制内容是否完整。' };
+    }
+    const body = code.slice(BACKUP_PREFIX.length);
+    if (!body) return { ok: false, error: '备份码无效，请检查复制内容是否完整。' };
     let jsonStr;
-    try {
-        if (v2) {
-            if (!supportsCompression()) return { ok: false, error: '这个备份码来自更新版本的网站，当前浏览器暂不支持读取，请改用「从备份文件恢复」。' };
-            jsonStr = new TextDecoder().decode(await gzipDecompress(base64UrlToBytes(body)));
-        } else {
-            jsonStr = base64UrlToUtf8(body);
-        }
-    } catch (e) { return { ok: false, error: '备份码损坏或格式不正确' }; }
+    try { jsonStr = base64UrlToUtf8(body); }
+    catch (e) { return { ok: false, error: '备份码损坏或格式不正确' }; }
     let parsed;
     try { parsed = JSON.parse(jsonStr); }
     catch (e) { return { ok: false, error: '备份码损坏或格式不正确' }; }
