@@ -111,7 +111,6 @@
         .bank-summary { font-size: 0.85em; color: var(--text-muted); margin: 4px 0 8px; }
         .case-tag { display: inline-block; background: rgba(139,69,19,0.08); color: var(--primary); padding: 1px 8px; border-radius: 10px; font-size: 0.8em; font-weight: 600; margin-right: 4px; }
         .case-tag-cat { background: rgba(184,134,11,0.1); color: var(--gold); }
-        .btn--sm { padding: 6px 12px; font-size: 0.85em; }
         .case-bank-item .btn--sm { animation: none; }
         .submission-form { display: flex; flex-direction: column; gap: 12px; }
         .submission-form label { font-weight: 600; color: var(--text-light); font-size: 0.9em; }

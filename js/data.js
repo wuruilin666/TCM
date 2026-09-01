@@ -2,7 +2,6 @@
 // 本模块仅负责：病例数据的定义、加载、校验、安全输出工具，以及各类映射表。
 
 export let casesDB = null;
-export let caseIndex = null;   // 病例索引（轻量：id/title/主诉/分类/难度），用于快速展示
 
 export const caseDiffFiles = {
     basic: 'data/cases/basic.json',
@@ -122,12 +121,7 @@ export function mergeLoadedCases() {
 
 export async function loadCaseData(initCallback) {
     try {
-        // 1) 先加载轻量索引，首页可立即展示
-        const idxResp = await fetch('data/case-index.json');
-        if (!idxResp.ok) throw new Error('病例数据加载失败');
-        const idx = await idxResp.json();
-        caseIndex = idx.cases || [];
-        // 2) 并行加载各难度完整病例，合入 casesDB
+        // 并行加载三份难度病例 JSON（basic / intermediate / advanced），合入 casesDB
         await Promise.all(Object.keys(caseDiffFiles).map(diff => ensureDiffLoaded(diff)));
         mergeLoadedCases();
         document.getElementById('loadingIndicator').style.display = 'none';
