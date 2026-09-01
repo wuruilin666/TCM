@@ -378,34 +378,49 @@ function sizeHintHtml(bytes) {
 // kind: format(非备份码) / modified(内容被改或损坏) / legacy(旧版TCM2) / version(高版本)
 export async function parseProgressBackupCode(raw) {
     if (typeof raw !== 'string') return { ok: false, error: MSG_FORMAT, kind: 'format' };
+    // 第 2 步：统一清理无害格式字符（BOM / 零宽 / 双向控制 / 换行 / Tab / 普通空格）。
+    // normalizeBackupInput 只做文本清洗，不做合法性判断。
     const code = normalizeBackupInput(raw);
-    if (code.length > MAX_BACKUP_CODE_LEN) return { ok: false, error: MSG_FORMAT, kind: 'format' };
-    // 旧版 TCM2（gzip）已停用，给出明确提示，不尝试解压
+    debugBackup('normalized', raw, code);
+    if (code.length > MAX_BACKUP_CODE_LEN) { debugBackup('too-long', raw, code); return { ok: false, error: MSG_FORMAT, kind: 'format' }; }
+    // 第 3 步：旧版 TCM2（gzip）已停用，给出明确提示，不尝试解压
     if (code.indexOf(BACKUP_PREFIX_V2) === 0) {
         return { ok: false, error: MSG_LEGACY, kind: 'legacy' };
     }
-    // 必须以 TCM1: 开头，否则根本不是有效备份码
-    if (code.indexOf(BACKUP_PREFIX) !== 0) {
+    // 第 4 步：查找 TCM1: 前缀。前缀前允许出现无害空白 / BOM / 零宽字符（已在 normalize 阶段清理），
+    // 不要求“从第一个字符开始就是 TCM1:”。找不到任何有效前缀才视为格式错误。
+    const prefixIndex = code.indexOf(BACKUP_PREFIX);
+    if (prefixIndex < 0) {
+        debugBackup('prefix-not-found', raw, code);
         return { ok: false, error: MSG_FORMAT, kind: 'format' };
     }
-    const body = code.slice(BACKUP_PREFIX.length);
-    // payload 只允许 Base64URL 字符集；出现其他字符说明内容被修改，不猜测、不强行恢复
-    if (!/^[A-Za-z0-9_-]+$/.test(body)) {
-        debugBackup('charset-invalid', raw, code);
+    // 第 5 步：只处理 TCM1: 之后的内容，绝不对整段文本做全局 Base64URL 拼接，
+    // 以免把前缀前的说明文字也误当成正文。
+    const body = code.slice(prefixIndex + BACKUP_PREFIX.length);
+    // 提取合法 Base64URL 字符，忽略中间夹杂的空格 / 换行 / Tab / 零宽字符等无害格式字符。
+    const cleanBody = body.replace(/[^A-Za-z0-9_-]/g, '');
+    debugBackup('extracted', raw, code);
+    if (!cleanBody) {
+        debugBackup('empty-body', raw, code);
         return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
     }
+    // 第 6 步：Base64URL 解码
     let jsonStr;
-    try { jsonStr = base64UrlToUtf8(body); }
+    try { jsonStr = base64UrlToUtf8(cleanBody); }
     catch (e) { debugBackup('decode-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
+    // 第 7 步：JSON 解析
     let parsed;
     try { parsed = JSON.parse(jsonStr); }
     catch (e) { debugBackup('json-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
+    // 第 8 步：版本检查（高版本备份不应误判为“损坏”）
     if (parsed && typeof parsed.version === 'number' && parsed.version > PROGRESS_VERSION) {
         return { ok: false, error: '这个备份来自更新版本的网站，当前版本暂时无法读取。请先更新网站后再尝试恢复。', kind: 'version' };
     }
+    // 第 9 步：严格校验数据结构
     const res = validateProgressData(parsed);
     if (!res.ok) { debugBackup('validate-fail', raw, code); return { ok: false, error: MSG_MODIFIED, kind: 'modified' }; }
-    // checksum 完整性校验（旧备份无 checksum 时跳过，仅做结构校验，保持兼容）
+    // 第 10 步：checksum 完整性校验（旧备份无 checksum 时跳过，仅做结构校验，保持兼容）。
+    // checksum 是判断“微信等传输是否真正改变了有效载荷”的最终保险，绝不跳过。
     if (typeof parsed.checksum === 'string') {
         const actual = await computeChecksum(canonicalizePayload(parsed));
         if (parsed.checksum.toLowerCase() !== actual.toLowerCase()) {
@@ -478,7 +493,8 @@ function verifyClipboard(code, msg, hint) {
     try {
         navigator.clipboard.readText().then(text => {
             if (typeof text !== 'string') return;
-            const norm = text.replace(/[\uFEFF\u200B\u200C\u200D\u200E\u200F\u202A-\u202E\u2066-\u2069]\r\n\t\f\v ]+/g, '');
+            // 与恢复端共用同一套规范化规则，确保复制端与恢复端判断一致
+            const norm = normalizeBackupInput(text);
             if (norm && norm !== code) {
                 if (msg) msg.innerHTML = '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>' +
                     '<div class="form-hint" style="margin-top:8px;">⚠️ 剪贴板内容可能发生变化，请使用下方备份码手动复制。</div>' + hint;
