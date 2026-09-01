@@ -5,7 +5,13 @@
 //   3) 将各模块的函数统一暴露到 window，供内联 onclick 使用（ES Module 下函数默认不挂全局）
 
 import { loadCaseData, getAllCases } from './data.js';
-import { renderDataStats, resetAllProgress, exportProgress, importProgress, applyImportMode, confirmCoverImport, closeImportModal } from './storage.js';
+import {
+    renderDataStats, resetAllProgress, exportProgress, importProgress,
+    applyImportMode, confirmCoverImport, closeImportModal,
+    createProgressBackupCode, parseProgressBackupCode,
+    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, renderBackupChoice, saveBackupFile,
+    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore
+} from './storage.js';
 import {
     startChallenge, resetGameUI, selectDifficulty, showCurrentCase, prevCase, nextCase,
     exploreDiag, showOtherCheck, submitAnswer, viewAnswer, resetCurrentCase, showHistory,
@@ -116,17 +122,20 @@ function initApp() {
             <div style="margin-top:14px;text-align:center;font-size:0.8em;color:var(--text-muted);line-height:1.7;">本站内容仅供中医学习与病例推演，不构成诊断、处方或医疗建议。如有身体不适，请及时前往正规医疗机构就诊。</div>
             <div style="text-align:center;"><button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button></div>
             <div class="data-card">
-                <h3>📦 本地数据</h3>
+                <h3>📦 学习数据</h3>
                 <p class="data-stats" id="dataStats"></p>
                 <div class="form-hint" style="line-height:1.7;margin:10px 0 14px;background:#fdfaf5;padding:10px 12px;border-radius:10px;">
                     💡 数据说明<br>
-                    你的学习进度仅保存在当前浏览器的本地存储中，不会自动同步到其他设备或浏览器。<br>
-                    清除浏览器网站数据、使用其他浏览器或更换设备后，学习记录可能无法保留。<br>
-                    建议定期使用「导出进度」备份，换设备后再通过「导入进度」恢复。
+                    你的学习进度目前只保存在你正在使用的浏览器中，不会自动同步到其他设备。<br>
+                    例如：电脑上的学习记录不会自动出现在手机上。<br>
+                    换设备、换浏览器，或者清除浏览器网站数据后，原来的学习记录可能无法保留。<br>
+                    建议定期备份学习进度。<br><br>
+                    📋 跨设备最方便的方法：<br>
+                    点击「复制备份码」，把备份码发到微信、QQ、邮箱或保存到备忘录。在另一台设备打开本站，点击「从备份码恢复」即可。
                 </div>
                 <div class="data-actions">
-                    <button onclick="exportProgress()">📤 导出进度</button>
-                    <button onclick="document.getElementById('importFileInput').click()">📥 导入进度</button>
+                    <button onclick="openBackupModal()">📤 备份学习进度</button>
+                    <button onclick="openRestoreChoice()">📥 恢复学习进度</button>
                     <button onclick="resetAllProgress()">🔄 重置全部进度</button>
                 </div>
                 <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;" onchange="if(this.files[0]) importProgress(this.files[0]); this.value='';">
@@ -246,6 +255,18 @@ window.importProgress = importProgress;
 window.applyImportMode = applyImportMode;
 window.confirmCoverImport = confirmCoverImport;
 window.closeImportModal = closeImportModal;
+window.createProgressBackupCode = createProgressBackupCode;
+window.parseProgressBackupCode = parseProgressBackupCode;
+window.openBackupModal = openBackupModal;
+window.closeBackupModal = closeBackupModal;
+window.showBackupCode = showBackupCode;
+window.copyBackupCode = copyBackupCode;
+window.renderBackupChoice = renderBackupChoice;
+window.saveBackupFile = saveBackupFile;
+window.openRestoreChoice = openRestoreChoice;
+window.startCodeRestore = startCodeRestore;
+window.checkBackupCode = checkBackupCode;
+window.triggerFileRestore = triggerFileRestore;
 
 // 仅用于调试 / 兼容（避免未使用导入告警）
 window._getAllCases = getAllCases;
