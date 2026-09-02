@@ -938,8 +938,7 @@ export function openRestoreChoice() {
             '<div class="backup-option-desc">快速跨设备恢复，备份码较长时会自动支持分段。</div>' +
         '</button>' +
         '</div>' +
-        '<p class="form-hint" style="margin:14px 2px 0;font-size:0.85em;line-height:1.6;">💡 提示：备份文件通常更方便、可靠；若暂时没有备份文件，也可以使用备份码恢复。</p>' +
-        '<div style="text-align:center;margin-top:12px;"><button type="button" class="btn btn--ghost btn--sm" onclick="closeImportModal()">取消</button></div>';
+        '<p class="form-hint" style="margin:14px 2px 0;font-size:0.85em;line-height:1.6;">💡 提示：备份文件通常更方便、可靠；若暂时没有备份文件，也可以使用备份码恢复。</p>';
 }
 export function startCodeRestore() {
     const body = document.getElementById('importModalBody');

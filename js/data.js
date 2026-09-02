@@ -71,6 +71,27 @@ export function escapeHtmlWithBreaks(value) { return escapeHtml(value).replace(/
 export function isNonEmptyString(value) { return typeof value === 'string' && value.trim().length > 0; }
 export function isSafeCaseId(value) { return typeof value === 'string' && SAFE_CASE_ID.test(value); }
 
+/* 问诊维度白名单：每道问诊题必须标注唯一主维度，且必须属于该集合。
+   新增病例时若缺少 dimension 或使用未登记的维度，病例数据将被判定为无效。 */
+export const VALID_INQUIRY_DIMENSIONS = new Set([
+    'chillHeat', 'sweat', 'diet', 'sleep', 'stool', 'urine', 'emotion', 'thirst',
+    'pain', 'head', 'breath', 'face', 'energy', 'menstruation', 'women', 'nose',
+    'throat', 'chest', 'abdomen', 'vomiting', 'sexual', 'skin', 'ear', 'back',
+    'palpitation', 'seizure', 'onset', 'frequency', 'check', 'treatment', 'neck',
+    'limb', 'eye', 'tongue', 'oral', 'general'
+]);
+
+export function isValidInquiryQuestion(q) {
+    return !!q
+        && isNonEmptyString(q.q)
+        && isNonEmptyString(q.a)
+        && Array.isArray(q.keywords)
+        && q.keywords.length > 0
+        && q.keywords.every(isNonEmptyString)
+        && isNonEmptyString(q.dimension)
+        && VALID_INQUIRY_DIMENSIONS.has(q.dimension.trim());
+}
+
 export function validateCaseData(data) {
     if (!data || !Array.isArray(data.cases) || data.cases.length === 0) throw new Error('病例数据格式无效');
     const ids = new Set();
@@ -80,7 +101,7 @@ export function validateCaseData(data) {
         if (!isNonEmptyString(c.title) || !isNonEmptyString(c.chiefComplaint) || !categoryMap[c.category] || !diffMap[c.difficulty]) throw new Error(`病例 ${c.id} 缺少基础字段`);
         const clues = c.clues;
         if (!clues || !['inspection', 'auscultation', 'pulse'].every(key => clues[key] && isNonEmptyString(clues[key].displayTitle) && isNonEmptyString(clues[key].displayContent) && isNonEmptyString(clues[key].textSummary))) throw new Error(`病例 ${c.id} 的四诊字段无效`);
-        if (!clues.inquiry || !Array.isArray(clues.inquiry.questions) || clues.inquiry.questions.length === 0 || !clues.inquiry.questions.every(q => q && isNonEmptyString(q.q) && isNonEmptyString(q.a) && Array.isArray(q.keywords) && q.keywords.every(isNonEmptyString))) throw new Error(`病例 ${c.id} 的问诊字段无效`);
+        if (!clues.inquiry || !Array.isArray(clues.inquiry.questions) || clues.inquiry.questions.length === 0 || !clues.inquiry.questions.every(isValidInquiryQuestion)) throw new Error(`病例 ${c.id} 的问诊字段无效（每题必须含 q / a / keywords / 合法 dimension）`);
         const answer = c.correctAnswer, analysis = c.fullAnalysis;
         if (!answer || !['disease', 'syndrome', 'westernDiagnosis'].every(key => isNonEmptyString(answer[key])) || !analysis || !['disease', 'syndrome', 'westernDiagnosis', 'pathogenesis', 'prescription'].every(key => isNonEmptyString(analysis[key])) || !Array.isArray(analysis.knowledgePoints) || !analysis.knowledgePoints.every(isNonEmptyString)) throw new Error(`病例 ${c.id} 的答案或解析字段无效`);
         if (c.inspectionImages && (!Array.isArray(c.inspectionImages) || !c.inspectionImages.every(path => typeof path === 'string' && /^tongue\/[\w-]+\.jpg$/.test(path)))) throw new Error(`病例 ${c.id} 的图片路径无效`);
