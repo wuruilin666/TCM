@@ -53,7 +53,7 @@ function renderMine() {
         <div class="card mine-card">
             <div class="mine-section-title">账号</div>
             <div class="mine-row"><span class="mine-label">用户名：</span><strong>${escapeHtml(authState.username || '')}</strong></div>
-            <div class="mine-row" style="color:#6aaf8a;font-size:0.92em;">● 云端同步正常</div>
+            <div class="mine-row mine-cloud-hint" style="color:#6aaf8a;font-size:0.92em;">● 云端同步正常</div>
             <div class="mine-actions">
                 <button class="btn btn--outline" onclick="logout()">退出登录</button>
             </div>
@@ -109,17 +109,21 @@ async function showMine() {
     showPage('Mine');
     renderMine();
     if (authState.loggedIn) {
-        try {
-            const res = await refreshProgressFromCloud();
-            if (res.ok) renderMine();
-            else {
-                const page = document.getElementById('pageMine');
-                if (page) {
-                    const hint = page.querySelector('.mine-cloud-hint');
-                    if (hint) hint.textContent = '云端同步暂时不可用';
-                }
+        let res = null;
+        try { res = await refreshProgressFromCloud(); } catch (e) { /* 静默失败，保持本地数据可用 */ }
+        renderMine(); // 合并可能更新了本地数据，重新渲染统计；同时恢复默认提示行
+        const page = document.getElementById('pageMine');
+        const hint = page && page.querySelector('.mine-cloud-hint');
+        if (hint) {
+            if (res && res.ok) {
+                hint.textContent = '● 云端同步正常';
+                hint.style.color = '#6aaf8a';
+            } else {
+                // GET 失败 / 401 / 网络异常：明确提示，但绝不阻止用户继续使用本地数据
+                hint.textContent = '⚠ 云端同步暂时不可用，本地记录仍可正常使用';
+                hint.style.color = 'var(--accent)';
             }
-        } catch (e) { /* 静默失败，保持本地数据可用 */ }
+        }
     }
 }
 
