@@ -168,3 +168,29 @@
             .mine-card .mine-actions { flex-direction: column; }
             .mine-card .mine-actions .btn { width: 100%; }
         }
+
+        /* ===================== 账号系统弹窗表单（登录/注册/恢复密码 统一样式） ===================== */
+        /* 仅作用于 js/auth.js 动态插入的 .auth-form 容器，不影响 .answer-area input 等其他输入框 */
+        .auth-form { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; }
+        .auth-form input[type="text"], .auth-form input[type="password"] {
+            width: 100%; height: 48px; padding: 0 15px;
+            font-size: 16px; /* 固定16px，避免手机浏览器聚焦时自动缩放页面 */
+            font-family: var(--font-body); color: var(--text);
+            background: #fffefb; border: 2px solid var(--border); border-radius: 12px;
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .auth-form input[type="text"]:focus, .auth-form input[type="password"]:focus {
+            border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(139, 69, 19, 0.10);
+        }
+        .auth-form input::placeholder { color: #b09386; opacity: 1; }
+        .auth-form .auth-hint { font-size: 0.85em; color: var(--text-muted); margin-top: -6px; }
+        .auth-form .auth-error { color: var(--accent); font-size: 0.9em; line-height: 1.6; }
+        .auth-form .auth-error:empty { display: none; }
+        .auth-form .btn { width: 100%; margin-top: 4px; }
+        .auth-form .btn--primary { font-size: 1.1em; padding: 13px 20px; animation: none; box-shadow: 0 4px 14px rgba(192,57,43,0.25); }
+        .auth-form .btn--primary:hover { animation: none; }
+        @media (max-width: 430px) {
+            .modal-overlay { padding: 12px; }
+            .modal { padding: 24px 18px; }
+            .auth-form { gap: 10px; }
+        }

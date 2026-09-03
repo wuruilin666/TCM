@@ -12,7 +12,8 @@ export async function onRequestPost({ request, env }) {
     const newPasswordConfirm = body.newPasswordConfirm || '';
 
     if (!username || !recoveryCodeInput) return json({ error: '请填写用户名和恢复码' }, 400);
-    if (newPassword.length < 8) return json({ error: '新密码至少需要8位' }, 400);
+    if (newPassword.length < 8) return json({ error: '密码至少需要8位' }, 400);
+    if (newPassword.length > 128) return json({ error: '密码长度不能超过128位' }, 400);
     if (newPassword !== newPasswordConfirm) return json({ error: '两次输入的新密码不一致' }, 400);
 
     const row = await env.DB.prepare(
