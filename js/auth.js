@@ -5,24 +5,13 @@
 //   2. 在任意位置放一个按钮调用 window.openAuthEntry()，作为登录/注册/我的账号 的入口
 //      （具体放在导航栏"我的"里、还是先放一个临时按钮，你可以按你的页面布局自己决定）
 
-import { getCompletedCases, getWrongCases, safeSetStorage, safeGetStorage, refreshProgressFromCloud } from './storage.js';
+import { getCompletedCases, getWrongCases, safeSetStorage, safeGetStorage, refreshProgressFromCloud, getPendingSync, markPendingSync, clearPendingSync } from './storage.js';
 
 export const authState = { loggedIn: false, username: null, sessionExpired: false, expiredShown: false };
 
 const REGISTER_PROMPT_LAST_COUNT_KEY = 'tcm_register_prompt_last_count';
-const PENDING_SYNC_KEY = 'tcm_pending_sync';      // 浏览器级：是否还有学习记录未确认写入云端（只存状态，不存任何凭据）
 const GUEST_CLAIMED_KEY = 'tcm_guest_claimed';    // 设备级：本机游客数据是否已被某个账号真正绑定上传过（防公共电脑串号）
-
-/* ---------- pending sync 状态 ---------- */
-function getPendingSync() { const v = safeGetStorage(PENDING_SYNC_KEY, null); return (v && v.pending) ? v : null; }
-function markPendingSync() {
-    if (getPendingSync()) return;
-    safeSetStorage(PENDING_SYNC_KEY, { pending: true, since: new Date().toISOString() });
-}
-function clearPendingSync() {
-    if (getPendingSync()) safeSetStorage(PENDING_SYNC_KEY, { pending: false });
-}
-function hasLocalRecords() { return getCompletedCases().length > 0 || getWrongCases().length > 0; }
+// pending sync（tcm_pending_sync）的读写逻辑统一放在 storage.js，auth.js 只负责在正确的时机标记/清除。
 
 /* ---------- 账号系统统一校验规则（前端与 functions/api/auth/*.js 保持一致） ---------- */
 // 中文用 Unicode 属性匹配，比硬编码 \u4e00-\u9fa5 覆盖面更准（Workers/V8 现代浏览器均支持 u 标志）
@@ -188,6 +177,8 @@ window.closeRecoveryCodeModal = function () {
     // 注册成功后：用户已确认保存恢复码 → 执行同步收尾 → 刷新页面进入已登录状态
     afterAuthSync();
 };
+// storage.js 在同步/拉取过程中遇到 401 时通过此钩子回调（避免 storage↔auth 循环依赖）
+window.__onAuthExpired = function () { handleAuthExpired(); };
 
 document.addEventListener('change', (e) => {
     if (e.target && e.target.id === 'recoveryCodeConfirmCheck') {
@@ -267,8 +258,9 @@ window.submitLogin = async function () {
 };
 
 /* ===================== 登录/注册成功后的统一收尾 ===================== */
-// 顺序（严格保证，任何一步失败都不删本地数据）：
-//   本地待同步数据 → 上传 D1 → 成功后清 pending 标记 → 重新读取 D1 → 刷新页面
+// 顺序（任何一步失败都不删本地数据、不清 pending、不假装同步成功）：
+//   读取本地 → 读取 D1 → 按时间戳合并（completed 并集 / 错题比较更新时间）
+//   → 本地较新的记录自动回传 D1 → 确认成功 → 清 pending → 刷新页面
 let afterAuthSyncRunning = false;
 async function afterAuthSync() {
     if (afterAuthSyncRunning) return;
@@ -282,31 +274,23 @@ async function afterAuthSync() {
         modal.style.display = 'flex';
     };
     try {
-        const boundKey = getGuestBoundKey();
-        const needSync = hasPendingSync() || !safeGetStorage(boundKey, false);
-        if (needSync) {
-            show('正在同步学习记录…');
-            const st = await maybeSyncGuestData(); // 处理首次游客绑定（含公共电脑防串号判断）
-            if (st !== 'other' && hasPendingSync()) {
-                // pending 数据属于当前账号（绑定路径已排除他人数据），此时才允许上传
-                const ok = await uploadLocalItems();
-                if (ok) {
-                    clearPendingSync();
-                    show('学习记录同步完成', '#2d6a4f');
-                    await refreshProgressFromCloud();
-                } else {
-                    show('同步失败，学习记录已保存在本设备。请检查网络后重试。', '#c0392b');
-                    setTimeout(() => location.reload(), 1800); // pending 保留，下次登录/恢复网络后再同步
-                    return;
-                }
-            } else {
-                const r = await refreshProgressFromCloud();
-                if (r && r.status === 401) { handleAuthExpired(); return; } // 提示过期，不自动刷新打断用户
-            }
-        } else {
-            const r = await refreshProgressFromCloud();
-            if (r && r.status === 401) { handleAuthExpired(); return; }
+        show('正在同步学习记录…');
+        const st = await maybeSyncGuestData(); // 首次游客绑定（含公共电脑防串号判断）
+        // 合并式同步：refreshProgressFromCloud 内部完成"下载 D1 → 比较 → 本地较新的回传 D1 → 最终状态写回本地"
+        // st==='other'（本机数据属于之前的账号）时只合并不上传，防止别人的记录被传到当前账号。
+        const r = await refreshProgressFromCloud({ allowUpload: st !== 'other' });
+        if (!r.ok) {
+            if (r.status === 401) { handleAuthExpired(); return; } // Session 过期：先让用户看到提示，不自动刷新
+            show('同步失败，学习记录已保存在本设备。请检查网络后重试。', '#c0392b');
+            setTimeout(() => location.reload(), 1800); // pending 保留，下次登录/恢复网络后再同步
+            return;
         }
+        if (st !== 'other' && r.uploadNeeded && !r.uploadOk) {
+            show('同步失败，学习记录已保存在本设备。请检查网络后重试。', '#c0392b');
+            setTimeout(() => location.reload(), 1800); return; // pending 已在 storage 内标记
+        }
+        clearPendingSync();
+        show('学习记录同步完成', '#2d6a4f');
         setTimeout(() => location.reload(), 800); // 刷新后由 initAuth() 重新读取 Session，页面整体进入已登录状态
     } catch (e) {
         // 收尾过程任何异常都不影响本地数据，直接刷新进入登录态
@@ -430,16 +414,16 @@ async function maybeSyncGuestData() {
     return 'failed'; // 上传失败：什么都不标记，下次登录/恢复网络后再试
 }
 
-/* ===================== 供 app.js 调用：登录用户把本地进度批量同步到 D1 ===================== */
-// 备份导入后调用。失败时标记 pending sync，绝不清本地数据。
+/* ===================== 供 app.js 调用：登录用户把本地进度同步到 D1 ===================== */
+// 备份导入后调用。走合并式同步：与 D1 按时间戳逐病例比较，本地较新的自动回传；
+// 失败标记 pending sync，绝不清本地数据。
 export async function syncLocalProgressToCloud() {
     if (!authState.loggedIn) return;
-    const ok = await uploadLocalItems();
-    if (ok) {
+    const r = await refreshProgressFromCloud({ allowUpload: true });
+    if (r.ok && (!r.uploadNeeded || r.uploadOk)) {
         clearPendingSync();
-        await refreshProgressFromCloud();
-    } else {
-        markPendingSync();
+    } else if (!r.ok) {
+        markPendingSync(); // 上传失败时 refresh 内部已标记，这里兜底拉取失败的情况
     }
 }
 

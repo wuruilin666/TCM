@@ -11,6 +11,16 @@ import {
 export function safeGetStorage(key, fallback) { try { const data = localStorage.getItem(key); return data ? JSON.parse(data) : fallback; } catch (e) { return fallback; } }
 export function safeSetStorage(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { console.warn('本地学习记录保存失败', e); } }
 
+/* ===================== 待同步状态（pending sync） ===================== */
+// tcm_pending_sync：浏览器级保险标记——"存在尚未确认写入 D1 的学习记录"。
+// 只存状态与时间，不含任何凭据；没有有效期、没有自动清理：
+// 网络异常 / 401 / 500 / 断网 / 关页面都保持 pending=true，只有全部确认写入云端后才置 false。
+// pending 只是保险状态：真正同步时始终重新读取当前 completedCases/wrongCases 构建上传内容，
+// 不会因为 pending=true 就把本地数据整体覆盖。
+export function getPendingSync() { const v = safeGetStorage('tcm_pending_sync', null); return (v && v.pending) ? v : null; }
+export function markPendingSync() { if (!getPendingSync()) safeSetStorage('tcm_pending_sync', { pending: true, since: new Date().toISOString() }); }
+export function clearPendingSync() { if (getPendingSync()) safeSetStorage('tcm_pending_sync', { pending: false }); }
+
 export function getCompletedCases() {
     const value = safeGetStorage('tcm_completed_cases', []);
     return Array.isArray(value) ? [...new Set(value.filter(isSafeCaseId))].slice(0, 1000) : [];
@@ -65,52 +75,136 @@ export function formatDate(iso) {
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
 }
 
-/* ===================== D1 进度读取 ===================== */
-// 将 /api/progress 返回的行应用到本地缓存。
-// 策略：D1 是登录用户的云端主数据，按 case_id 覆盖对应状态；
-// 对于 D1 未覆盖的本地记录，予以保留，避免网络异常造成数据丢失。
+/* ===================== D1 进度读取与合并 ===================== */
+// 本地时间戳解析：支持 ISO 字符串 / 秒或毫秒时间戳；解析失败按 0（视为更旧，宁可不覆盖本地）。
+function parseLocalTs(v) {
+    if (v === undefined || v === null || v === '') return 0;
+    if (typeof v === 'number' && isFinite(v)) return v > 1e12 ? Math.floor(v / 1000) : v;
+    const n = Number(v);
+    if (!isNaN(n) && n > 0) return n > 1e12 ? Math.floor(n / 1000) : n;
+    const t = Date.parse(String(v));
+    return isNaN(t) ? 0 : Math.floor(t / 1000);
+}
+
+// 把 D1 的一行 progress（is_wrong=1）转换成本地错题对象（title 等展示字段从当前题库补齐）
+function cloudRowToWrong(row, cloudTs) {
+    const id = row.case_id;
+    const c = getAllCases().find(x => x.id === id);
+    const date = cloudTs > 0 ? new Date(cloudTs * 1000).toISOString() : new Date().toISOString();
+    return {
+        id,
+        title: sanitizeStoredText(c?.title || '', 200),
+        chiefComplaint: sanitizeStoredText(c?.chiefComplaint || '', 200),
+        difficulty: diffMap[c?.difficulty] ? c.difficulty : '',
+        date,
+        syndrome: sanitizeStoredText(row.submitted_syndrome || '', 200),
+        disease: sanitizeStoredText(row.submitted_disease || '', 200),
+        basis: sanitizeStoredText(row.submitted_basis || '', 1000)
+    };
+}
+
+/* 云端进度 → 本地合并（不再是"下载→覆盖"）。
+   冲突规则：
+   - completed：并集。本地或云端任一标记完成即保留完成状态；云端没有的本地完成记录绝不删除。
+     （completedCases 只是 ID 集合、没有逐条时间戳，所以不做假时间比较，只做并集）
+   - 错题：按更新时间比较。本地时间 = wrong.date（保存时刻），云端时间 = updated_at，统一为秒级 Unix。
+       · 本地较新 → 保留本地，并放入 uploadItems 由调用方回传 D1
+       · 云端较新 → 云端覆盖本地
+       · 时间相同 → 视为一致，保留本地（避免无意义写入）
+       · 云端 is_wrong=0 只有在云端版本确实比本地新时，才允许删除本地错题
+   - 云端没有、本地有的记录 → 保留本地，并标记上传。
+   返回 { uploadItems }：需要回传 D1 的记录列表（sync-guest 的 items 格式）。 */
 export function applyCloudProgressToLocal(rows) {
-    if (!Array.isArray(rows)) return;
+    if (!Array.isArray(rows)) return { uploadItems: [] };
     const completed = new Set(getCompletedCases());
     const wrongMap = new Map();
     for (const w of getWrongCases()) wrongMap.set(w.id, w);
 
+    const cloudRows = new Map();
     for (const row of rows) {
-        const id = row.case_id;
-        if (!isSafeCaseId(id)) continue;
-        if (Number(row.is_completed) === 1) completed.add(id);
+        if (!row || !isSafeCaseId(row.case_id)) continue;
+        cloudRows.set(row.case_id, row);
+        if (Number(row.is_completed) === 1) completed.add(row.case_id);
+    }
+
+    const uploadItems = [];
+    const uploadSeen = new Set();
+    const queueUpload = (id) => {
+        if (uploadSeen.has(id)) return;
+        uploadSeen.add(id);
+        const w = wrongMap.get(id);
+        uploadItems.push({
+            caseId: id, isCompleted: completed.has(id), isWrong: !!w,
+            syndrome: w?.syndrome || '', disease: w?.disease || '', basis: w?.basis || ''
+        });
+    };
+
+    for (const [id, row] of cloudRows) {
+        const local = wrongMap.get(id);
+        const cloudTs = Number(row.updated_at) || 0;
+        const localTs = local ? parseLocalTs(local.date) : 0;
         if (Number(row.is_wrong) === 1) {
-            const c = getAllCases().find(x => x.id === id);
-            const updated = row.updated_at ? Number(row.updated_at) : 0;
-            const date = updated > 0 ? new Date(updated * 1000).toISOString() : new Date().toISOString();
-            wrongMap.set(id, {
-                id,
-                title: sanitizeStoredText(c?.title || '', 200),
-                chiefComplaint: sanitizeStoredText(c?.chiefComplaint || '', 200),
-                difficulty: diffMap[c?.difficulty] ? c.difficulty : '',
-                date,
-                syndrome: sanitizeStoredText(row.submitted_syndrome || '', 200),
-                disease: sanitizeStoredText(row.submitted_disease || '', 200),
-                basis: sanitizeStoredText(row.submitted_basis || '', 1000)
-            });
-        } else if (Number(row.is_wrong) === 0) {
-            wrongMap.delete(id);
+            if (!local || cloudTs > localTs) {
+                // 本地没有，或云端更新：采用云端
+                wrongMap.set(id, cloudRowToWrong(row, cloudTs));
+            } else if (cloudTs < localTs) {
+                // 本地更新：保留本地，稍后回传 D1，绝不让旧云端答案覆盖新本地答案
+                queueUpload(id);
+            }
+            // cloudTs === localTs：视为一致，保留本地
+        } else if (Number(row.is_wrong) === 0 && local) {
+            // 云端说不是错题：只有云端版本确实更新时才允许删除本地错题
+            if (cloudTs > localTs) {
+                wrongMap.delete(id);
+            } else if (cloudTs < localTs) {
+                // 本地错题更新：保留并回传，防止被旧云端状态抹掉
+                queueUpload(id);
+            }
         }
     }
 
+    // 云端没有、本地有的记录：保留本地并标记上传（覆盖"过期期间做题后重新登录"等场景）
+    for (const id of wrongMap.keys()) if (!cloudRows.has(id)) queueUpload(id);
+    for (const id of completed) if (!cloudRows.has(id)) queueUpload(id);
+
     setCompletedCases([...completed].slice(0, 1000));
     setWrongCases([...wrongMap.values()].slice(-1000));
+    return { uploadItems };
 }
 
-// 从 D1 拉取当前登录用户的 progress，并写入本地缓存。
-// 返回 { ok: boolean }，调用方决定是否刷新 UI；失败时保留本地数据。
-export async function refreshProgressFromCloud() {
+// 批量上传指定记录到 D1（sync-guest 为 upsert，重复上传幂等安全）。
+// 401 时通过 window.__onAuthExpired（auth.js 注入）弹过期提示；网络异常返回 false。
+async function uploadItemsToCloud(items) {
+    if (!items || items.length === 0) return true;
+    try {
+        const resp = await fetch('/api/progress/sync-guest', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items })
+        });
+        if (resp.status === 401 && typeof window.__onAuthExpired === 'function') window.__onAuthExpired();
+        return resp.ok;
+    } catch (e) {
+        return false;
+    }
+}
+
+// 从 D1 拉取进度并与本地按时间戳合并。
+// options.allowUpload=false 时（公共电脑防串号路径）只合并不上传。
+// 返回 { ok, status?, uploadNeeded, uploadOk }；失败时保留本地数据。
+export async function refreshProgressFromCloud(options = {}) {
+    const allowUpload = options.allowUpload !== false;
     try {
         const resp = await fetch('/api/progress');
         if (!resp.ok) return { ok: false, status: resp.status };
         const data = await resp.json();
-        applyCloudProgressToLocal(data.progress);
-        return { ok: true };
+        const { uploadItems } = applyCloudProgressToLocal(data.progress);
+        const uploadNeeded = uploadItems.length > 0;
+        let uploadOk = true;
+        if (uploadNeeded && allowUpload) {
+            uploadOk = await uploadItemsToCloud(uploadItems);
+            if (!uploadOk) markPendingSync(); // 上传失败：保留本地与 pending，绝不假装同步成功
+        }
+        return { ok: true, uploadNeeded, uploadOk: allowUpload ? uploadOk : false };
     } catch (e) {
         console.warn('拉取云端进度失败', e);
         return { ok: false };
@@ -241,14 +335,24 @@ function applyImportData(mode, data) {
         safeSetStorage('tcm_wrong_cases', mergeWrongCases(getWrongCases(), data.wrongCases));
     }
     renderDataStats();
+    // 导入的数据尚未确认写入云端：标记 pending sync（游客标记也无害，登录后走绑定/合并同步）。
+    markPendingSync();
     // 若用户正打开错题 / 题库，实时重新渲染
     if (document.getElementById('recordsModal')?.style.display === 'flex' && typeof window.openRecords === 'function') window.openRecords();
     if (document.getElementById('caseBankModal')?.style.display === 'flex' && typeof window.filterCaseBank === 'function') window.filterCaseBank();
-    // 登录用户恢复后，触发外部同步钩子把本地数据同步到 D1
+    // 登录用户恢复后，触发外部同步钩子把本地数据同步到 D1（未登录时钩子内部会直接跳过，不产生 D1 写入）
     if (typeof window.__onProgressImported === 'function') window.__onProgressImported();
 }
 
-let pendingImport = null;
+let pendingImport = null; // 当前导入确认上下文：{ data }；同一时间只允许存在一个，防止 A/B 文件互相覆盖
+
+// 同一时间只允许一个导入确认上下文：有未确认的导入时阻止新的文件/备份码进入，
+// 防止"A 文件确认框被 B 文件覆盖 → 用户点确认实际导入 B"的状态竞争。
+function blockIfImportPending() {
+    if (!pendingImport) return false;
+    showImportError('有一个导入确认尚未完成。请先选择「合并 / 覆盖 / 取消」处理完当前确认框，再导入新的备份。');
+    return true;
+}
 
 export function closeImportModal() { pendingImport = null; const m = document.getElementById('importModal'); if (m) m.style.display = 'none'; }
 
@@ -259,7 +363,7 @@ function showImportError(msg, showDiag) {
     const m = document.getElementById('importModal');
     if (!body || !m) { alert('❌ ' + msg); return; }
     const html = escapeHtml(msg).replace(/\n/g, '<br>');
-    // 普通用户不再展示“复制诊断信息”按钮；诊断能力仍保留在 Console（见 copyDiagnosticInfo / lastRestoreDiag）。
+    // 普通用户不再展示"复制诊断信息"按钮；诊断能力仍保留在 Console（见 copyDiagnosticInfo / lastRestoreDiag）。
     void showDiag;
     body.innerHTML = '<div class="result-box fail" style="margin:6px 0;">❌ ' + html + '</div>' +
         '<div style="text-align:center;margin-top:12px;"><button class="btn btn--outline btn--sm" onclick="closeImportModal()">知道了</button></div>';
@@ -1018,6 +1122,7 @@ export function startCodeRestore() {
 export async function checkBackupCode() {
     const ta = document.getElementById('progressCodeInput');
     if (!ta) return;
+    if (blockIfImportPending()) return;
     const pasted = ta.value || '';
     // 同设备诊断：若本会话复制过备份码（电脑 / 手机通常是不同浏览器，故跨设备一般无此值），
     // 比较原始码与粘贴码的“第一处差异”，帮助判断传输是否改动了字符。跨设备场景依赖下面的 Console 诊断。
@@ -1040,6 +1145,7 @@ export function triggerFileRestore() {
 // 文件导入增加大小上限，避免异常大文件直接解析
 export function importProgress(file) {
     if (!file) return;
+    if (blockIfImportPending()) return;
     if (file.size > MAX_IMPORT_FILE_BYTES) { showImportError('文件过大，无法导入'); return; }
     const reader = new FileReader();
     reader.onload = () => {
