@@ -1,16 +1,17 @@
 /* ===================== 应用入口（页面结构 / 导航 / 全局事件 / window 暴露） ===================== */
 // 本模块：
-//   1) 负责首页/闯关页/关于页的 HTML 结构生成（initApp）
+//   1) 负责首页/闯关页/关于页/我的页 的 HTML 结构生成（initApp）
 //   2) 负责页面导航、投稿表单、全局事件
 //   3) 将各模块的函数统一暴露到 window，供内联 onclick 使用（ES Module 下函数默认不挂全局）
 
-import { loadCaseData, getAllCases } from './data.js';
+import { loadCaseData, getAllCases, escapeHtml } from './data.js';
 import {
-    renderDataStats, resetAllProgress, exportProgress, importProgress,
+    getCompletedCases, getWrongCases, exportProgress, importProgress,
     applyImportMode, confirmCoverImport, closeImportModal,
     createProgressBackupCode, parseProgressBackupCode,
-    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart, renderBackupChoice, saveBackupFile,
-    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo
+    openBackupModal as openBackupModalBase, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart, renderBackupChoice, saveBackupFile,
+    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo,
+    refreshProgressFromCloud
 } from './storage.js';
 import {
     startChallenge, resetGameUI, selectDifficulty, showCurrentCase, prevCase, nextCase,
@@ -23,10 +24,11 @@ import {
 } from './inspection.js';
 import {
     openCaseBank, closeCaseBank, selectBankCategory, selectBankDiff, filterCaseBank,
-    challengeCaseFromBank, openRecords, closeRecords, clearRecords,
+    challengeCaseFromBank, openRecords as openRecordsBase, closeRecords, clearRecords,
     rechallengeCase, viewWrongCaseAnalysis, openCaseDetail, closeCaseDetail, renderFullCase,
     registerNav as registerBankNav
 } from './case-bank.js';
+import { authState, syncLocalProgressToCloud } from './auth.js';
 
 /* ===================== 页面导航 ===================== */
 function showPage(name) {
@@ -34,11 +36,106 @@ function showPage(name) {
     document.getElementById('page' + name)?.classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     document.querySelectorAll('.top-nav .nav-link').forEach(l => l.classList.remove('nav-active'));
-    const map = { Home: 'navHome', Game: 'navGame', About: 'navAbout' };
+    const map = { Home: 'navHome', Game: 'navGame', About: 'navAbout', Mine: 'navMine' };
     document.getElementById(map[name])?.classList.add('nav-active');
 }
 function goHome() { showPage('Home'); }
-function showAbout() { renderDataStats(); showPage('About'); }
+function showAbout() { showPage('About'); }
+
+/* ===================== 我的页面 ===================== */
+function renderMine() {
+    const page = document.getElementById('pageMine');
+    if (!page) return;
+    const done = getCompletedCases().length;
+    const wrong = getWrongCases().length;
+
+    const accountCard = authState.loggedIn ? `
+        <div class="card mine-card">
+            <div class="mine-section-title">账号</div>
+            <div class="mine-row"><span class="mine-label">用户名：</span><strong>${escapeHtml(authState.username || '')}</strong></div>
+            <div class="mine-row" style="color:#6aaf8a;font-size:0.92em;">● 云端同步正常</div>
+            <div class="mine-actions">
+                <button class="btn btn--outline" onclick="logout()">退出登录</button>
+            </div>
+        </div>
+    ` : `
+        <div class="card mine-card">
+            <div class="mine-section-title">账号</div>
+            <div class="mine-row" style="font-weight:700;color:var(--accent);">当前为游客模式</div>
+            <p class="mine-desc">游客学习数据保存在当前浏览器。登录后可将学习数据同步到云端，并在其他设备继续使用。</p>
+            <div class="mine-actions">
+                <button class="btn btn--primary" onclick="openAuthEntry('login')">登录</button>
+                <button class="btn btn--outline" onclick="openAuthEntry('register')">注册</button>
+            </div>
+            <div class="mine-summary">已完成 <strong>${done}</strong> 例 · 错题 <strong>${wrong}</strong> 条</div>
+        </div>
+    `;
+
+    page.innerHTML = `
+        <div class="card card--accent" style="text-align:center;">
+            <div class="hero-title"><span class="icon">👤</span> 我的</div>
+        </div>
+        ${accountCard}
+        <div class="card mine-card">
+            <div class="mine-section-title">我的学习</div>
+            <div class="mine-row">我的错题</div>
+            <p class="mine-desc">查看你在闯关过程中答错的病例，可重新挑战或查看解析。</p>
+            <div class="mine-actions">
+                <button class="btn btn--outline" onclick="openMineRecords()">查看错题</button>
+            </div>
+            <div class="mine-summary">错题 <strong>${wrong}</strong> 条</div>
+        </div>
+        <div class="card mine-card">
+            <div class="mine-section-title">我的投稿</div>
+            <p class="mine-desc">当前投稿功能仍通过现有投稿入口提交。未来迁移到云端后可在此查看投稿状态。</p>
+            <div class="mine-actions">
+                <button class="btn btn--outline" onclick="openSubmissionModal()">投稿病例</button>
+            </div>
+        </div>
+        <div class="card mine-card">
+            <div class="mine-section-title">数据与备份</div>
+            <div class="mine-row">云端学习数据：<strong>${authState.loggedIn ? '已登录后同步' : '未登录'}</strong></div>
+            <div class="mine-actions">
+                <button class="btn btn--outline" onclick="openMineBackup()">备份</button>
+                <button class="btn btn--outline" onclick="openRestoreChoice()">恢复</button>
+            </div>
+            <p class="mine-hint">⚠ 当前没有手机号/邮箱找回密码功能，请妥善保存密码和恢复码。</p>
+            <p class="mine-hint">账号安全提示：当前没有手机号或邮箱找回密码功能。请妥善保存密码和恢复码，并定期备份重要数据。</p>
+        </div>
+    `;
+}
+
+async function showMine() {
+    showPage('Mine');
+    renderMine();
+    if (authState.loggedIn) {
+        try {
+            const res = await refreshProgressFromCloud();
+            if (res.ok) renderMine();
+            else {
+                const page = document.getElementById('pageMine');
+                if (page) {
+                    const hint = page.querySelector('.mine-cloud-hint');
+                    if (hint) hint.textContent = '云端同步暂时不可用';
+                }
+            }
+        } catch (e) { /* 静默失败，保持本地数据可用 */ }
+    }
+}
+
+async function openMineRecords() {
+    if (authState.loggedIn) {
+        try { await refreshProgressFromCloud(); } catch (e) {}
+    }
+    openRecordsBase();
+}
+
+async function openMineBackup() {
+    if (authState.loggedIn) {
+        try { await refreshProgressFromCloud(); } catch (e) {}
+    }
+    openBackupModalBase();
+}
 
 /* ===================== 页面结构 ===================== */
 function initApp() {
@@ -54,7 +151,6 @@ function initApp() {
                 <button class="btn btn--primary" onclick="startChallenge()">🎯 开始闯关</button>
                 <div class="home-secondary">
                     <button class="btn btn--outline btn--equal" onclick="openCaseBank()">📚 病例题库</button>
-                    <button class="btn btn--ghost btn--equal" onclick="openRecords()">📝 我的错题</button>
                     <button class="btn btn--outline btn--equal" onclick="openSubmissionModal()" style="border-color: var(--gold); color: var(--gold);">📤 投稿病例</button>
                 </div>
             </div>
@@ -121,20 +217,9 @@ function initApp() {
             </div>
             <div style="margin-top:14px;text-align:center;font-size:0.8em;color:var(--text-muted);line-height:1.7;">本站内容仅供中医学习与病例推演，不构成诊断、处方或医疗建议。如有身体不适，请及时前往正规医疗机构就诊。</div>
             <div style="text-align:center;"><button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button></div>
-            <div class="data-card">
-                <h3>📦 学习数据</h3>
-                <p class="data-stats" id="dataStats"></p>
-                <p class="form-hint" style="line-height:1.7;margin:8px 0 14px;">💡 学习记录只保存在当前浏览器，换设备或其他浏览器前建议先备份。</p>
-                <div class="data-actions">
-                    <button onclick="openBackupModal()">📤 备份</button>
-                    <button onclick="openRestoreChoice()">📥 恢复</button>
-                    <button onclick="resetAllProgress()">🔄 重置进度</button>
-                </div>
-                <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;" onchange="if(this.files[0]) importProgress(this.files[0]); this.value='';">
-            </div>
         </div>
+        <div class="page" id="pageMine"></div>
     `;
-    renderDataStats();
     showPage('Home');
 }
 
@@ -192,8 +277,15 @@ window.addEventListener('load', function() {
     }
 });
 
+/* ===================== 登录用户恢复备份后同步到云端 ===================== */
+window.__onProgressImported = async function () {
+    if (authState.loggedIn) {
+        try { await syncLocalProgressToCloud(); } catch (e) {}
+    }
+    renderMine();
+};
+
 /* ===================== 模块间依赖注入 ===================== */
-// game.js 需要打开问诊/望诊弹窗；case-bank.js 与 game.js 需要页面导航函数。
 registerModalOpeners({
     openInquiry: openInquiryModal,
     openInspection: openInspectionModal
@@ -205,8 +297,8 @@ registerBankNav({ showPage });
 window.goHome = goHome;
 window.startChallenge = startChallenge;
 window.showAbout = showAbout;
+window.showMine = showMine;
 window.openCaseBank = openCaseBank;
-window.openRecords = openRecords;
 window.openSubmissionModal = openSubmissionModal;
 window.closeSubmissionModal = closeSubmissionModal;
 window.selectDifficulty = selectDifficulty;
@@ -241,7 +333,6 @@ window.closeCaseDetail = closeCaseDetail;
 window.toggleDifficultyOptions = toggleDifficultyOptions;
 window.selectDifficultyOption = selectDifficultyOption;
 window.validateSubmissionForm = validateSubmissionForm;
-window.resetAllProgress = resetAllProgress;
 window.exportProgress = exportProgress;
 window.importProgress = importProgress;
 window.applyImportMode = applyImportMode;
@@ -249,7 +340,7 @@ window.confirmCoverImport = confirmCoverImport;
 window.closeImportModal = closeImportModal;
 window.createProgressBackupCode = createProgressBackupCode;
 window.parseProgressBackupCode = parseProgressBackupCode;
-window.openBackupModal = openBackupModal;
+window.openBackupModal = openMineBackup;
 window.closeBackupModal = closeBackupModal;
 window.showBackupCode = showBackupCode;
 window.copyBackupCode = copyBackupCode;
@@ -261,6 +352,7 @@ window.startCodeRestore = startCodeRestore;
 window.checkBackupCode = checkBackupCode;
 window.triggerFileRestore = triggerFileRestore;
 window.copyDiagnosticInfo = copyDiagnosticInfo;
+window.openMineRecords = openMineRecords;
 
 // 仅用于调试 / 兼容（避免未使用导入告警）
 window._getAllCases = getAllCases;
@@ -268,6 +360,7 @@ window._openCaseDetail = openCaseDetail;
 window._renderFullCase = renderFullCase;
 window._resetGameUI = resetGameUI;
 window._showCurrentCase = showCurrentCase;
+window._refreshProgressFromCloud = refreshProgressFromCloud;
 
 /* ===================== 启动 ===================== */
 loadCaseData(initApp);

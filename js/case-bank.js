@@ -4,6 +4,7 @@ import {
     getAllCases, diffMap, categoryMap, diffOrder, escapeHtml, escapeHtmlWithBreaks
 } from './data.js';
 import { getCompletedCases, getWrongCases, formatDate } from './storage.js';
+import { authState, syncProgressToServer } from './auth.js';
 
 // 题库筛选状态
 let bankCategory = 'all';
@@ -199,14 +200,20 @@ function openRecords() {
         el.innerHTML = '<p style="text-align:center;color:#b5a595;">🎉 暂无错题，继续保持！</p>';
     } else {
         const items = wrongs.slice().reverse().map((w, i) => {
+            const c = findCaseById(w.id);
+            // 优先使用当前静态病例 JSON 中的病例数据；题库中不存在时才回退本地缓存
+            const title = c ? c.title : w.title;
+            const chiefComplaint = c ? c.chiefComplaint : w.chiefComplaint;
+            const diffMeta = c ? (diffMap[c.difficulty] || { name: c.difficulty, emoji: '' }) : { name: w.difficulty || '', emoji: '' };
             const answerParts = [];
             if (w.syndrome) answerParts.push('证型：' + w.syndrome);
             if (w.disease) answerParts.push('病名：' + w.disease);
             const answerStr = answerParts.join('；') || '未填写';
             return `<div class="wrong-card">
-                <div class="wrong-title">错题${i + 1}</div>
+                <div class="wrong-title">错题${i + 1} ${diffMeta.emoji ? '<span style="font-size:0.85em;color:var(--text-muted);margin-left:6px;">' + escapeHtml(diffMeta.emoji + ' ' + diffMeta.name) + '</span>' : ''}</div>
                 <div class="wrong-meta">${formatDate(w.date)}</div>
-                <div><strong>主诉：</strong>${escapeHtmlWithBreaks(w.chiefComplaint)}</div>
+                <div><strong>标题：</strong>${escapeHtml(title || '未知病例')}</div>
+                <div><strong>主诉：</strong>${escapeHtmlWithBreaks(chiefComplaint || '暂无')}</div>
                 <div><strong>我的答案：</strong>${escapeHtml(answerStr)}</div>
                 <div><strong>我的辨证依据：</strong>${escapeHtml(w.basis || '未填写')}</div>
                 <div class="wrong-actions">
@@ -222,7 +229,18 @@ function openRecords() {
 
 function closeRecords() { document.getElementById('recordsModal').style.display = 'none'; }
 
-function clearRecords() { if (confirm('清空我的错题？')) { try { localStorage.removeItem('tcm_wrong_cases'); } catch (e) {} closeRecords(); } }
+async function clearRecords() {
+    if (!confirm('清空我的错题？')) return;
+    const wrongs = getWrongCases();
+    try { localStorage.removeItem('tcm_wrong_cases'); } catch (e) {}
+    // 登录用户：把清空操作同步到 D1，避免下次拉取又把旧错题覆盖回来
+    if (authState.loggedIn) {
+        for (const w of wrongs) {
+            try { await syncProgressToServer(w.id, { isWrong: false }); } catch (e) {}
+        }
+    }
+    closeRecords();
+}
 
 function findCaseById(caseId) {
     return getAllCases().find(x => x.id === caseId) || null;

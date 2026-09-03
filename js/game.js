@@ -11,6 +11,7 @@ import {
 import {
     getCompletedCases, markCaseCompleted, removeWrongCase, saveWrongCase
 } from './storage.js';
+import { syncProgressToServer, maybeShowRegisterReminder } from './auth.js';
 
 /* ===================== 唯一游戏状态 ===================== */
 export const state = {
@@ -181,6 +182,8 @@ export function submitAnswer() {
     if (isCorrect) {
         feedbackHtml = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${escapeHtml(correct.disease)} · ${escapeHtml(correct.syndrome)}</p>`;
         removeWrongCase(state.currentCase.id);
+        // 只在"提交答案"这个定局时刻同步一行到 D1，探查四诊等中间过程不产生任何云端写入。
+        syncProgressToServer(state.currentCase.id, { isWrong: false, syndrome, disease, basis });
     } else {
         if (!dOk && !sOk) {
             feedbackHtml = `<div class="result-box fail"><h4>🤔 辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
@@ -191,6 +194,7 @@ export function submitAnswer() {
             feedbackHtml = `<div class="result-box fail"><h4>🔍 部分正确</h4><p>${parts.join('，')}</p>`;
         }
         saveWrongCase({ syndrome, disease, basis }, state.currentCase, state.currentDifficulty);
+        syncProgressToServer(state.currentCase.id, { isWrong: true, syndrome, disease, basis });
     }
     feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">💡 显示答案</button></div>`;
     fb.innerHTML = feedbackHtml;
@@ -204,6 +208,9 @@ export function viewAnswer() {
     // 无论对错，做过的病例都标记为已完成，从闯关队列移除；
     // 只有从"我的错题"点击"重新挑战"才能再次进入闯关练习。
     markCaseCompleted(state.currentCase.id);
+    // "查看解析"是另一个定局时刻，同步一次 is_completed；游客模式下 syncProgressToServer 内部会直接跳过。
+    syncProgressToServer(state.currentCase.id, { isCompleted: true });
+    maybeShowRegisterReminder();
 }
 
 export function showFullAnalysis(el) {

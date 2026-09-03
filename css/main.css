@@ -152,3 +152,19 @@
         .backup-option-desc { font-size: 0.82em; color: var(--text-muted); margin-top: 4px; line-height: 1.6; }
         .backup-code-area { width: 100%; min-height: 120px; max-height: 200px; overflow-y: auto; padding: 12px 14px; border-radius: 10px; border: 2px solid var(--border); background: #fdfaf5; font-size: 0.85em; line-height: 1.7; color: var(--text-light); font-family: var(--font-body); resize: vertical; outline: none; word-break: break-all; }
         .backup-code-area:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(139,69,19,0.07); }
+
+        /* ===== 我的页面 ===== */
+        .mine-card { padding: 22px 24px; }
+        .mine-card .mine-section-title { font-family: var(--font-heading); font-size: 1.15em; font-weight: 700; color: var(--primary); margin-bottom: 12px; border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
+        .mine-card .mine-row { margin: 8px 0; color: var(--text-light); line-height: 1.7; }
+        .mine-card .mine-label { color: var(--text-muted); margin-right: 4px; }
+        .mine-card .mine-desc { color: var(--text-muted); font-size: 0.92em; line-height: 1.7; margin: 6px 0 10px; }
+        .mine-card .mine-summary { margin-top: 12px; font-size: 0.9em; color: var(--text-muted); }
+        .mine-card .mine-hint { margin-top: 12px; font-size: 0.85em; color: var(--text-muted); line-height: 1.7; }
+        .mine-card .mine-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .mine-card .mine-actions .btn { padding: 10px 20px; font-size: 0.95em; border-radius: 24px; }
+        @media (max-width: 500px) {
+            .mine-card { padding: 16px 18px; }
+            .mine-card .mine-actions { flex-direction: column; }
+            .mine-card .mine-actions .btn { width: 100%; }
+        }

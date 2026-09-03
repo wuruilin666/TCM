@@ -1,6 +1,8 @@
 /* ===================== 本地存储（localStorage） ===================== */
-// 本模块负责学习记录的读写、数据统计与重置。localStorage key 保持原样：
+// 本模块负责学习记录的读写、数据统计与备份/恢复。
+// localStorage key 保持原样：
 //   tcm_completed_cases / tcm_wrong_cases
+// 登录用户：D1 为云端主数据，登录/进入"我的"/备份前会先把 D1 progress 拉取回本地。
 
 import {
     isSafeCaseId, diffMap, getAllCases, MAX_STORED_TEXT_LENGTH, escapeHtml
@@ -13,6 +15,8 @@ export function getCompletedCases() {
     const value = safeGetStorage('tcm_completed_cases', []);
     return Array.isArray(value) ? [...new Set(value.filter(isSafeCaseId))].slice(0, 1000) : [];
 }
+
+export function setCompletedCases(arr) { safeSetStorage('tcm_completed_cases', arr); }
 
 export function markCaseCompleted(caseId) {
     const arr = getCompletedCases();
@@ -30,6 +34,8 @@ export function getWrongCases() {
         syndrome: sanitizeStoredText(w.syndrome, 200), disease: sanitizeStoredText(w.disease, 200), basis: sanitizeStoredText(w.basis)
     }));
 }
+
+export function setWrongCases(arr) { safeSetStorage('tcm_wrong_cases', arr); }
 
 // 保存错题。为避免模块间循环依赖，caseObj / difficulty 由调用方传入。
 export function saveWrongCase(data, caseObj, difficulty) {
@@ -59,7 +65,59 @@ export function formatDate(iso) {
     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
 }
 
-/* ===================== 本地数据统计与重置 ===================== */
+/* ===================== D1 进度读取 ===================== */
+// 将 /api/progress 返回的行应用到本地缓存。
+// 策略：D1 是登录用户的云端主数据，按 case_id 覆盖对应状态；
+// 对于 D1 未覆盖的本地记录，予以保留，避免网络异常造成数据丢失。
+export function applyCloudProgressToLocal(rows) {
+    if (!Array.isArray(rows)) return;
+    const completed = new Set(getCompletedCases());
+    const wrongMap = new Map();
+    for (const w of getWrongCases()) wrongMap.set(w.id, w);
+
+    for (const row of rows) {
+        const id = row.case_id;
+        if (!isSafeCaseId(id)) continue;
+        if (Number(row.is_completed) === 1) completed.add(id);
+        if (Number(row.is_wrong) === 1) {
+            const c = getAllCases().find(x => x.id === id);
+            const updated = row.updated_at ? Number(row.updated_at) : 0;
+            const date = updated > 0 ? new Date(updated * 1000).toISOString() : new Date().toISOString();
+            wrongMap.set(id, {
+                id,
+                title: sanitizeStoredText(c?.title || '', 200),
+                chiefComplaint: sanitizeStoredText(c?.chiefComplaint || '', 200),
+                difficulty: diffMap[c?.difficulty] ? c.difficulty : '',
+                date,
+                syndrome: sanitizeStoredText(row.submitted_syndrome || '', 200),
+                disease: sanitizeStoredText(row.submitted_disease || '', 200),
+                basis: sanitizeStoredText(row.submitted_basis || '', 1000)
+            });
+        } else if (Number(row.is_wrong) === 0) {
+            wrongMap.delete(id);
+        }
+    }
+
+    setCompletedCases([...completed].slice(0, 1000));
+    setWrongCases([...wrongMap.values()].slice(-1000));
+}
+
+// 从 D1 拉取当前登录用户的 progress，并写入本地缓存。
+// 返回 { ok: boolean }，调用方决定是否刷新 UI；失败时保留本地数据。
+export async function refreshProgressFromCloud() {
+    try {
+        const resp = await fetch('/api/progress');
+        if (!resp.ok) return { ok: false, status: resp.status };
+        const data = await resp.json();
+        applyCloudProgressToLocal(data.progress);
+        return { ok: true };
+    } catch (e) {
+        console.warn('拉取云端进度失败', e);
+        return { ok: false };
+    }
+}
+
+/* ===================== 本地数据统计 ===================== */
 export function renderDataStats() {
     const total = getAllCases().length;
     const done = getCompletedCases().length;
@@ -69,6 +127,7 @@ export function renderDataStats() {
     if (el) el.textContent = `已完成 ${done} · 错题 ${wrong} · 未完成 ${remaining}`;
 }
 
+// 重置进度入口已删除；保留本函数仅作为内部/调试备用，不再暴露给用户。
 export function resetAllProgress() {
     if (!confirm('确定要清空所有学习进度和错题吗？此操作不可恢复。')) return;
     safeSetStorage('tcm_completed_cases', []);
@@ -157,7 +216,7 @@ export function validateProgressData(obj) {
 
 // 错题去重依据：病例 ID + 日期 + 用户答案（证型/病名/辨证依据）
 function wrongKey(w) {
-    return [w.id, w.date, w.syndrome || '', w.disease || '', w.basis || ''].join('');
+    return [w.id, w.date, w.syndrome || '', w.disease || '', w.basis || ''].join('\u007f');
 }
 
 function mergeWrongCases(current, imported) {
@@ -185,6 +244,8 @@ function applyImportData(mode, data) {
     // 若用户正打开错题 / 题库，实时重新渲染
     if (document.getElementById('recordsModal')?.style.display === 'flex' && typeof window.openRecords === 'function') window.openRecords();
     if (document.getElementById('caseBankModal')?.style.display === 'flex' && typeof window.filterCaseBank === 'function') window.filterCaseBank();
+    // 登录用户恢复后，触发外部同步钩子把本地数据同步到 D1
+    if (typeof window.__onProgressImported === 'function') window.__onProgressImported();
 }
 
 let pendingImport = null;
@@ -853,7 +914,7 @@ export function copyBackupCode() {
     const msg = document.getElementById('backupCodeMsg');
     const code = ta ? ta.value : '';
     if (!code) return;
-    // 诊断：记录本次复制的备份码摘要（仅内存，不写 localStorage、不上传）
+    // 诊断：记录本次复制的备份码摘要（仅内存，不写 localStorage、不上传服务器）
     lastGeneratedBackupCode = code;
     const segLen = currentBackup.isSegmented && currentBackup.parts[0] ? currentBackup.parts[0].length : code.length;
     sha256Hex(code).then(d => { lastGeneratedSummary = { length: code.length, segLength: segLen, digest: d }; }).catch(() => {});
