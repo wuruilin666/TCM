@@ -9,7 +9,7 @@ import {
     escapeHtml, escapeHtmlWithBreaks, getAllCases
 } from './data.js';
 import {
-    getCompletedCases, markCaseCompleted, removeWrongCase, saveWrongCase
+    getCompletedCases, markCaseCompleted, resolveWrongCase, saveWrongCase
 } from './storage.js';
 import { syncProgressToServer, maybeShowRegisterReminder } from './auth.js';
 
@@ -181,7 +181,9 @@ export function submitAnswer() {
     let feedbackHtml = '';
     if (isCorrect) {
         feedbackHtml = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${escapeHtml(correct.disease)} · ${escapeHtml(correct.syndrome)}</p>`;
-        removeWrongCase(state.currentCase.id);
+        // 答对时不能只删本地错题：必须同时写入 resolved tombstone，
+        // 否则离线订正后，D1 里旧的 is_wrong=1 会在同步合并时把错题"复活"回本地。
+        resolveWrongCase(state.currentCase.id);
         // 只在"提交答案"这个定局时刻同步一行到 D1，探查四诊等中间过程不产生任何云端写入。
         syncProgressToServer(state.currentCase.id, { isWrong: false, syndrome, disease, basis });
     } else {

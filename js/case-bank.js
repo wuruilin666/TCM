@@ -3,7 +3,7 @@ import { state, resetGameUI, showCurrentCase } from './game.js';
 import {
     getAllCases, diffMap, categoryMap, diffOrder, escapeHtml, escapeHtmlWithBreaks
 } from './data.js';
-import { getCompletedCases, getWrongCases, formatDate } from './storage.js';
+import { getCompletedCases, getWrongCases, formatDate, resolveWrongCases } from './storage.js';
 import { authState, syncProgressToServer } from './auth.js';
 
 // 题库筛选状态
@@ -232,7 +232,8 @@ function closeRecords() { document.getElementById('recordsModal').style.display 
 async function clearRecords() {
     if (!confirm('清空我的错题？')) return;
     const wrongs = getWrongCases();
-    try { localStorage.removeItem('tcm_wrong_cases'); } catch (e) {}
+    // 清空也要写 tombstone：否则同步时 D1 里旧的 is_wrong=1 会把这些错题复活回来
+    resolveWrongCases(wrongs.map(w => w.id));
     // 登录用户：把清空操作同步到 D1，避免下次拉取又把旧错题覆盖回来
     if (authState.loggedIn) {
         for (const w of wrongs) {
