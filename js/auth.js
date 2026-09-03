@@ -11,6 +11,11 @@ export const authState = { loggedIn: false, username: null };
 
 const REGISTER_PROMPT_LAST_COUNT_KEY = 'tcm_register_prompt_last_count';
 
+/* ---------- 账号系统统一校验规则（前端与 functions/api/auth/*.js 保持一致） ---------- */
+// 中文用 Unicode 属性匹配，比硬编码 \u4e00-\u9fa5 覆盖面更准（Workers/V8 现代浏览器均支持 u 标志）
+export const USERNAME_RE = /^[\p{Script=Han}A-Za-z0-9_]{3,20}$/u;
+const PASSWORD_MIN = 8, PASSWORD_MAX = 128;
+
 // 游客数据绑定状态按当前登录账号隔离，避免学校/公共电脑等共享设备上数据串号。
 function getGuestBoundKey() { return 'tcm_guest_bound_' + (authState.username || 'guest'); }
 
@@ -42,12 +47,15 @@ function ensureModalsInDom() {
     <button class="modal-close" onclick="closeAuthModal('authRegisterModal')">✕</button>
     <h3>📝 注册账号</h3>
     <p style="color:var(--text-muted);font-size:0.9em;">用户名注册后不可修改，且不支持邮箱/手机找回密码，请务必牢记密码，并在注册成功后妥善保存系统生成的恢复码。</p>
-    <input type="text" id="regUsername" placeholder="用户名（3-20位，注册后不可改）" style="width:100%;margin-top:8px;">
-    <input type="password" id="regPassword" placeholder="密码（至少8位）" style="width:100%;margin-top:8px;">
-    <input type="password" id="regPasswordConfirm" placeholder="再次输入密码" style="width:100%;margin-top:8px;">
-    <div id="regError" style="color:#c0392b;font-size:0.9em;margin-top:6px;"></div>
-    <button class="btn btn--primary" style="margin-top:10px;width:100%;" onclick="submitRegister()">注册</button>
-    <p style="margin-top:10px;font-size:0.9em;">已有账号？<a href="#" onclick="switchAuthModal('authRegisterModal','authLoginModal');return false;">去登录</a></p>
+    <div class="auth-form">
+      <input type="text" id="regUsername" placeholder="用户名（3-20位）" maxlength="20" autocomplete="username">
+      <div class="auth-hint">支持中文、英文、数字和下划线，注册后不可修改</div>
+      <input type="password" id="regPassword" placeholder="密码（8-128位）" maxlength="128" autocomplete="new-password">
+      <input type="password" id="regPasswordConfirm" placeholder="再次输入密码" maxlength="128" autocomplete="new-password">
+      <div id="regError" class="auth-error"></div>
+      <button class="btn btn--primary" onclick="submitRegister()">注册</button>
+      <p style="font-size:0.9em;">已有账号？<a href="#" onclick="switchAuthModal('authRegisterModal','authLoginModal');return false;">去登录</a></p>
+    </div>
   </div>
 </div>
 
@@ -55,15 +63,17 @@ function ensureModalsInDom() {
   <div class="modal">
     <button class="modal-close" onclick="closeAuthModal('authLoginModal')">✕</button>
     <h3>🔑 登录</h3>
-    <input type="text" id="loginUsername" placeholder="用户名" style="width:100%;margin-top:8px;">
-    <input type="password" id="loginPassword" placeholder="密码" style="width:100%;margin-top:8px;">
-    <div id="loginError" style="color:#c0392b;font-size:0.9em;margin-top:6px;"></div>
-    <button class="btn btn--primary" style="margin-top:10px;width:100%;" onclick="submitLogin()">登录</button>
-    <p style="margin-top:10px;font-size:0.9em;">
-      <a href="#" onclick="switchAuthModal('authLoginModal','authRegisterModal');return false;">还没有账号</a>
-      ・
-      <a href="#" onclick="switchAuthModal('authLoginModal','authRecoverModal');return false;">忘记密码</a>
-    </p>
+    <div class="auth-form">
+      <input type="text" id="loginUsername" placeholder="用户名" autocomplete="username">
+      <input type="password" id="loginPassword" placeholder="密码" autocomplete="current-password">
+      <div id="loginError" class="auth-error"></div>
+      <button class="btn btn--primary" onclick="submitLogin()">登录</button>
+      <p style="font-size:0.9em;">
+        <a href="#" onclick="switchAuthModal('authLoginModal','authRegisterModal');return false;">还没有账号</a>
+        ・
+        <a href="#" onclick="switchAuthModal('authLoginModal','authRecoverModal');return false;">忘记密码</a>
+      </p>
+    </div>
   </div>
 </div>
 
@@ -72,12 +82,14 @@ function ensureModalsInDom() {
     <button class="modal-close" onclick="closeAuthModal('authRecoverModal')">✕</button>
     <h3>🔓 用恢复码找回密码</h3>
     <p style="color:var(--text-muted);font-size:0.9em;">没有恢复码将无法找回，只能放弃该账号重新注册。</p>
-    <input type="text" id="recUsername" placeholder="用户名" style="width:100%;margin-top:8px;">
-    <input type="text" id="recCode" placeholder="恢复码（形如 A7K9F-3MXQP-...）" style="width:100%;margin-top:8px;">
-    <input type="password" id="recNewPassword" placeholder="新密码（至少8位）" style="width:100%;margin-top:8px;">
-    <input type="password" id="recNewPasswordConfirm" placeholder="再次输入新密码" style="width:100%;margin-top:8px;">
-    <div id="recError" style="color:#c0392b;font-size:0.9em;margin-top:6px;"></div>
-    <button class="btn btn--primary" style="margin-top:10px;width:100%;" onclick="submitRecover()">重置密码</button>
+    <div class="auth-form">
+      <input type="text" id="recUsername" placeholder="用户名" autocomplete="username">
+      <input type="text" id="recCode" placeholder="恢复码（形如 A7K9F-3MXQP-...）" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+      <input type="password" id="recNewPassword" placeholder="新密码（8-128位）" maxlength="128" autocomplete="new-password">
+      <input type="password" id="recNewPasswordConfirm" placeholder="再次输入新密码" maxlength="128" autocomplete="new-password">
+      <div id="recError" class="auth-error"></div>
+      <button class="btn btn--primary" onclick="submitRecover()">重置密码</button>
+    </div>
   </div>
 </div>
 
@@ -140,8 +152,10 @@ window.submitRegister = async function () {
     const errEl = document.getElementById('regError');
     errEl.textContent = '';
 
+    if (!USERNAME_RE.test(username)) { errEl.textContent = '用户名需为3-20位中文、英文、数字或下划线'; return; }
     if (password !== passwordConfirm) { errEl.textContent = '两次输入的密码不一致'; return; }
-    if (password.length < 8) { errEl.textContent = '密码至少需要8位'; return; }
+    if (password.length < PASSWORD_MIN) { errEl.textContent = '密码至少需要8位'; return; }
+    if (password.length > PASSWORD_MAX) { errEl.textContent = '密码长度不能超过128位'; return; }
 
     try {
         const resp = await fetch('/api/auth/register', {
@@ -197,7 +211,8 @@ window.submitRecover = async function () {
     errEl.textContent = '';
 
     if (newPassword !== newPasswordConfirm) { errEl.textContent = '两次输入的新密码不一致'; return; }
-    if (newPassword.length < 8) { errEl.textContent = '新密码至少需要8位'; return; }
+    if (newPassword.length < PASSWORD_MIN) { errEl.textContent = '密码至少需要8位'; return; }
+    if (newPassword.length > PASSWORD_MAX) { errEl.textContent = '密码长度不能超过128位'; return; }
 
     try {
         const resp = await fetch('/api/auth/recover', {
