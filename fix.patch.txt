@@ -1,0 +1,1730 @@
+diff --git a/css/main.css b/css/main.css
+--- a/css/main.css	2026-09-03 13:23:13.141396000 +0800
++++ b/css/main.css	2026-09-03 14:24:14.924208800 +0800
+@@ -152,3 +152,19 @@
+         .backup-option-desc { font-size: 0.82em; color: var(--text-muted); margin-top: 4px; line-height: 1.6; }
+         .backup-code-area { width: 100%; min-height: 120px; max-height: 200px; overflow-y: auto; padding: 12px 14px; border-radius: 10px; border: 2px solid var(--border); background: #fdfaf5; font-size: 0.85em; line-height: 1.7; color: var(--text-light); font-family: var(--font-body); resize: vertical; outline: none; word-break: break-all; }
+         .backup-code-area:focus { border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(139,69,19,0.07); }
++
++        /* ===== 我的页面 ===== */
++        .mine-card { padding: 22px 24px; }
++        .mine-card .mine-section-title { font-family: var(--font-heading); font-size: 1.15em; font-weight: 700; color: var(--primary); margin-bottom: 12px; border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
++        .mine-card .mine-row { margin: 8px 0; color: var(--text-light); line-height: 1.7; }
++        .mine-card .mine-label { color: var(--text-muted); margin-right: 4px; }
++        .mine-card .mine-desc { color: var(--text-muted); font-size: 0.92em; line-height: 1.7; margin: 6px 0 10px; }
++        .mine-card .mine-summary { margin-top: 12px; font-size: 0.9em; color: var(--text-muted); }
++        .mine-card .mine-hint { margin-top: 12px; font-size: 0.85em; color: var(--text-muted); line-height: 1.7; }
++        .mine-card .mine-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
++        .mine-card .mine-actions .btn { padding: 10px 20px; font-size: 0.95em; border-radius: 24px; }
++        @media (max-width: 500px) {
++            .mine-card { padding: 16px 18px; }
++            .mine-card .mine-actions { flex-direction: column; }
++            .mine-card .mine-actions .btn { width: 100%; }
++        }
+diff --git a/functions/_lib/crypto.js b/functions/_lib/crypto.js
+--- a/functions/_lib/crypto.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/_lib/crypto.js	2026-09-03 14:24:15.060371900 +0800
+@@ -0,0 +1,58 @@
++/* ===================== 加密工具（纯 Web Crypto API，Cloudflare Pages Functions 原生支持，无需安装任何包） ===================== */
++
++// PBKDF2 迭代次数：Workers 免费版每次请求有 CPU 时间上限（目前公开信息约为 10ms/次调用）。
++// 100000 次迭代在多数情况下能跑完，但如果你在 Cloudflare 控制台看到注册/登录接口报 CPU 超限错误，
++// 把这个数字调低（比如 50000）重新部署即可——安全性会略有下降，但仍远好于明文/简单哈希存储密码。
++const PBKDF2_ITERATIONS = 100000;
++
++function bytesToBase64(bytes) {
++    let binary = '';
++    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
++    return btoa(binary);
++}
++function base64ToBytes(b64) {
++    const binary = atob(b64);
++    const bytes = new Uint8Array(binary.length);
++    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
++    return bytes;
++}
++
++// 生成随机盐并对密码做 PBKDF2-SHA256 派生。saltB64 传入则复用（用于校验），不传则生成新盐（用于注册/改密）。
++export async function hashPassword(password, saltB64) {
++    const enc = new TextEncoder();
++    const salt = saltB64 ? base64ToBytes(saltB64) : crypto.getRandomValues(new Uint8Array(16));
++    const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
++    const bits = await crypto.subtle.deriveBits(
++        { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
++        keyMaterial, 256
++    );
++    return { hash: bytesToBase64(new Uint8Array(bits)), salt: bytesToBase64(salt) };
++}
++
++// 定长比较，避免通过响应耗时差异推断哈希是否正确（timing attack）。
++export function timingSafeEqual(aB64, bB64) {
++    const a = base64ToBytes(aB64), b = base64ToBytes(bB64);
++    if (a.length !== b.length) return false;
++    let diff = 0;
++    for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
++    return diff === 0;
++}
++
++export async function verifyPassword(password, storedHashB64, storedSaltB64) {
++    const { hash } = await hashPassword(password, storedSaltB64);
++    return timingSafeEqual(hash, storedHashB64);
++}
++
++// 一次性恢复码：20 个字符，排除易混淆字符（0/O、1/I/L），分 4 组便于抄写，如 "A7K9F-3MXQP-...".
++const RECOVERY_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
++export function generateRecoveryCode() {
++    const bytes = crypto.getRandomValues(new Uint8Array(20));
++    let raw = '';
++    for (let i = 0; i < bytes.length; i++) raw += RECOVERY_ALPHABET[bytes[i] % RECOVERY_ALPHABET.length];
++    return raw.match(/.{1,5}/g).join('-'); // -> XXXXX-XXXXX-XXXXX-XXXXX
++}
++
++// 恢复码校验前统一去掉用户可能手抖多打的空格/大小写差异，再复用同一套哈希函数。
++export function normalizeRecoveryCode(code) {
++    return (code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
++}
+diff --git a/functions/_lib/session.js b/functions/_lib/session.js
+--- a/functions/_lib/session.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/_lib/session.js	2026-09-03 14:24:15.058374100 +0800
+@@ -0,0 +1,59 @@
++/* ===================== 登录态：无状态签名 Cookie（不占用 D1 读写配额） ===================== */
++// 会话信息直接编码进 Cookie 并用 HMAC 签名，服务端验证签名即可，不需要为每次请求查一次"会话表"。
++// 代价：退出登录只能清除客户端 Cookie，无法在到期前强制吊销已签发的旧 Cookie——
++// 对这种没有支付/隐私强诉求的学习工具是可以接受的取舍，但要知道这个限制。
++//
++// 部署前必须设置一个密钥（否则任何人都能伪造登录态）：
++//   npx wrangler pages secret put SESSION_SECRET
++// 随便生成一串足够长的随机字符串作为密钥即可，例如：
++//   node -e "console.log(crypto.randomBytes(32).toString('hex'))"
++
++const SESSION_MAX_AGE_SECONDS = 30 * 24 * 3600; // 30 天
++
++function b64urlEncode(bytes) {
++    let binary = ''; for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
++    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
++}
++function b64urlDecode(str) {
++    str = str.replace(/-/g, '+').replace(/_/g, '/');
++    while (str.length % 4) str += '=';
++    const binary = atob(str);
++    const bytes = new Uint8Array(binary.length);
++    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
++    return bytes;
++}
++
++async function hmacKey(secret) {
++    return crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
++}
++
++export async function createSessionCookie(payloadObj, secret) {
++    const payload = { ...payloadObj, exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS };
++    const payloadB64 = b64urlEncode(new TextEncoder().encode(JSON.stringify(payload)));
++    const key = await hmacKey(secret);
++    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payloadB64));
++    const sigB64 = b64urlEncode(new Uint8Array(sig));
++    const token = `${payloadB64}.${sigB64}`;
++    return `tcm_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${SESSION_MAX_AGE_SECONDS}`;
++}
++
++export function clearSessionCookie() {
++    return 'tcm_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0';
++}
++
++// 从 Request 里取出并校验会话；无效/过期/未登录一律返回 null，调用方按"未登录"处理。
++export async function readSession(request, secret) {
++    const cookieHeader = request.headers.get('Cookie') || '';
++    const match = cookieHeader.match(/(?:^|;\s*)tcm_session=([^;]+)/);
++    if (!match) return null;
++    const [payloadB64, sigB64] = match[1].split('.');
++    if (!payloadB64 || !sigB64) return null;
++    try {
++        const key = await hmacKey(secret);
++        const valid = await crypto.subtle.verify('HMAC', key, b64urlDecode(sigB64), new TextEncoder().encode(payloadB64));
++        if (!valid) return null;
++        const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(payloadB64)));
++        if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) return null;
++        return payload; // { uid, username, exp }
++    } catch (e) { return null; }
++}
+diff --git a/functions/api/auth/login.js b/functions/api/auth/login.js
+--- a/functions/api/auth/login.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/api/auth/login.js	2026-09-03 14:24:15.066370000 +0800
+@@ -0,0 +1,30 @@
++/* POST /api/auth/login  { username, password } */
++import { verifyPassword } from '../../_lib/crypto.js';
++import { createSessionCookie } from '../../_lib/session.js';
++
++export async function onRequestPost({ request, env }) {
++    let body;
++    try { body = await request.json(); } catch (e) { return json({ error: '请求格式有误' }, 400); }
++    const username = (body.username || '').trim();
++    const password = body.password || '';
++    if (!username || !password) return json({ error: '请输入用户名和密码' }, 400);
++
++    const row = await env.DB.prepare(
++        'SELECT id, username, password_hash, password_salt FROM users WHERE username = ?'
++    ).bind(username).first();
++
++    // 用户名不存在和密码错误返回同一句提示，避免让人借此探测哪些用户名已被注册。
++    if (!row) return json({ error: '用户名或密码错误' }, 401);
++
++    const ok = await verifyPassword(password, row.password_hash, row.password_salt);
++    if (!ok) return json({ error: '用户名或密码错误' }, 401);
++
++    const cookie = await createSessionCookie({ uid: row.id, username: row.username }, env.SESSION_SECRET);
++    return new Response(JSON.stringify({ ok: true, username: row.username }), {
++        status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie }
++    });
++}
++
++function json(obj, status) {
++    return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
++}
+diff --git a/functions/api/auth/logout.js b/functions/api/auth/logout.js
+--- a/functions/api/auth/logout.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/api/auth/logout.js	2026-09-03 14:24:15.062370300 +0800
+@@ -0,0 +1,8 @@
++/* POST /api/auth/logout —— 仅清除客户端 Cookie（见 session.js 顶部关于"无法强制吊销"的说明） */
++import { clearSessionCookie } from '../../_lib/session.js';
++
++export async function onRequestPost() {
++    return new Response(JSON.stringify({ ok: true }), {
++        status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': clearSessionCookie() }
++    });
++}
+diff --git a/functions/api/auth/me.js b/functions/api/auth/me.js
+--- a/functions/api/auth/me.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/api/auth/me.js	2026-09-03 14:24:15.063372200 +0800
+@@ -0,0 +1,9 @@
++/* GET /api/auth/me —— 只验证 Cookie 签名，不查数据库，不占用 D1 读配额 */
++import { readSession } from '../../_lib/session.js';
++
++export async function onRequestGet({ request, env }) {
++    const session = await readSession(request, env.SESSION_SECRET);
++    return new Response(JSON.stringify({ loggedIn: !!session, username: session ? session.username : null }), {
++        status: 200, headers: { 'Content-Type': 'application/json' }
++    });
++}
+diff --git a/functions/api/auth/recover.js b/functions/api/auth/recover.js
+--- a/functions/api/auth/recover.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/api/auth/recover.js	2026-09-03 14:24:15.064372000 +0800
+@@ -0,0 +1,40 @@
++/* POST /api/auth/recover  { username, recoveryCode, newPassword, newPasswordConfirm }
++   用恢复码重置密码；成功后会作废旧恢复码、发一个新的恢复码给用户（同样只显示这一次）。
++   这样即使恢复码曾经泄露，用过一次之后旧码也不再有效。 */
++import { hashPassword, verifyPassword, generateRecoveryCode, normalizeRecoveryCode } from '../../_lib/crypto.js';
++
++export async function onRequestPost({ request, env }) {
++    let body;
++    try { body = await request.json(); } catch (e) { return json({ error: '请求格式有误' }, 400); }
++    const username = (body.username || '').trim();
++    const recoveryCodeInput = normalizeRecoveryCode(body.recoveryCode || '');
++    const newPassword = body.newPassword || '';
++    const newPasswordConfirm = body.newPasswordConfirm || '';
++
++    if (!username || !recoveryCodeInput) return json({ error: '请填写用户名和恢复码' }, 400);
++    if (newPassword.length < 8) return json({ error: '新密码至少需要8位' }, 400);
++    if (newPassword !== newPasswordConfirm) return json({ error: '两次输入的新密码不一致' }, 400);
++
++    const row = await env.DB.prepare(
++        'SELECT id, recovery_code_hash, recovery_code_salt FROM users WHERE username = ?'
++    ).bind(username).first();
++
++    // 同样地，用户名不存在和恢复码错误给同一句提示，不透露具体是哪个错。
++    if (!row) return json({ error: '用户名或恢复码不正确' }, 401);
++    const codeOk = await verifyPassword(recoveryCodeInput, row.recovery_code_hash, row.recovery_code_salt);
++    if (!codeOk) return json({ error: '用户名或恢复码不正确' }, 401);
++
++    const { hash: passwordHash, salt: passwordSalt } = await hashPassword(newPassword);
++    const rawNewCode = generateRecoveryCode();
++    const { hash: newCodeHash, salt: newCodeSalt } = await hashPassword(normalizeRecoveryCode(rawNewCode));
++
++    await env.DB.prepare(
++        `UPDATE users SET password_hash = ?, password_salt = ?, recovery_code_hash = ?, recovery_code_salt = ? WHERE id = ?`
++    ).bind(passwordHash, passwordSalt, newCodeHash, newCodeSalt, row.id).run();
++
++    return json({ ok: true, newRecoveryCode: rawNewCode }, 200);
++}
++
++function json(obj, status) {
++    return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
++}
+diff --git a/functions/api/auth/register.js b/functions/api/auth/register.js
+--- a/functions/api/auth/register.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/api/auth/register.js	2026-09-03 14:24:15.065369700 +0800
+@@ -0,0 +1,57 @@
++/* POST /api/auth/register  { username, password, passwordConfirm } */
++import { hashPassword, generateRecoveryCode, normalizeRecoveryCode } from '../../_lib/crypto.js';
++import { createSessionCookie } from '../../_lib/session.js';
++
++const USERNAME_RE = /^[A-Za-z0-9_\u4e00-\u9fa5]{3,20}$/; // 3-20位，中英文数字下划线
++
++export async function onRequestPost({ request, env }) {
++    let body;
++    try { body = await request.json(); } catch (e) { return json({ error: '请求格式有误' }, 400); }
++    const username = (body.username || '').trim();
++    const password = body.password || '';
++    const passwordConfirm = body.passwordConfirm || '';
++
++    if (!USERNAME_RE.test(username)) {
++        return json({ error: '用户名需为3-20位中英文/数字/下划线，且注册后不可修改，请想清楚再提交' }, 400);
++    }
++    if (password.length < 8) {
++        return json({ error: '密码至少需要8位' }, 400);
++    }
++    // 前端已经做过两次输入一致性校验，这里再校验一遍，防止绕过前端直接调接口。
++    if (password !== passwordConfirm) {
++        return json({ error: '两次输入的密码不一致' }, 400);
++    }
++
++    const { hash: passwordHash, salt: passwordSalt } = await hashPassword(password);
++    const rawRecoveryCode = generateRecoveryCode();               // 展示给用户的、带"-"分隔的版本
++    const normalizedCode = normalizeRecoveryCode(rawRecoveryCode); // 去掉"-"后用于哈希的版本
++    const { hash: recoveryHash, salt: recoverySalt } = await hashPassword(normalizedCode);
++
++    try {
++        // 用户名唯一性完全依赖 UNIQUE 约束在这里插入失败来最终裁决，不做"先查是否存在"。
++        const result = await env.DB.prepare(
++            `INSERT INTO users (username, password_hash, password_salt, recovery_code_hash, recovery_code_salt, created_at)
++             VALUES (?, ?, ?, ?, ?, ?)`
++        ).bind(username, passwordHash, passwordSalt, recoveryHash, recoverySalt, Math.floor(Date.now() / 1000)).run();
++
++        const userId = result.meta.last_row_id;
++        const cookie = await createSessionCookie({ uid: userId, username }, env.SESSION_SECRET);
++
++        return new Response(JSON.stringify({
++            ok: true,
++            username,
++            recoveryCode: rawRecoveryCode // 只有这一次会返回明文恢复码，前端必须提示用户立刻保存
++        }), { status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': cookie } });
++
++    } catch (e) {
++        if (String(e.message || '').includes('UNIQUE constraint failed')) {
++            return json({ error: '该用户名已被占用，换一个试试' }, 409);
++        }
++        console.error('注册失败:', e);
++        return json({ error: '注册失败，请稍后重试' }, 500);
++    }
++}
++
++function json(obj, status) {
++    return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
++}
+diff --git a/functions/api/progress/index.js b/functions/api/progress/index.js
+--- a/functions/api/progress/index.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/api/progress/index.js	2026-09-03 14:24:15.069371900 +0800
+@@ -0,0 +1,62 @@
++/* GET  /api/progress          —— 返回当前用户全部进度行（用于"我的错题"/统计渲染）
++   POST /api/progress          —— upsert 一行；只应在"提交答案"或"查看解析"这两个真正定局的时刻调用，
++                                    不要在探查四诊等中间过程调用，否则会不必要地消耗 D1 每日写入配额。
++   body: { caseId, isCompleted?, isWrong?, syndrome?, disease?, basis? }
++   —— 只传本次要更新的字段，未传的字段在 upsert 时保留原值（COALESCE）。 */
++import { readSession } from '../../_lib/session.js';
++
++const SAFE_CASE_ID = /^[a-z]+-\d{3}$/; // 与前端 data.js 的 isSafeCaseId 保持一致
++
++export async function onRequestGet({ request, env }) {
++    const session = await readSession(request, env.SESSION_SECRET);
++    if (!session) return json({ error: '未登录' }, 401);
++
++    const { results } = await env.DB.prepare(
++        `SELECT case_id, is_completed, is_wrong, submitted_syndrome, submitted_disease, submitted_basis, updated_at
++         FROM user_progress WHERE user_id = ?`
++    ).bind(session.uid).all();
++
++    return json({ progress: results || [] }, 200);
++}
++
++export async function onRequestPost({ request, env }) {
++    const session = await readSession(request, env.SESSION_SECRET);
++    if (!session) return json({ error: '未登录' }, 401);
++
++    let body;
++    try { body = await request.json(); } catch (e) { return json({ error: '请求格式有误' }, 400); }
++    const caseId = body.caseId;
++    if (!SAFE_CASE_ID.test(caseId || '')) return json({ error: '病例ID不合法' }, 400);
++
++    const isCompleted = body.isCompleted === undefined ? null : (body.isCompleted ? 1 : 0);
++    const isWrong = body.isWrong === undefined ? null : (body.isWrong ? 1 : 0);
++    const syndrome = typeof body.syndrome === 'string' ? body.syndrome.slice(0, 200) : null;
++    const disease = typeof body.disease === 'string' ? body.disease.slice(0, 200) : null;
++    const basis = typeof body.basis === 'string' ? body.basis.slice(0, 1000) : null;
++
++    // 注意：INSERT VALUES 里的 COALESCE(?,0) 只是为了"新建一行时给个默认值"，
++    // 不能直接在 UPDATE 分支里复用 excluded.xxx——因为 excluded 里已经被上面那层 COALESCE 填成了 0，
++    // 会导致"这次调用没传 isCompleted"被误判成"把 isCompleted 显式改成 0"，反而覆盖掉之前的完成状态。
++    // 所以 UPDATE 分支单独再绑定一遍"原始值"（可能是 null）来做 COALESCE 判断。
++    const now = Math.floor(Date.now() / 1000);
++    await env.DB.prepare(`
++        INSERT INTO user_progress (user_id, case_id, is_completed, is_wrong, submitted_syndrome, submitted_disease, submitted_basis, updated_at)
++        VALUES (?, ?, COALESCE(?, 0), COALESCE(?, 0), ?, ?, ?, ?)
++        ON CONFLICT(user_id, case_id) DO UPDATE SET
++            is_completed       = COALESCE(?, user_progress.is_completed),
++            is_wrong           = COALESCE(?, user_progress.is_wrong),
++            submitted_syndrome = COALESCE(?, user_progress.submitted_syndrome),
++            submitted_disease  = COALESCE(?, user_progress.submitted_disease),
++            submitted_basis    = COALESCE(?, user_progress.submitted_basis),
++            updated_at         = ?
++    `).bind(
++        session.uid, caseId, isCompleted, isWrong, syndrome, disease, basis, now,
++        isCompleted, isWrong, syndrome, disease, basis, now
++    ).run();
++
++    return json({ ok: true }, 200);
++}
++
++function json(obj, status) {
++    return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
++}
+diff --git a/functions/api/progress/sync-guest.js b/functions/api/progress/sync-guest.js
+--- a/functions/api/progress/sync-guest.js	1970-01-01 08:00:00.000000000 +0800
++++ b/functions/api/progress/sync-guest.js	2026-09-03 14:24:15.068371500 +0800
+@@ -0,0 +1,47 @@
++/* POST /api/progress/sync-guest
++   body: { items: [{ caseId, isCompleted, isWrong, syndrome, disease, basis }, ...] }
++   由前端在"注册成功"或"登录成功后检测到本机有未绑定的游客数据"时调用一次，
++   把 localStorage 里的游客记录批量写入当前登录用户名下。
++   只有已登录（能验证出 uid）才允许写，防止匿名接口被滥用刷库。 */
++import { readSession } from '../../_lib/session.js';
++
++const SAFE_CASE_ID = /^[a-z]+-\d{3}$/;
++const MAX_ITEMS = 200; // 正常情况下题库不会有这么多题，做个防御性上限，避免异常请求把配额打爆
++
++export async function onRequestPost({ request, env }) {
++    const session = await readSession(request, env.SESSION_SECRET);
++    if (!session) return json({ error: '未登录' }, 401);
++
++    let body;
++    try { body = await request.json(); } catch (e) { return json({ error: '请求格式有误' }, 400); }
++    const items = Array.isArray(body.items) ? body.items.slice(0, MAX_ITEMS) : [];
++    if (items.length === 0) return json({ ok: true, synced: 0 }, 200);
++
++    const now = Math.floor(Date.now() / 1000);
++    const stmts = [];
++    for (const it of items) {
++        if (!SAFE_CASE_ID.test(it.caseId || '')) continue;
++        stmts.push(env.DB.prepare(`
++            INSERT INTO user_progress (user_id, case_id, is_completed, is_wrong, submitted_syndrome, submitted_disease, submitted_basis, updated_at)
++            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
++            ON CONFLICT(user_id, case_id) DO UPDATE SET
++                is_completed       = MAX(user_progress.is_completed, excluded.is_completed),
++                is_wrong           = excluded.is_wrong,
++                submitted_syndrome = COALESCE(excluded.submitted_syndrome, user_progress.submitted_syndrome),
++                submitted_disease  = COALESCE(excluded.submitted_disease, user_progress.submitted_disease),
++                submitted_basis    = COALESCE(excluded.submitted_basis, user_progress.submitted_basis),
++                updated_at         = excluded.updated_at
++        `).bind(
++            session.uid, it.caseId, it.isCompleted ? 1 : 0, it.isWrong ? 1 : 0,
++            (it.syndrome || '').slice(0, 200), (it.disease || '').slice(0, 200), (it.basis || '').slice(0, 1000), now
++        ));
++    }
++    if (stmts.length === 0) return json({ ok: true, synced: 0 }, 200);
++
++    await env.DB.batch(stmts); // batch：一次网络往返写完所有行，同时也算作一次事务
++    return json({ ok: true, synced: stmts.length }, 200);
++}
++
++function json(obj, status) {
++    return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
++}
+diff --git a/index.html b/index.html
+--- a/index.html	2026-09-03 13:23:13.145397500 +0800
++++ b/index.html	2026-09-03 14:24:15.139408300 +0800
+@@ -22,6 +22,7 @@
+         <span class="nav-link nav-active" id="navHome" onclick="goHome()">🏠 首页</span>
+         <span class="nav-link" id="navGame" onclick="startChallenge()">🎯 闯关</span>
+         <span class="nav-link" id="navAbout" onclick="showAbout()">📖 关于</span>
++        <span class="nav-link" id="navMine" onclick="showMine()">👤 我的</span>
+     </nav>
+ </header>
+ 
+@@ -179,6 +180,7 @@
+     </div>
+ </div>
+ 
++<script type="module" src="js/auth.js"></script>
+ <script type="module" src="js/app.js"></script>
+ </body>
+ </html>
+diff --git a/js/app.js b/js/app.js
+--- a/js/app.js	2026-09-03 13:23:13.146396300 +0800
++++ b/js/app.js	2026-09-03 14:24:15.227712900 +0800
+@@ -1,16 +1,17 @@
+ /* ===================== 应用入口（页面结构 / 导航 / 全局事件 / window 暴露） ===================== */
+ // 本模块：
+-//   1) 负责首页/闯关页/关于页的 HTML 结构生成（initApp）
++//   1) 负责首页/闯关页/关于页/我的页 的 HTML 结构生成（initApp）
+ //   2) 负责页面导航、投稿表单、全局事件
+ //   3) 将各模块的函数统一暴露到 window，供内联 onclick 使用（ES Module 下函数默认不挂全局）
+ 
+-import { loadCaseData, getAllCases } from './data.js';
++import { loadCaseData, getAllCases, escapeHtml } from './data.js';
+ import {
+-    renderDataStats, resetAllProgress, exportProgress, importProgress,
++    getCompletedCases, getWrongCases, exportProgress, importProgress,
+     applyImportMode, confirmCoverImport, closeImportModal,
+     createProgressBackupCode, parseProgressBackupCode,
+-    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart, renderBackupChoice, saveBackupFile,
+-    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo
++    openBackupModal as openBackupModalBase, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart, renderBackupChoice, saveBackupFile,
++    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo,
++    refreshProgressFromCloud
+ } from './storage.js';
+ import {
+     startChallenge, resetGameUI, selectDifficulty, showCurrentCase, prevCase, nextCase,
+@@ -23,10 +24,11 @@
+ } from './inspection.js';
+ import {
+     openCaseBank, closeCaseBank, selectBankCategory, selectBankDiff, filterCaseBank,
+-    challengeCaseFromBank, openRecords, closeRecords, clearRecords,
++    challengeCaseFromBank, openRecords as openRecordsBase, closeRecords, clearRecords,
+     rechallengeCase, viewWrongCaseAnalysis, openCaseDetail, closeCaseDetail, renderFullCase,
+     registerNav as registerBankNav
+ } from './case-bank.js';
++import { authState, syncLocalProgressToCloud } from './auth.js';
+ 
+ /* ===================== 页面导航 ===================== */
+ function showPage(name) {
+@@ -34,11 +36,106 @@
+     document.getElementById('page' + name)?.classList.add('active');
+     window.scrollTo({ top: 0, behavior: 'smooth' });
+     document.querySelectorAll('.top-nav .nav-link').forEach(l => l.classList.remove('nav-active'));
+-    const map = { Home: 'navHome', Game: 'navGame', About: 'navAbout' };
++    const map = { Home: 'navHome', Game: 'navGame', About: 'navAbout', Mine: 'navMine' };
+     document.getElementById(map[name])?.classList.add('nav-active');
+ }
+ function goHome() { showPage('Home'); }
+-function showAbout() { renderDataStats(); showPage('About'); }
++function showAbout() { showPage('About'); }
++
++/* ===================== 我的页面 ===================== */
++function renderMine() {
++    const page = document.getElementById('pageMine');
++    if (!page) return;
++    const done = getCompletedCases().length;
++    const wrong = getWrongCases().length;
++
++    const accountCard = authState.loggedIn ? `
++        <div class="card mine-card">
++            <div class="mine-section-title">账号</div>
++            <div class="mine-row"><span class="mine-label">用户名：</span><strong>${escapeHtml(authState.username || '')}</strong></div>
++            <div class="mine-row" style="color:#6aaf8a;font-size:0.92em;">● 云端同步正常</div>
++            <div class="mine-actions">
++                <button class="btn btn--outline" onclick="logout()">退出登录</button>
++            </div>
++        </div>
++    ` : `
++        <div class="card mine-card">
++            <div class="mine-section-title">账号</div>
++            <div class="mine-row" style="font-weight:700;color:var(--accent);">当前为游客模式</div>
++            <p class="mine-desc">游客学习数据保存在当前浏览器。登录后可将学习数据同步到云端，并在其他设备继续使用。</p>
++            <div class="mine-actions">
++                <button class="btn btn--primary" onclick="openAuthEntry('login')">登录</button>
++                <button class="btn btn--outline" onclick="openAuthEntry('register')">注册</button>
++            </div>
++            <div class="mine-summary">已完成 <strong>${done}</strong> 例 · 错题 <strong>${wrong}</strong> 条</div>
++        </div>
++    `;
++
++    page.innerHTML = `
++        <div class="card card--accent" style="text-align:center;">
++            <div class="hero-title"><span class="icon">👤</span> 我的</div>
++        </div>
++        ${accountCard}
++        <div class="card mine-card">
++            <div class="mine-section-title">我的学习</div>
++            <div class="mine-row">我的错题</div>
++            <p class="mine-desc">查看你在闯关过程中答错的病例，可重新挑战或查看解析。</p>
++            <div class="mine-actions">
++                <button class="btn btn--outline" onclick="openMineRecords()">查看错题</button>
++            </div>
++            <div class="mine-summary">错题 <strong>${wrong}</strong> 条</div>
++        </div>
++        <div class="card mine-card">
++            <div class="mine-section-title">我的投稿</div>
++            <p class="mine-desc">当前投稿功能仍通过现有投稿入口提交。未来迁移到云端后可在此查看投稿状态。</p>
++            <div class="mine-actions">
++                <button class="btn btn--outline" onclick="openSubmissionModal()">投稿病例</button>
++            </div>
++        </div>
++        <div class="card mine-card">
++            <div class="mine-section-title">数据与备份</div>
++            <div class="mine-row">云端学习数据：<strong>${authState.loggedIn ? '已登录后同步' : '未登录'}</strong></div>
++            <div class="mine-actions">
++                <button class="btn btn--outline" onclick="openMineBackup()">备份</button>
++                <button class="btn btn--outline" onclick="openRestoreChoice()">恢复</button>
++            </div>
++            <p class="mine-hint">⚠ 当前没有手机号/邮箱找回密码功能，请妥善保存密码和恢复码。</p>
++            <p class="mine-hint">账号安全提示：当前没有手机号或邮箱找回密码功能。请妥善保存密码和恢复码，并定期备份重要数据。</p>
++        </div>
++    `;
++}
++
++async function showMine() {
++    showPage('Mine');
++    renderMine();
++    if (authState.loggedIn) {
++        try {
++            const res = await refreshProgressFromCloud();
++            if (res.ok) renderMine();
++            else {
++                const page = document.getElementById('pageMine');
++                if (page) {
++                    const hint = page.querySelector('.mine-cloud-hint');
++                    if (hint) hint.textContent = '云端同步暂时不可用';
++                }
++            }
++        } catch (e) { /* 静默失败，保持本地数据可用 */ }
++    }
++}
++
++async function openMineRecords() {
++    if (authState.loggedIn) {
++        try { await refreshProgressFromCloud(); } catch (e) {}
++    }
++    openRecordsBase();
++}
++
++async function openMineBackup() {
++    if (authState.loggedIn) {
++        try { await refreshProgressFromCloud(); } catch (e) {}
++    }
++    openBackupModalBase();
++}
+ 
+ /* ===================== 页面结构 ===================== */
+ function initApp() {
+@@ -54,7 +151,6 @@
+                 <button class="btn btn--primary" onclick="startChallenge()">🎯 开始闯关</button>
+                 <div class="home-secondary">
+                     <button class="btn btn--outline btn--equal" onclick="openCaseBank()">📚 病例题库</button>
+-                    <button class="btn btn--ghost btn--equal" onclick="openRecords()">📝 我的错题</button>
+                     <button class="btn btn--outline btn--equal" onclick="openSubmissionModal()" style="border-color: var(--gold); color: var(--gold);">📤 投稿病例</button>
+                 </div>
+             </div>
+@@ -121,20 +217,9 @@
+             </div>
+             <div style="margin-top:14px;text-align:center;font-size:0.8em;color:var(--text-muted);line-height:1.7;">本站内容仅供中医学习与病例推演，不构成诊断、处方或医疗建议。如有身体不适，请及时前往正规医疗机构就诊。</div>
+             <div style="text-align:center;"><button class="btn btn--outline" onclick="goHome()">🏠 返回首页</button></div>
+-            <div class="data-card">
+-                <h3>📦 学习数据</h3>
+-                <p class="data-stats" id="dataStats"></p>
+-                <p class="form-hint" style="line-height:1.7;margin:8px 0 14px;">💡 学习记录只保存在当前浏览器，换设备或其他浏览器前建议先备份。</p>
+-                <div class="data-actions">
+-                    <button onclick="openBackupModal()">📤 备份</button>
+-                    <button onclick="openRestoreChoice()">📥 恢复</button>
+-                    <button onclick="resetAllProgress()">🔄 重置进度</button>
+-                </div>
+-                <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;" onchange="if(this.files[0]) importProgress(this.files[0]); this.value='';">
+-            </div>
+         </div>
++        <div class="page" id="pageMine"></div>
+     `;
+-    renderDataStats();
+     showPage('Home');
+ }
+ 
+@@ -192,8 +277,15 @@
+     }
+ });
+ 
++/* ===================== 登录用户恢复备份后同步到云端 ===================== */
++window.__onProgressImported = async function () {
++    if (authState.loggedIn) {
++        try { await syncLocalProgressToCloud(); } catch (e) {}
++    }
++    renderMine();
++};
++
+ /* ===================== 模块间依赖注入 ===================== */
+-// game.js 需要打开问诊/望诊弹窗；case-bank.js 与 game.js 需要页面导航函数。
+ registerModalOpeners({
+     openInquiry: openInquiryModal,
+     openInspection: openInspectionModal
+@@ -205,8 +297,8 @@
+ window.goHome = goHome;
+ window.startChallenge = startChallenge;
+ window.showAbout = showAbout;
++window.showMine = showMine;
+ window.openCaseBank = openCaseBank;
+-window.openRecords = openRecords;
+ window.openSubmissionModal = openSubmissionModal;
+ window.closeSubmissionModal = closeSubmissionModal;
+ window.selectDifficulty = selectDifficulty;
+@@ -241,7 +333,6 @@
+ window.toggleDifficultyOptions = toggleDifficultyOptions;
+ window.selectDifficultyOption = selectDifficultyOption;
+ window.validateSubmissionForm = validateSubmissionForm;
+-window.resetAllProgress = resetAllProgress;
+ window.exportProgress = exportProgress;
+ window.importProgress = importProgress;
+ window.applyImportMode = applyImportMode;
+@@ -249,7 +340,7 @@
+ window.closeImportModal = closeImportModal;
+ window.createProgressBackupCode = createProgressBackupCode;
+ window.parseProgressBackupCode = parseProgressBackupCode;
+-window.openBackupModal = openBackupModal;
++window.openBackupModal = openMineBackup;
+ window.closeBackupModal = closeBackupModal;
+ window.showBackupCode = showBackupCode;
+ window.copyBackupCode = copyBackupCode;
+@@ -261,6 +352,7 @@
+ window.checkBackupCode = checkBackupCode;
+ window.triggerFileRestore = triggerFileRestore;
+ window.copyDiagnosticInfo = copyDiagnosticInfo;
++window.openMineRecords = openMineRecords;
+ 
+ // 仅用于调试 / 兼容（避免未使用导入告警）
+ window._getAllCases = getAllCases;
+@@ -268,6 +360,7 @@
+ window._renderFullCase = renderFullCase;
+ window._resetGameUI = resetGameUI;
+ window._showCurrentCase = showCurrentCase;
++window._refreshProgressFromCloud = refreshProgressFromCloud;
+ 
+ /* ===================== 启动 ===================== */
+ loadCaseData(initApp);
+diff --git a/js/auth.js b/js/auth.js
+--- a/js/auth.js	1970-01-01 08:00:00.000000000 +0800
++++ b/js/auth.js	2026-09-03 14:24:15.231709900 +0800
+@@ -0,0 +1,323 @@
++/* ===================== 账号系统（前端） ===================== */
++// 依赖 storage.js 里现有的 getCompletedCases/getWrongCases 读取游客本地数据。
++// 本模块自己往 <body> 里插入所需的弹窗 HTML，index.html 只需要：
++//   1. <script type="module" src="js/auth.js"></script>
++//   2. 在任意位置放一个按钮调用 window.openAuthEntry()，作为登录/注册/我的账号 的入口
++//      （具体放在导航栏"我的"里、还是先放一个临时按钮，你可以按你的页面布局自己决定）
++
++import { getCompletedCases, getWrongCases, safeSetStorage, safeGetStorage, refreshProgressFromCloud } from './storage.js';
++
++export const authState = { loggedIn: false, username: null };
++
++const REGISTER_PROMPT_LAST_COUNT_KEY = 'tcm_register_prompt_last_count';
++
++// 游客数据绑定状态按当前登录账号隔离，避免学校/公共电脑等共享设备上数据串号。
++function getGuestBoundKey() { return 'tcm_guest_bound_' + (authState.username || 'guest'); }
++
++/* ---------- 页面加载时检查登录态（只验证签名 Cookie，不查数据库） ---------- */
++export async function initAuth() {
++    try {
++        const resp = await fetch('/api/auth/me');
++        const data = await resp.json();
++        authState.loggedIn = !!data.loggedIn;
++        authState.username = data.username || null;
++    } catch (e) {
++        authState.loggedIn = false; // 网络异常时按未登录处理，不影响游客模式继续使用
++    }
++    renderAuthEntry();
++}
++
++function renderAuthEntry() {
++    const el = document.getElementById('authEntry');
++    if (!el) return; // 具体入口按钮由你自己放在页面哪里，没放的话这里跳过不报错
++    el.textContent = authState.loggedIn ? `👤 ${authState.username}` : '登录 / 注册';
++}
++
++/* ===================== 弹窗 HTML（自动插入，不需要手动改 index.html） ===================== */
++function ensureModalsInDom() {
++    if (document.getElementById('authRegisterModal')) return;
++    document.body.insertAdjacentHTML('beforeend', `
++<div class="modal-overlay" id="authRegisterModal" style="display:none;">
++  <div class="modal">
++    <button class="modal-close" onclick="closeAuthModal('authRegisterModal')">✕</button>
++    <h3>📝 注册账号</h3>
++    <p style="color:var(--text-muted);font-size:0.9em;">用户名注册后不可修改，且不支持邮箱/手机找回密码，请务必牢记密码，并在注册成功后妥善保存系统生成的恢复码。</p>
++    <input type="text" id="regUsername" placeholder="用户名（3-20位，注册后不可改）" style="width:100%;margin-top:8px;">
++    <input type="password" id="regPassword" placeholder="密码（至少8位）" style="width:100%;margin-top:8px;">
++    <input type="password" id="regPasswordConfirm" placeholder="再次输入密码" style="width:100%;margin-top:8px;">
++    <div id="regError" style="color:#c0392b;font-size:0.9em;margin-top:6px;"></div>
++    <button class="btn btn--primary" style="margin-top:10px;width:100%;" onclick="submitRegister()">注册</button>
++    <p style="margin-top:10px;font-size:0.9em;">已有账号？<a href="#" onclick="switchAuthModal('authRegisterModal','authLoginModal');return false;">去登录</a></p>
++  </div>
++</div>
++
++<div class="modal-overlay" id="authLoginModal" style="display:none;">
++  <div class="modal">
++    <button class="modal-close" onclick="closeAuthModal('authLoginModal')">✕</button>
++    <h3>🔑 登录</h3>
++    <input type="text" id="loginUsername" placeholder="用户名" style="width:100%;margin-top:8px;">
++    <input type="password" id="loginPassword" placeholder="密码" style="width:100%;margin-top:8px;">
++    <div id="loginError" style="color:#c0392b;font-size:0.9em;margin-top:6px;"></div>
++    <button class="btn btn--primary" style="margin-top:10px;width:100%;" onclick="submitLogin()">登录</button>
++    <p style="margin-top:10px;font-size:0.9em;">
++      <a href="#" onclick="switchAuthModal('authLoginModal','authRegisterModal');return false;">还没有账号</a>
++      ・
++      <a href="#" onclick="switchAuthModal('authLoginModal','authRecoverModal');return false;">忘记密码</a>
++    </p>
++  </div>
++</div>
++
++<div class="modal-overlay" id="authRecoverModal" style="display:none;">
++  <div class="modal">
++    <button class="modal-close" onclick="closeAuthModal('authRecoverModal')">✕</button>
++    <h3>🔓 用恢复码找回密码</h3>
++    <p style="color:var(--text-muted);font-size:0.9em;">没有恢复码将无法找回，只能放弃该账号重新注册。</p>
++    <input type="text" id="recUsername" placeholder="用户名" style="width:100%;margin-top:8px;">
++    <input type="text" id="recCode" placeholder="恢复码（形如 A7K9F-3MXQP-...）" style="width:100%;margin-top:8px;">
++    <input type="password" id="recNewPassword" placeholder="新密码（至少8位）" style="width:100%;margin-top:8px;">
++    <input type="password" id="recNewPasswordConfirm" placeholder="再次输入新密码" style="width:100%;margin-top:8px;">
++    <div id="recError" style="color:#c0392b;font-size:0.9em;margin-top:6px;"></div>
++    <button class="btn btn--primary" style="margin-top:10px;width:100%;" onclick="submitRecover()">重置密码</button>
++  </div>
++</div>
++
++<div class="modal-overlay" id="authRecoveryCodeModal" style="display:none;">
++  <div class="modal">
++    <h3>🗝️ 请立刻保存这个恢复码</h3>
++    <p style="color:#c0392b;font-weight:bold;">恢复码用于忘记密码时重置密码。恢复码只显示一次，请务必妥善保存。如果密码和恢复码均遗失，网站无法为你找回账号。</p>
++    <div id="recoveryCodeDisplay" style="font-size:1.3em;letter-spacing:1px;text-align:center;padding:14px;background:var(--bg-light,#f5f0e6);border-radius:8px;margin:10px 0;user-select:all;"></div>
++    <p style="color:var(--text-muted);font-size:0.9em;">建议截图或抄写在纸上，不要只存在这台设备里——如果这台设备本身丢了或数据被清除，恢复码也会一起丢。</p>
++    <label style="display:flex;align-items:center;gap:6px;margin-top:8px;">
++      <input type="checkbox" id="recoveryCodeConfirmCheck"> 我已经保存好这个恢复码
++    </label>
++    <button class="btn btn--primary" id="recoveryCodeCloseBtn" style="margin-top:10px;width:100%;" disabled onclick="closeRecoveryCodeModal()">关闭</button>
++  </div>
++</div>
++
++<div class="modal-overlay" id="authGuestReminderModal" style="display:none;">
++  <div class="modal">
++    <button class="modal-close" onclick="closeAuthModal('authGuestReminderModal')">✕</button>
++    <h3>💡 要不要注册一个账号？</h3>
++    <p>你已经以游客身份完成了几道病例——游客数据只存在这台设备的浏览器里，换设备、换浏览器或清除浏览器数据都会丢失。注册账号后，学习记录会同步保存到云端，可在其他设备登录后继续使用。请妥善保存密码和恢复码；目前没有手机号或邮箱找回密码功能。</p>
++    <button class="btn btn--primary" style="width:100%;margin-top:6px;" onclick="closeAuthModal('authGuestReminderModal');openAuthEntry('register')">立即注册</button>
++    <button class="btn btn--outline" style="width:100%;margin-top:8px;" onclick="closeAuthModal('authGuestReminderModal')">暂不需要</button>
++  </div>
++</div>`);
++}
++
++/* ===================== 对外入口 ===================== */
++window.openAuthEntry = function (which) {
++    ensureModalsInDom();
++    if (authState.loggedIn) { alert(`当前已登录：${authState.username}`); return; }
++    const id = which === 'login' ? 'authLoginModal' : 'authRegisterModal';
++    document.getElementById(id).style.display = 'flex';
++};
++window.closeAuthModal = function (id) { document.getElementById(id).style.display = 'none'; };
++window.switchAuthModal = function (fromId, toId) {
++    document.getElementById(fromId).style.display = 'none';
++    document.getElementById(toId).style.display = 'flex';
++};
++window.closeRecoveryCodeModal = function () { document.getElementById('authRecoveryCodeModal').style.display = 'none'; };
++
++document.addEventListener('change', (e) => {
++    if (e.target && e.target.id === 'recoveryCodeConfirmCheck') {
++        document.getElementById('recoveryCodeCloseBtn').disabled = !e.target.checked;
++    }
++});
++
++function showRecoveryCode(code) {
++    document.getElementById('recoveryCodeDisplay').textContent = code;
++    document.getElementById('recoveryCodeConfirmCheck').checked = false;
++    document.getElementById('recoveryCodeCloseBtn').disabled = true;
++    document.getElementById('authRecoveryCodeModal').style.display = 'flex';
++}
++
++/* ===================== 注册 ===================== */
++window.submitRegister = async function () {
++    const username = document.getElementById('regUsername').value.trim();
++    const password = document.getElementById('regPassword').value;
++    const passwordConfirm = document.getElementById('regPasswordConfirm').value;
++    const errEl = document.getElementById('regError');
++    errEl.textContent = '';
++
++    if (password !== passwordConfirm) { errEl.textContent = '两次输入的密码不一致'; return; }
++    if (password.length < 8) { errEl.textContent = '密码至少需要8位'; return; }
++
++    try {
++        const resp = await fetch('/api/auth/register', {
++            method: 'POST', headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({ username, password, passwordConfirm })
++        });
++        const data = await resp.json();
++        if (!resp.ok) { errEl.textContent = data.error || '注册失败'; return; }
++
++        authState.loggedIn = true; authState.username = data.username;
++        renderAuthEntry();
++        closeAuthModal('authRegisterModal');
++        showRecoveryCode(data.recoveryCode);
++        await maybeSyncGuestData();
++        await refreshProgressFromCloud(); // 把 D1 中合并后的最新进度拉回本地
++    } catch (e) {
++        errEl.textContent = '网络异常，请稍后重试';
++    }
++};
++
++/* ===================== 登录 ===================== */
++window.submitLogin = async function () {
++    const username = document.getElementById('loginUsername').value.trim();
++    const password = document.getElementById('loginPassword').value;
++    const errEl = document.getElementById('loginError');
++    errEl.textContent = '';
++
++    try {
++        const resp = await fetch('/api/auth/login', {
++            method: 'POST', headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({ username, password })
++        });
++        const data = await resp.json();
++        if (!resp.ok) { errEl.textContent = data.error || '登录失败'; return; }
++
++        authState.loggedIn = true; authState.username = data.username;
++        renderAuthEntry();
++        closeAuthModal('authLoginModal');
++        await maybeSyncGuestData();
++        await refreshProgressFromCloud(); // 把 D1 中合并后的最新进度拉回本地
++    } catch (e) {
++        errEl.textContent = '网络异常，请稍后重试';
++    }
++};
++
++/* ===================== 恢复码找回密码 ===================== */
++window.submitRecover = async function () {
++    const username = document.getElementById('recUsername').value.trim();
++    const recoveryCode = document.getElementById('recCode').value.trim();
++    const newPassword = document.getElementById('recNewPassword').value;
++    const newPasswordConfirm = document.getElementById('recNewPasswordConfirm').value;
++    const errEl = document.getElementById('recError');
++    errEl.textContent = '';
++
++    if (newPassword !== newPasswordConfirm) { errEl.textContent = '两次输入的新密码不一致'; return; }
++    if (newPassword.length < 8) { errEl.textContent = '新密码至少需要8位'; return; }
++
++    try {
++        const resp = await fetch('/api/auth/recover', {
++            method: 'POST', headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({ username, recoveryCode, newPassword, newPasswordConfirm })
++        });
++        const data = await resp.json();
++        if (!resp.ok) { errEl.textContent = data.error || '重置失败'; return; }
++
++        closeAuthModal('authRecoverModal');
++        showRecoveryCode(data.newRecoveryCode); // 旧恢复码已作废，这是新的一次性恢复码
++        alert('密码已重置，请用新密码重新登录。');
++    } catch (e) {
++        errEl.textContent = '网络异常，请稍后重试';
++    }
++};
++
++window.logout = async function () {
++    try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) { /* 忽略网络错误，反正客户端状态照样清 */ }
++    authState.loggedIn = false; authState.username = null;
++    renderAuthEntry();
++    location.reload(); // 简单起见直接刷新，避免页面上残留"已登录"状态的界面碎片
++};
++
++/* ===================== 游客数据 → 账号 绑定同步 ===================== */
++// 只在"这台设备的游客数据还没绑定过任何账号"时才会触发，绑定成功后立刻标记，
++// 防止同一台设备（比如学校机房公用电脑）后续被别人注册新账号时，把上一个人的游客记录也带过去。
++async function maybeSyncGuestData() {
++    const boundKey = getGuestBoundKey();
++    if (safeGetStorage(boundKey, false)) return;
++
++    const completed = getCompletedCases();
++    const wrongs = getWrongCases();
++    if (completed.length === 0 && wrongs.length === 0) {
++        safeSetStorage(boundKey, true); // 没数据也标记一下，避免每次登录都重复判断
++        return;
++    }
++
++    const wrongMap = new Map(wrongs.map(w => [w.id, w]));
++    const items = completed.map(caseId => {
++        const w = wrongMap.get(caseId);
++        return {
++            caseId,
++            isCompleted: true,
++            isWrong: !!w,
++            syndrome: w ? w.syndrome : undefined,
++            disease: w ? w.disease : undefined,
++            basis: w ? w.basis : undefined
++        };
++    });
++    // 有些错题可能尚未点"显示答案"（不在 completed 里，但已经在 wrongs 里），也一并带上。
++    for (const w of wrongs) {
++        if (!completed.includes(w.id)) {
++            items.push({ caseId: w.id, isCompleted: false, isWrong: true, syndrome: w.syndrome, disease: w.disease, basis: w.basis });
++        }
++    }
++
++    try {
++        const resp = await fetch('/api/progress/sync-guest', {
++            method: 'POST', headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({ items })
++        });
++        if (resp.ok) {
++            safeSetStorage(boundKey, true);
++            alert(`已将本机 ${items.length} 条游客学习记录同步到你的账号。\n提醒：如果你之前在其他设备上也玩过游客模式，那部分记录不会自动带过来，只有这台设备上的记录会被同步。`);
++        }
++        // 同步失败就不标记，留到下次登录/刷新时会再尝试一次。
++    } catch (e) { /* 同样，静默失败，下次再试 */ }
++}
++
++/* ===================== 供 app.js 调用：登录用户把本地进度批量同步到 D1 ===================== */
++export async function syncLocalProgressToCloud() {
++    if (!authState.loggedIn) return;
++    const completed = getCompletedCases();
++    const wrongs = getWrongCases();
++    const wrongMap = new Map(wrongs.map(w => [w.id, w]));
++    const items = [];
++    for (const caseId of completed) {
++        const w = wrongMap.get(caseId);
++        items.push({ caseId, isCompleted: true, isWrong: !!w, syndrome: w?.syndrome, disease: w?.disease, basis: w?.basis });
++    }
++    for (const w of wrongs) {
++        if (!completed.includes(w.id)) {
++            items.push({ caseId: w.id, isCompleted: false, isWrong: true, syndrome: w.syndrome, disease: w.disease, basis: w.basis });
++        }
++    }
++    if (items.length === 0) return;
++    try {
++        await fetch('/api/progress/sync-guest', {
++            method: 'POST', headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({ items })
++        });
++    } catch (e) { /* 静默失败：本地已恢复，云端同步失败不影响当前使用 */ }
++}
++
++/* ===================== 供 game.js 调用：写一行进度到 D1（仅登录用户） ===================== */
++// 严格只在"提交答案"和"查看解析"这两个真正定局的时刻调用，探查四诊等中间过程不要调用这个函数。
++export async function syncProgressToServer(caseId, payload) {
++    if (!authState.loggedIn) return; // 游客模式完全不产生任何 D1 写入
++    try {
++        await fetch('/api/progress', {
++            method: 'POST', headers: { 'Content-Type': 'application/json' },
++            body: JSON.stringify({ caseId, ...payload })
++        });
++    } catch (e) { /* 静默失败：不影响本地 localStorage 已经保存的结果，只是云端这次没同步上 */ }
++}
++
++/* ===================== 供 game.js 调用：完成三道题后提醒注册（仅游客） ===================== */
++export function maybeShowRegisterReminder() {
++    if (authState.loggedIn) return;
++    const count = getCompletedCases().length;
++    if (count < 3) return;
++    const lastShownAt = safeGetStorage(REGISTER_PROMPT_LAST_COUNT_KEY, 0);
++    // 完成数达到3之后，每再多完成5道题重新提醒一次（3、8、13...），避免第一次被关掉后就再也不提醒，
++    // 也避免每做一题就弹一次太烦人。这个间隔按需自己调整。
++    if (lastShownAt !== 0 && count - lastShownAt < 5) return;
++    ensureModalsInDom();
++    document.getElementById('authGuestReminderModal').style.display = 'flex';
++    safeSetStorage(REGISTER_PROMPT_LAST_COUNT_KEY, count);
++}
++
++ensureModalsInDom();
++initAuth();
+diff --git a/js/case-bank.js b/js/case-bank.js
+--- a/js/case-bank.js	2026-09-03 13:23:13.146396300 +0800
++++ b/js/case-bank.js	2026-09-03 14:24:15.233707600 +0800
+@@ -4,6 +4,7 @@
+     getAllCases, diffMap, categoryMap, diffOrder, escapeHtml, escapeHtmlWithBreaks
+ } from './data.js';
+ import { getCompletedCases, getWrongCases, formatDate } from './storage.js';
++import { authState, syncProgressToServer } from './auth.js';
+ 
+ // 题库筛选状态
+ let bankCategory = 'all';
+@@ -199,14 +200,20 @@
+         el.innerHTML = '<p style="text-align:center;color:#b5a595;">🎉 暂无错题，继续保持！</p>';
+     } else {
+         const items = wrongs.slice().reverse().map((w, i) => {
++            const c = findCaseById(w.id);
++            // 优先使用当前静态病例 JSON 中的病例数据；题库中不存在时才回退本地缓存
++            const title = c ? c.title : w.title;
++            const chiefComplaint = c ? c.chiefComplaint : w.chiefComplaint;
++            const diffMeta = c ? (diffMap[c.difficulty] || { name: c.difficulty, emoji: '' }) : { name: w.difficulty || '', emoji: '' };
+             const answerParts = [];
+             if (w.syndrome) answerParts.push('证型：' + w.syndrome);
+             if (w.disease) answerParts.push('病名：' + w.disease);
+             const answerStr = answerParts.join('；') || '未填写';
+             return `<div class="wrong-card">
+-                <div class="wrong-title">错题${i + 1}</div>
++                <div class="wrong-title">错题${i + 1} ${diffMeta.emoji ? '<span style="font-size:0.85em;color:var(--text-muted);margin-left:6px;">' + escapeHtml(diffMeta.emoji + ' ' + diffMeta.name) + '</span>' : ''}</div>
+                 <div class="wrong-meta">${formatDate(w.date)}</div>
+-                <div><strong>主诉：</strong>${escapeHtmlWithBreaks(w.chiefComplaint)}</div>
++                <div><strong>标题：</strong>${escapeHtml(title || '未知病例')}</div>
++                <div><strong>主诉：</strong>${escapeHtmlWithBreaks(chiefComplaint || '暂无')}</div>
+                 <div><strong>我的答案：</strong>${escapeHtml(answerStr)}</div>
+                 <div><strong>我的辨证依据：</strong>${escapeHtml(w.basis || '未填写')}</div>
+                 <div class="wrong-actions">
+@@ -222,7 +229,18 @@
+ 
+ function closeRecords() { document.getElementById('recordsModal').style.display = 'none'; }
+ 
+-function clearRecords() { if (confirm('清空我的错题？')) { try { localStorage.removeItem('tcm_wrong_cases'); } catch (e) {} closeRecords(); } }
++async function clearRecords() {
++    if (!confirm('清空我的错题？')) return;
++    const wrongs = getWrongCases();
++    try { localStorage.removeItem('tcm_wrong_cases'); } catch (e) {}
++    // 登录用户：把清空操作同步到 D1，避免下次拉取又把旧错题覆盖回来
++    if (authState.loggedIn) {
++        for (const w of wrongs) {
++            try { await syncProgressToServer(w.id, { isWrong: false }); } catch (e) {}
++        }
++    }
++    closeRecords();
++}
+ 
+ function findCaseById(caseId) {
+     return getAllCases().find(x => x.id === caseId) || null;
+diff --git a/js/game.js b/js/game.js
+--- a/js/game.js	2026-09-03 13:23:13.147395600 +0800
++++ b/js/game.js	2026-09-03 14:24:15.229707800 +0800
+@@ -1,240 +1,247 @@
+-/* ===================== 闯关游戏（核心状态 + 游戏流程） ===================== */
+-// 本模块维护唯一的游戏状态 state，并负责闯关主流程。
+-// 为避免循环依赖：
+-//   - 其它模块通过 import { state } 读取/写入同一份状态（单一数据源）
+-//   - game.js 不直接 import 问诊/望诊/题库模块；问诊与望诊弹窗的打开函数
+-//     由 app.js 通过 registerModalOpeners 注入。
+-
+-import {
+-    escapeHtml, escapeHtmlWithBreaks, getAllCases
+-} from './data.js';
+-import {
+-    getCompletedCases, markCaseCompleted, removeWrongCase, saveWrongCase
+-} from './storage.js';
+-
+-/* ===================== 唯一游戏状态 ===================== */
+-export const state = {
+-    currentDifficulty: null,
+-    currentCase: null,
+-    collectedClues: [],
+-    exploredDiags: {},
+-    gameStarted: false,
+-    inquiryHistory: [],
+-    askedInquiryQuestions: [],
+-    unfinishedCases: [],
+-    currentCaseIndex: 0,
+-    inspectionImages: [],
+-    inspectionIndex: 0,
+-    inspectionNonTongueAdded: false,
+-    lastAnswerWasCorrect: false,
+-};
+-
+-// 由 app.js 注入：openInquiry / openInspection 等弹窗打开函数
+-let modalOpeners = {};
+-export function registerModalOpeners(fns) { modalOpeners = { ...modalOpeners, ...fns }; }
+-
+-/* ===================== 页面导航（由 app.js 注入 showPage） ===================== */
+-let showPageFn = null;
+-export function registerNav(fns) { showPageFn = fns.showPage || showPageFn; }
+-
+-/* ===================== 简单结果模态框 ===================== */
+-export function openSimpleResultModal(title, content) {
+-    document.getElementById('simpleResultTitle').textContent = title;
+-    document.getElementById('simpleResultContent').textContent = content;
+-    document.getElementById('simpleResultModal').style.display = 'flex';
+-}
+-export function closeSimpleResultModal() { document.getElementById('simpleResultModal').style.display = 'none'; }
+-
+-/* ===================== 闯关逻辑 ===================== */
+-export function startChallenge() { if (showPageFn) showPageFn('Game'); resetGameUI(); }
+-
+-export function resetGameUI() {
+-    state.currentDifficulty = null; state.currentCase = null; state.collectedClues = []; state.exploredDiags = {}; state.gameStarted = false;
+-    state.inquiryHistory = []; state.askedInquiryQuestions = []; state.unfinishedCases = []; state.currentCaseIndex = 0; state.inspectionNonTongueAdded = false; state.lastAnswerWasCorrect = false;
+-    document.getElementById('chiefComplaintCard').style.display = 'none';
+-    document.getElementById('fourDiagBtns').style.display = 'none';
+-    document.getElementById('btnOtherCheck').style.display = 'none';
+-    document.getElementById('clueCollectionCard').style.display = 'none';
+-    document.getElementById('answerCard').style.display = 'none';
+-    document.getElementById('gameExtraBtns').style.display = 'none';
+-    document.getElementById('historyBtn').style.display = 'none';
+-    document.getElementById('clueArea').innerHTML = '';
+-    document.getElementById('answerFeedback').innerHTML = '';
+-    document.getElementById('fullAnalysisArea').innerHTML = '';
+-    document.getElementById('inputSyndrome').value = '';
+-    document.getElementById('inputDisease').value = '';
+-    document.getElementById('inputBasis').value = '';
+-    document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
+-    ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
+-}
+-
+-export function selectDifficulty(diff, btnEl) {
+-    document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
+-    btnEl.classList.add('selected');
+-    state.currentDifficulty = diff;
+-    const pool = getAllCases().filter(c => c.difficulty === diff);
+-    if (!pool || pool.length === 0) { alert('该难度暂无病例。'); return; }
+-    const completed = getCompletedCases();
+-    state.unfinishedCases = pool.filter(c => !completed.includes(c.id));
+-    if (state.unfinishedCases.length === 0) {
+-        openSimpleResultModal('🎉 闯关完毕', '该难度下所有病例均已完成，无新病例可学习。您可以在病例题库中复习已完成的病例。');
+-        document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
+-        state.currentDifficulty = null;
+-        return;
+-    }
+-    state.currentCaseIndex = 0;
+-    showCurrentCase();
+-}
+-
+-export function showCurrentCase() {
+-    if (!state.unfinishedCases.length) return;
+-    state.currentCase = state.unfinishedCases[state.currentCaseIndex];
+-    state.collectedClues = []; state.exploredDiags = { inspection: false, auscultation: false, inquiry: false, pulse: false };
+-    state.inquiryHistory = []; state.askedInquiryQuestions = []; state.gameStarted = true; state.inspectionNonTongueAdded = false; state.lastAnswerWasCorrect = false;
+-    document.getElementById('chiefComplaintCard').style.display = 'block';
+-    document.getElementById('chiefComplaintText').textContent = state.currentCase.chiefComplaint;
+-    document.getElementById('historyBtn').style.display = 'inline-flex';
+-    document.getElementById('fourDiagBtns').style.display = 'grid';
+-    document.getElementById('clueCollectionCard').style.display = 'block';
+-    document.getElementById('answerCard').style.display = 'block';
+-    document.getElementById('gameExtraBtns').style.display = 'flex';
+-    document.getElementById('clueArea').innerHTML = '';
+-    document.getElementById('answerFeedback').innerHTML = '';
+-    document.getElementById('fullAnalysisArea').innerHTML = '';
+-    document.getElementById('inputSyndrome').value = '';
+-    document.getElementById('inputDisease').value = '';
+-    document.getElementById('inputBasis').value = '';
+-    ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
+-    document.getElementById('caseCounter').textContent = `病例 ${state.currentCaseIndex + 1} / ${state.unfinishedCases.length}`;
+-    document.getElementById('prevCaseBtn').style.display = (state.unfinishedCases.length > 1 && state.currentCaseIndex > 0) ? 'inline-flex' : 'none';
+-    document.getElementById('nextCaseBtn').style.display = (state.unfinishedCases.length > 1 && state.currentCaseIndex < state.unfinishedCases.length - 1) ? 'inline-flex' : 'none';
+-    const otherCheckBtn = document.getElementById('btnOtherCheck');
+-    otherCheckBtn.style.display = 'block';
+-    document.getElementById('chiefComplaintCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+-}
+-
+-export function prevCase() {
+-    if (state.currentCaseIndex > 0) { state.currentCaseIndex--; showCurrentCase(); }
+-}
+-export function nextCase() {
+-    if (state.currentCaseIndex < state.unfinishedCases.length - 1) { state.currentCaseIndex++; showCurrentCase(); }
+-}
+-
+-/* ===================== 四诊探索 ===================== */
+-export function exploreDiag(type) {
+-    if (!state.gameStarted || !state.currentCase) { alert('请先选择关卡。'); return; }
+-    if (type === 'inquiry') { if (modalOpeners.openInquiry) modalOpeners.openInquiry(); return; }
+-    if (type === 'inspection') { if (modalOpeners.openInspection) modalOpeners.openInspection(); return; }
+-    if (state.exploredDiags[type]) { alert('该诊法已探索过。'); return; }
+-    state.exploredDiags[type] = true; markExplored(type);
+-    const clue = state.currentCase.clues[type];
+-    if (clue) { openSimpleResultModal(clue.displayTitle, clue.displayContent); addClue(type, clue.textSummary); }
+-}
+-
+-export function showOtherCheck() {
+-    if (!state.currentCase) return;
+-    openSimpleResultModal('📋 其他检查', state.currentCase.otherCheck || '无');
+-}
+-
+-export function markExplored(type) {
+-    const map = { inspection: 'btnWang', auscultation: 'btnWen', inquiry: 'btnAsk', pulse: 'btnPulse' };
+-    document.getElementById(map[type])?.classList.add('explored');
+-}
+-
+-export function addClue(type, content, tagText) {
+-    const tagMap = { inspection: 'tag-wang', auscultation: 'tag-wen', inquiry: 'tag-ask', pulse: 'tag-pulse' };
+-    const nameMap = { inspection: '望诊', auscultation: '闻诊', inquiry: '问诊', pulse: '切脉' };
+-    const tag = tagText || nameMap[type];
+-    if (state.collectedClues.some(c => c.content === content && c.tag === tag)) return;
+-    state.collectedClues.push({ tag, tagClass: tagMap[type], content });
+-    renderClues();
+-}
+-
+-export function renderClues() {
+-    const area = document.getElementById('clueArea');
+-    area.innerHTML = state.collectedClues.map(c => `<div class="clue-item"><span class="clue-tag ${escapeHtml(c.tagClass)}">${escapeHtml(c.tag)}</span><span>${escapeHtmlWithBreaks(c.content)}</span></div>`).join('');
+-    area.scrollTop = area.scrollHeight;
+-}
+-
+-/* ===================== 提交辨证 ===================== */
+-export function submitAnswer() {
+-    if (!state.gameStarted || !state.currentCase) { alert('请先选择关卡。'); return; }
+-    const syndrome = document.getElementById('inputSyndrome').value.trim();
+-    const disease = document.getElementById('inputDisease').value.trim();
+-    const basis = document.getElementById('inputBasis').value.trim();
+-    if (!syndrome && !disease) { alert('请至少输入证型或病名。'); return; }
+-    if (!basis) { alert('请写出你的辩证依据。'); return; }
+-    const correct = state.currentCase.correctAnswer;
+-    const fb = document.getElementById('answerFeedback');
+-    const analysis = document.getElementById('fullAnalysisArea');
+-    const dOk = disease && correct.disease.includes(disease.replace(/证$/, ''));
+-    const sOk = syndrome && (
+-        correct.syndrome.includes('风热') && syndrome.includes('风热') && syndrome.includes('津伤') ||
+-        correct.syndrome.includes('脾胃虚寒') && syndrome.includes('脾胃虚寒') ||
+-        correct.syndrome.includes('痰瘀互结') && syndrome.includes('痰瘀') && syndrome.includes('互结') ||
+-        correct.syndrome.includes('痰热壅肺') && syndrome.includes('痰热壅肺') ||
+-        syndrome === correct.syndrome || correct.syndrome.includes(syndrome) || syndrome.includes(correct.syndrome)
+-    );
+-    const isCorrect = dOk && sOk;
+-    state.lastAnswerWasCorrect = isCorrect;
+-    let feedbackHtml = '';
+-    if (isCorrect) {
+-        feedbackHtml = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${escapeHtml(correct.disease)} · ${escapeHtml(correct.syndrome)}</p>`;
+-        removeWrongCase(state.currentCase.id);
+-    } else {
+-        if (!dOk && !sOk) {
+-            feedbackHtml = `<div class="result-box fail"><h4>🤔 辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
+-        } else {
+-            const parts = [];
+-            if (dOk) parts.push('✅ 病名基本正确'); else parts.push('⚠️ 病名需调整');
+-            if (sOk) parts.push('✅ 证型判断准确'); else parts.push('⚠️ 证型需斟酌');
+-            feedbackHtml = `<div class="result-box fail"><h4>🔍 部分正确</h4><p>${parts.join('，')}</p>`;
+-        }
+-        saveWrongCase({ syndrome, disease, basis }, state.currentCase, state.currentDifficulty);
+-    }
+-    feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">💡 显示答案</button></div>`;
+-    fb.innerHTML = feedbackHtml;
+-    analysis.innerHTML = '';
+-    fb.scrollIntoView({ behavior: 'smooth' });
+-}
+-
+-export function viewAnswer() {
+-    if (!state.currentCase) return;
+-    showFullAnalysis(document.getElementById('fullAnalysisArea'));
+-    // 无论对错，做过的病例都标记为已完成，从闯关队列移除；
+-    // 只有从"我的错题"点击"重新挑战"才能再次进入闯关练习。
+-    markCaseCompleted(state.currentCase.id);
+-}
+-
+-export function showFullAnalysis(el) {
+-    const fa = state.currentCase.fullAnalysis;
+-    const sourceHtml = state.currentCase.source ? `<p><strong>病例来源：</strong><span class="source-tag">${escapeHtml(state.currentCase.source)}</span></p>` : '';
+-    el.innerHTML = `<div class="result-box success"><h4>📋 完整医案解析</h4>
+-        <p><strong>中医病证：</strong>${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）</p>
+-        <p><strong>西医诊断：</strong>${escapeHtml(fa.westernDiagnosis)}</p>
+-        ${sourceHtml}
+-        <hr><p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
+-        <hr><p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
+-        <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
+-        <hr><p style="color:var(--text-muted);font-size:0.9em;">💡 提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
+-}
+-
+-export function resetCurrentCase() {
+-    if (!state.currentCase) return;
+-    if (confirm('确定重新探查吗？线索将清除。')) {
+-        state.collectedClues = []; state.exploredDiags = { inspection: false, auscultation: false, inquiry: false, pulse: false };
+-        state.inquiryHistory = []; state.askedInquiryQuestions = []; state.inspectionNonTongueAdded = false; state.lastAnswerWasCorrect = false;
+-        document.getElementById('clueArea').innerHTML = '';
+-        document.getElementById('answerFeedback').innerHTML = '';
+-        document.getElementById('fullAnalysisArea').innerHTML = '';
+-        document.getElementById('inputSyndrome').value = '';
+-        document.getElementById('inputDisease').value = '';
+-        document.getElementById('inputBasis').value = '';
+-        ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
+-    }
+-}
+-
+-export function showHistory() {
+-    if (!state.currentCase) return;
+-    openSimpleResultModal('📜 病史（既往史）', state.currentCase.history || '无');
+-}
++/* ===================== 闯关游戏（核心状态 + 游戏流程） ===================== */
++// 本模块维护唯一的游戏状态 state，并负责闯关主流程。
++// 为避免循环依赖：
++//   - 其它模块通过 import { state } 读取/写入同一份状态（单一数据源）
++//   - game.js 不直接 import 问诊/望诊/题库模块；问诊与望诊弹窗的打开函数
++//     由 app.js 通过 registerModalOpeners 注入。
++
++import {
++    escapeHtml, escapeHtmlWithBreaks, getAllCases
++} from './data.js';
++import {
++    getCompletedCases, markCaseCompleted, removeWrongCase, saveWrongCase
++} from './storage.js';
++import { syncProgressToServer, maybeShowRegisterReminder } from './auth.js';
++
++/* ===================== 唯一游戏状态 ===================== */
++export const state = {
++    currentDifficulty: null,
++    currentCase: null,
++    collectedClues: [],
++    exploredDiags: {},
++    gameStarted: false,
++    inquiryHistory: [],
++    askedInquiryQuestions: [],
++    unfinishedCases: [],
++    currentCaseIndex: 0,
++    inspectionImages: [],
++    inspectionIndex: 0,
++    inspectionNonTongueAdded: false,
++    lastAnswerWasCorrect: false,
++};
++
++// 由 app.js 注入：openInquiry / openInspection 等弹窗打开函数
++let modalOpeners = {};
++export function registerModalOpeners(fns) { modalOpeners = { ...modalOpeners, ...fns }; }
++
++/* ===================== 页面导航（由 app.js 注入 showPage） ===================== */
++let showPageFn = null;
++export function registerNav(fns) { showPageFn = fns.showPage || showPageFn; }
++
++/* ===================== 简单结果模态框 ===================== */
++export function openSimpleResultModal(title, content) {
++    document.getElementById('simpleResultTitle').textContent = title;
++    document.getElementById('simpleResultContent').textContent = content;
++    document.getElementById('simpleResultModal').style.display = 'flex';
++}
++export function closeSimpleResultModal() { document.getElementById('simpleResultModal').style.display = 'none'; }
++
++/* ===================== 闯关逻辑 ===================== */
++export function startChallenge() { if (showPageFn) showPageFn('Game'); resetGameUI(); }
++
++export function resetGameUI() {
++    state.currentDifficulty = null; state.currentCase = null; state.collectedClues = []; state.exploredDiags = {}; state.gameStarted = false;
++    state.inquiryHistory = []; state.askedInquiryQuestions = []; state.unfinishedCases = []; state.currentCaseIndex = 0; state.inspectionNonTongueAdded = false; state.lastAnswerWasCorrect = false;
++    document.getElementById('chiefComplaintCard').style.display = 'none';
++    document.getElementById('fourDiagBtns').style.display = 'none';
++    document.getElementById('btnOtherCheck').style.display = 'none';
++    document.getElementById('clueCollectionCard').style.display = 'none';
++    document.getElementById('answerCard').style.display = 'none';
++    document.getElementById('gameExtraBtns').style.display = 'none';
++    document.getElementById('historyBtn').style.display = 'none';
++    document.getElementById('clueArea').innerHTML = '';
++    document.getElementById('answerFeedback').innerHTML = '';
++    document.getElementById('fullAnalysisArea').innerHTML = '';
++    document.getElementById('inputSyndrome').value = '';
++    document.getElementById('inputDisease').value = '';
++    document.getElementById('inputBasis').value = '';
++    document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
++    ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
++}
++
++export function selectDifficulty(diff, btnEl) {
++    document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
++    btnEl.classList.add('selected');
++    state.currentDifficulty = diff;
++    const pool = getAllCases().filter(c => c.difficulty === diff);
++    if (!pool || pool.length === 0) { alert('该难度暂无病例。'); return; }
++    const completed = getCompletedCases();
++    state.unfinishedCases = pool.filter(c => !completed.includes(c.id));
++    if (state.unfinishedCases.length === 0) {
++        openSimpleResultModal('🎉 闯关完毕', '该难度下所有病例均已完成，无新病例可学习。您可以在病例题库中复习已完成的病例。');
++        document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
++        state.currentDifficulty = null;
++        return;
++    }
++    state.currentCaseIndex = 0;
++    showCurrentCase();
++}
++
++export function showCurrentCase() {
++    if (!state.unfinishedCases.length) return;
++    state.currentCase = state.unfinishedCases[state.currentCaseIndex];
++    state.collectedClues = []; state.exploredDiags = { inspection: false, auscultation: false, inquiry: false, pulse: false };
++    state.inquiryHistory = []; state.askedInquiryQuestions = []; state.gameStarted = true; state.inspectionNonTongueAdded = false; state.lastAnswerWasCorrect = false;
++    document.getElementById('chiefComplaintCard').style.display = 'block';
++    document.getElementById('chiefComplaintText').textContent = state.currentCase.chiefComplaint;
++    document.getElementById('historyBtn').style.display = 'inline-flex';
++    document.getElementById('fourDiagBtns').style.display = 'grid';
++    document.getElementById('clueCollectionCard').style.display = 'block';
++    document.getElementById('answerCard').style.display = 'block';
++    document.getElementById('gameExtraBtns').style.display = 'flex';
++    document.getElementById('clueArea').innerHTML = '';
++    document.getElementById('answerFeedback').innerHTML = '';
++    document.getElementById('fullAnalysisArea').innerHTML = '';
++    document.getElementById('inputSyndrome').value = '';
++    document.getElementById('inputDisease').value = '';
++    document.getElementById('inputBasis').value = '';
++    ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
++    document.getElementById('caseCounter').textContent = `病例 ${state.currentCaseIndex + 1} / ${state.unfinishedCases.length}`;
++    document.getElementById('prevCaseBtn').style.display = (state.unfinishedCases.length > 1 && state.currentCaseIndex > 0) ? 'inline-flex' : 'none';
++    document.getElementById('nextCaseBtn').style.display = (state.unfinishedCases.length > 1 && state.currentCaseIndex < state.unfinishedCases.length - 1) ? 'inline-flex' : 'none';
++    const otherCheckBtn = document.getElementById('btnOtherCheck');
++    otherCheckBtn.style.display = 'block';
++    document.getElementById('chiefComplaintCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
++}
++
++export function prevCase() {
++    if (state.currentCaseIndex > 0) { state.currentCaseIndex--; showCurrentCase(); }
++}
++export function nextCase() {
++    if (state.currentCaseIndex < state.unfinishedCases.length - 1) { state.currentCaseIndex++; showCurrentCase(); }
++}
++
++/* ===================== 四诊探索 ===================== */
++export function exploreDiag(type) {
++    if (!state.gameStarted || !state.currentCase) { alert('请先选择关卡。'); return; }
++    if (type === 'inquiry') { if (modalOpeners.openInquiry) modalOpeners.openInquiry(); return; }
++    if (type === 'inspection') { if (modalOpeners.openInspection) modalOpeners.openInspection(); return; }
++    if (state.exploredDiags[type]) { alert('该诊法已探索过。'); return; }
++    state.exploredDiags[type] = true; markExplored(type);
++    const clue = state.currentCase.clues[type];
++    if (clue) { openSimpleResultModal(clue.displayTitle, clue.displayContent); addClue(type, clue.textSummary); }
++}
++
++export function showOtherCheck() {
++    if (!state.currentCase) return;
++    openSimpleResultModal('📋 其他检查', state.currentCase.otherCheck || '无');
++}
++
++export function markExplored(type) {
++    const map = { inspection: 'btnWang', auscultation: 'btnWen', inquiry: 'btnAsk', pulse: 'btnPulse' };
++    document.getElementById(map[type])?.classList.add('explored');
++}
++
++export function addClue(type, content, tagText) {
++    const tagMap = { inspection: 'tag-wang', auscultation: 'tag-wen', inquiry: 'tag-ask', pulse: 'tag-pulse' };
++    const nameMap = { inspection: '望诊', auscultation: '闻诊', inquiry: '问诊', pulse: '切脉' };
++    const tag = tagText || nameMap[type];
++    if (state.collectedClues.some(c => c.content === content && c.tag === tag)) return;
++    state.collectedClues.push({ tag, tagClass: tagMap[type], content });
++    renderClues();
++}
++
++export function renderClues() {
++    const area = document.getElementById('clueArea');
++    area.innerHTML = state.collectedClues.map(c => `<div class="clue-item"><span class="clue-tag ${escapeHtml(c.tagClass)}">${escapeHtml(c.tag)}</span><span>${escapeHtmlWithBreaks(c.content)}</span></div>`).join('');
++    area.scrollTop = area.scrollHeight;
++}
++
++/* ===================== 提交辨证 ===================== */
++export function submitAnswer() {
++    if (!state.gameStarted || !state.currentCase) { alert('请先选择关卡。'); return; }
++    const syndrome = document.getElementById('inputSyndrome').value.trim();
++    const disease = document.getElementById('inputDisease').value.trim();
++    const basis = document.getElementById('inputBasis').value.trim();
++    if (!syndrome && !disease) { alert('请至少输入证型或病名。'); return; }
++    if (!basis) { alert('请写出你的辩证依据。'); return; }
++    const correct = state.currentCase.correctAnswer;
++    const fb = document.getElementById('answerFeedback');
++    const analysis = document.getElementById('fullAnalysisArea');
++    const dOk = disease && correct.disease.includes(disease.replace(/证$/, ''));
++    const sOk = syndrome && (
++        correct.syndrome.includes('风热') && syndrome.includes('风热') && syndrome.includes('津伤') ||
++        correct.syndrome.includes('脾胃虚寒') && syndrome.includes('脾胃虚寒') ||
++        correct.syndrome.includes('痰瘀互结') && syndrome.includes('痰瘀') && syndrome.includes('互结') ||
++        correct.syndrome.includes('痰热壅肺') && syndrome.includes('痰热壅肺') ||
++        syndrome === correct.syndrome || correct.syndrome.includes(syndrome) || syndrome.includes(correct.syndrome)
++    );
++    const isCorrect = dOk && sOk;
++    state.lastAnswerWasCorrect = isCorrect;
++    let feedbackHtml = '';
++    if (isCorrect) {
++        feedbackHtml = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${escapeHtml(correct.disease)} · ${escapeHtml(correct.syndrome)}</p>`;
++        removeWrongCase(state.currentCase.id);
++        // 只在"提交答案"这个定局时刻同步一行到 D1，探查四诊等中间过程不产生任何云端写入。
++        syncProgressToServer(state.currentCase.id, { isWrong: false, syndrome, disease, basis });
++    } else {
++        if (!dOk && !sOk) {
++            feedbackHtml = `<div class="result-box fail"><h4>🤔 辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
++        } else {
++            const parts = [];
++            if (dOk) parts.push('✅ 病名基本正确'); else parts.push('⚠️ 病名需调整');
++            if (sOk) parts.push('✅ 证型判断准确'); else parts.push('⚠️ 证型需斟酌');
++            feedbackHtml = `<div class="result-box fail"><h4>🔍 部分正确</h4><p>${parts.join('，')}</p>`;
++        }
++        saveWrongCase({ syndrome, disease, basis }, state.currentCase, state.currentDifficulty);
++        syncProgressToServer(state.currentCase.id, { isWrong: true, syndrome, disease, basis });
++    }
++    feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">💡 显示答案</button></div>`;
++    fb.innerHTML = feedbackHtml;
++    analysis.innerHTML = '';
++    fb.scrollIntoView({ behavior: 'smooth' });
++}
++
++export function viewAnswer() {
++    if (!state.currentCase) return;
++    showFullAnalysis(document.getElementById('fullAnalysisArea'));
++    // 无论对错，做过的病例都标记为已完成，从闯关队列移除；
++    // 只有从"我的错题"点击"重新挑战"才能再次进入闯关练习。
++    markCaseCompleted(state.currentCase.id);
++    // "查看解析"是另一个定局时刻，同步一次 is_completed；游客模式下 syncProgressToServer 内部会直接跳过。
++    syncProgressToServer(state.currentCase.id, { isCompleted: true });
++    maybeShowRegisterReminder();
++}
++
++export function showFullAnalysis(el) {
++    const fa = state.currentCase.fullAnalysis;
++    const sourceHtml = state.currentCase.source ? `<p><strong>病例来源：</strong><span class="source-tag">${escapeHtml(state.currentCase.source)}</span></p>` : '';
++    el.innerHTML = `<div class="result-box success"><h4>📋 完整医案解析</h4>
++        <p><strong>中医病证：</strong>${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）</p>
++        <p><strong>西医诊断：</strong>${escapeHtml(fa.westernDiagnosis)}</p>
++        ${sourceHtml}
++        <hr><p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
++        <hr><p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
++        <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
++        <hr><p style="color:var(--text-muted);font-size:0.9em;">💡 提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
++}
++
++export function resetCurrentCase() {
++    if (!state.currentCase) return;
++    if (confirm('确定重新探查吗？线索将清除。')) {
++        state.collectedClues = []; state.exploredDiags = { inspection: false, auscultation: false, inquiry: false, pulse: false };
++        state.inquiryHistory = []; state.askedInquiryQuestions = []; state.inspectionNonTongueAdded = false; state.lastAnswerWasCorrect = false;
++        document.getElementById('clueArea').innerHTML = '';
++        document.getElementById('answerFeedback').innerHTML = '';
++        document.getElementById('fullAnalysisArea').innerHTML = '';
++        document.getElementById('inputSyndrome').value = '';
++        document.getElementById('inputDisease').value = '';
++        document.getElementById('inputBasis').value = '';
++        ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
++    }
++}
++
++export function showHistory() {
++    if (!state.currentCase) return;
++    openSimpleResultModal('📜 病史（既往史）', state.currentCase.history || '无');
++}
+diff --git a/js/storage.js b/js/storage.js
+--- a/js/storage.js	2026-09-03 13:23:13.150398500 +0800
++++ b/js/storage.js	2026-09-03 14:24:15.235708900 +0800
+@@ -1,6 +1,8 @@
+ /* ===================== 本地存储（localStorage） ===================== */
+-// 本模块负责学习记录的读写、数据统计与重置。localStorage key 保持原样：
++// 本模块负责学习记录的读写、数据统计与备份/恢复。
++// localStorage key 保持原样：
+ //   tcm_completed_cases / tcm_wrong_cases
++// 登录用户：D1 为云端主数据，登录/进入"我的"/备份前会先把 D1 progress 拉取回本地。
+ 
+ import {
+     isSafeCaseId, diffMap, getAllCases, MAX_STORED_TEXT_LENGTH, escapeHtml
+@@ -14,6 +16,8 @@
+     return Array.isArray(value) ? [...new Set(value.filter(isSafeCaseId))].slice(0, 1000) : [];
+ }
+ 
++export function setCompletedCases(arr) { safeSetStorage('tcm_completed_cases', arr); }
++
+ export function markCaseCompleted(caseId) {
+     const arr = getCompletedCases();
+     if (!arr.includes(caseId)) { arr.push(caseId); safeSetStorage('tcm_completed_cases', arr); }
+@@ -31,6 +35,8 @@
+     }));
+ }
+ 
++export function setWrongCases(arr) { safeSetStorage('tcm_wrong_cases', arr); }
++
+ // 保存错题。为避免模块间循环依赖，caseObj / difficulty 由调用方传入。
+ export function saveWrongCase(data, caseObj, difficulty) {
+     if (!caseObj) return;
+@@ -59,7 +65,59 @@
+     return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+ }
+ 
+-/* ===================== 本地数据统计与重置 ===================== */
++/* ===================== D1 进度读取 ===================== */
++// 将 /api/progress 返回的行应用到本地缓存。
++// 策略：D1 是登录用户的云端主数据，按 case_id 覆盖对应状态；
++// 对于 D1 未覆盖的本地记录，予以保留，避免网络异常造成数据丢失。
++export function applyCloudProgressToLocal(rows) {
++    if (!Array.isArray(rows)) return;
++    const completed = new Set(getCompletedCases());
++    const wrongMap = new Map();
++    for (const w of getWrongCases()) wrongMap.set(w.id, w);
++
++    for (const row of rows) {
++        const id = row.case_id;
++        if (!isSafeCaseId(id)) continue;
++        if (Number(row.is_completed) === 1) completed.add(id);
++        if (Number(row.is_wrong) === 1) {
++            const c = getAllCases().find(x => x.id === id);
++            const updated = row.updated_at ? Number(row.updated_at) : 0;
++            const date = updated > 0 ? new Date(updated * 1000).toISOString() : new Date().toISOString();
++            wrongMap.set(id, {
++                id,
++                title: sanitizeStoredText(c?.title || '', 200),
++                chiefComplaint: sanitizeStoredText(c?.chiefComplaint || '', 200),
++                difficulty: diffMap[c?.difficulty] ? c.difficulty : '',
++                date,
++                syndrome: sanitizeStoredText(row.submitted_syndrome || '', 200),
++                disease: sanitizeStoredText(row.submitted_disease || '', 200),
++                basis: sanitizeStoredText(row.submitted_basis || '', 1000)
++            });
++        } else if (Number(row.is_wrong) === 0) {
++            wrongMap.delete(id);
++        }
++    }
++
++    setCompletedCases([...completed].slice(0, 1000));
++    setWrongCases([...wrongMap.values()].slice(-1000));
++}
++
++// 从 D1 拉取当前登录用户的 progress，并写入本地缓存。
++// 返回 { ok: boolean }，调用方决定是否刷新 UI；失败时保留本地数据。
++export async function refreshProgressFromCloud() {
++    try {
++        const resp = await fetch('/api/progress');
++        if (!resp.ok) return { ok: false, status: resp.status };
++        const data = await resp.json();
++        applyCloudProgressToLocal(data.progress);
++        return { ok: true };
++    } catch (e) {
++        console.warn('拉取云端进度失败', e);
++        return { ok: false };
++    }
++}
++
++/* ===================== 本地数据统计 ===================== */
+ export function renderDataStats() {
+     const total = getAllCases().length;
+     const done = getCompletedCases().length;
+@@ -69,6 +127,7 @@
+     if (el) el.textContent = `已完成 ${done} · 错题 ${wrong} · 未完成 ${remaining}`;
+ }
+ 
++// 重置进度入口已删除；保留本函数仅作为内部/调试备用，不再暴露给用户。
+ export function resetAllProgress() {
+     if (!confirm('确定要清空所有学习进度和错题吗？此操作不可恢复。')) return;
+     safeSetStorage('tcm_completed_cases', []);
+@@ -157,7 +216,7 @@
+ 
+ // 错题去重依据：病例 ID + 日期 + 用户答案（证型/病名/辨证依据）
+ function wrongKey(w) {
+-    return [w.id, w.date, w.syndrome || '', w.disease || '', w.basis || ''].join('');
++    return [w.id, w.date, w.syndrome || '', w.disease || '', w.basis || ''].join('\u007f');
+ }
+ 
+ function mergeWrongCases(current, imported) {
+@@ -185,6 +244,8 @@
+     // 若用户正打开错题 / 题库，实时重新渲染
+     if (document.getElementById('recordsModal')?.style.display === 'flex' && typeof window.openRecords === 'function') window.openRecords();
+     if (document.getElementById('caseBankModal')?.style.display === 'flex' && typeof window.filterCaseBank === 'function') window.filterCaseBank();
++    // 登录用户恢复后，触发外部同步钩子把本地数据同步到 D1
++    if (typeof window.__onProgressImported === 'function') window.__onProgressImported();
+ }
+ 
+ let pendingImport = null;
+@@ -853,7 +914,7 @@
+     const msg = document.getElementById('backupCodeMsg');
+     const code = ta ? ta.value : '';
+     if (!code) return;
+-    // 诊断：记录本次复制的备份码摘要（仅内存，不写 localStorage、不上传）
++    // 诊断：记录本次复制的备份码摘要（仅内存，不写 localStorage、不上传服务器）
+     lastGeneratedBackupCode = code;
+     const segLen = currentBackup.isSegmented && currentBackup.parts[0] ? currentBackup.parts[0].length : code.length;
+     sha256Hex(code).then(d => { lastGeneratedSummary = { length: code.length, segLength: segLen, digest: d }; }).catch(() => {});
+diff --git a/schema/schema.sql b/schema/schema.sql
+--- a/schema/schema.sql	1970-01-01 08:00:00.000000000 +0800
++++ b/schema/schema.sql	2026-09-03 14:24:15.486708800 +0800
+@@ -0,0 +1,41 @@
++-- ============================================================
++-- D1 数据库表结构（第一阶段：账号系统 + 学习进度）
++-- 部署方式：
++--   npx wrangler d1 create tcm-db          # 首次创建数据库，记下返回的 database_id
++--   npx wrangler d1 execute tcm-db --file=./schema/schema.sql --remote
++-- 并在 wrangler.toml 里加上：
++--   [[d1_databases]]
++--   binding = "DB"
++--   database_name = "tcm-db"
++--   database_id = "上一步返回的id"
++-- ============================================================
++
++-- 用户表
++-- 用户名唯一且不可修改：靠 UNIQUE 约束在插入时最终裁决，代码里不做"先查后插"。
++CREATE TABLE IF NOT EXISTS users (
++    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
++    username              TEXT NOT NULL UNIQUE,
++    password_hash         TEXT NOT NULL,   -- PBKDF2 派生结果（base64）
++    password_salt         TEXT NOT NULL,   -- 本次密码使用的随机盐（base64）
++    recovery_code_hash    TEXT NOT NULL,   -- 一次性恢复码的哈希（从不存明文）
++    recovery_code_salt    TEXT NOT NULL,
++    created_at            INTEGER NOT NULL -- unix 秒
++);
++
++-- 学习进度表：一个 (用户, 病例) 组合只有一行，靠 PRIMARY KEY 天然支持 upsert。
++-- is_completed：是否点击过"显示答案"（对应旧版 tcm_completed_cases）
++-- is_wrong    ：当前是否处于错题状态，订正为正确后会被置回 0（对应旧版 tcm_wrong_cases）
++CREATE TABLE IF NOT EXISTS user_progress (
++    user_id             INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
++    case_id             TEXT NOT NULL,
++    is_completed        INTEGER NOT NULL DEFAULT 0,
++    is_wrong            INTEGER NOT NULL DEFAULT 0,
++    submitted_syndrome  TEXT,
++    submitted_disease   TEXT,
++    submitted_basis     TEXT,
++    updated_at          INTEGER NOT NULL,
++    PRIMARY KEY (user_id, case_id)
++);
++
++CREATE INDEX IF NOT EXISTS idx_progress_user ON user_progress(user_id);
++CREATE INDEX IF NOT EXISTS idx_progress_wrong ON user_progress(user_id, is_wrong);
