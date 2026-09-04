@@ -121,12 +121,12 @@
             "shape": "正常",
             "coating": "薄黄"
           },
-          "nonTongue": "情绪烦躁，眉头紧锁。"
+          "nonTongue": "眉头紧锁。"
         },
         "auscultation": {
           "displayTitle": "闻诊结果",
-          "displayContent": "神清，语声清晰，应答切题；情绪烦躁。",
-          "textSummary": "语声清晰，情绪烦躁"
+          "displayContent": "神清，语声清晰，应答切题。",
+          "textSummary": "语声清晰"
         },
         "inquiry": {
           "questions": [
@@ -183,6 +183,19 @@
                 "晕"
               ],
               "dimension": "head"
+            },
+            {
+              "q": "情绪情况",
+              "a": "平素容易烦躁。",
+              "keywords": [
+                "情绪",
+                "心情",
+                "烦躁",
+                "心烦",
+                "急躁",
+                "易怒"
+              ],
+              "dimension": "emotion"
             }
           ]
         },
