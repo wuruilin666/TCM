@@ -2,7 +2,8 @@
 import { hashPassword, generateRecoveryCode, normalizeRecoveryCode } from '../../_lib/crypto.js';
 import { createSessionCookie } from '../../_lib/session.js';
 
-const USERNAME_RE = /^[A-Za-z0-9_\u4e00-\u9fa5]{3,20}$/; // 3-20位，中英文数字下划线
+// 与 js/auth.js 里的 USERNAME_RE 完全一致：3-20位，中文（Unicode属性匹配）、英文、数字、下划线
+const USERNAME_RE = /^[\p{Script=Han}A-Za-z0-9_]{3,20}$/u;
 
 export async function onRequestPost({ request, env }) {
     let body;
@@ -12,10 +13,13 @@ export async function onRequestPost({ request, env }) {
     const passwordConfirm = body.passwordConfirm || '';
 
     if (!USERNAME_RE.test(username)) {
-        return json({ error: '用户名需为3-20位中英文/数字/下划线，且注册后不可修改，请想清楚再提交' }, 400);
+        return json({ error: '用户名需为3-20位中文、英文、数字或下划线，且注册后不可修改，请想清楚再提交' }, 400);
     }
     if (password.length < 8) {
         return json({ error: '密码至少需要8位' }, 400);
+    }
+    if (password.length > 128) {
+        return json({ error: '密码长度不能超过128位' }, 400);
     }
     // 前端已经做过两次输入一致性校验，这里再校验一遍，防止绕过前端直接调接口。
     if (password !== passwordConfirm) {
