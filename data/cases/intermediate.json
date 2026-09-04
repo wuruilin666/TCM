@@ -1151,12 +1151,12 @@
             "shape": "正常",
             "coating": "白厚腻"
           },
-          "nonTongue": "心情烦躁，手抚右侧头部，牵扯样头痛。"
+          "nonTongue": "手抚右侧头部，表现疼痛不适。"
         },
         "auscultation": {
           "displayTitle": "闻诊结果",
-          "displayContent": "神清，语声清晰，应答切题；情绪烦躁，语气偏急。",
-          "textSummary": "语声清晰，情绪烦躁"
+          "displayContent": "神清，语声清晰，应答切题；语气偏急。",
+          "textSummary": "语声清晰，语气偏急"
         },
         "inquiry": {
           "questions": [
