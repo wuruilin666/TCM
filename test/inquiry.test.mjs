@@ -2,41 +2,64 @@
 import assert from 'node:assert';
 import { resolveInquiry } from '../js/inquiry.js';
 
-const questions = [
-    { q: '大便情况如何？', a: '大便正常，每日一行。', keywords: ['大便', '排便'], dimension: 'stool' },
-    { q: '小便情况如何？', a: '小便正常。', keywords: ['小便', '排尿'], dimension: 'urine' },
-    { q: '睡眠如何？', a: '睡眠尚可。', keywords: ['睡眠'], dimension: 'sleep' },
-    { q: '胃口怎么样？', a: '食欲一般。', keywords: ['胃口', '饮食'], dimension: 'diet' }
+// 模拟病例题库
+const stoolOnly = [   // 病例只记录大便（干结），未记录小便
+    { q: '大便情况', a: '大便干结，2-3天一解。', keywords: ['大便', '便秘'], dimension: 'stool' },
+    { q: '睡眠如何？', a: '睡眠尚可。', keywords: ['睡眠'], dimension: 'sleep' }
+];
+const bothCase = [    // 大便干结 + 小便短赤
+    { q: '大便情况', a: '大便干结。', keywords: ['大便'], dimension: 'stool' },
+    { q: '小便情况', a: '小便短赤。', keywords: ['小便'], dimension: 'urine' }
+];
+const bothNormal = [  // 二便调（分别记录为正常）
+    { q: '大便情况', a: '大便调。', keywords: ['大便'], dimension: 'stool' },
+    { q: '小便情况', a: '小便调。', keywords: ['小便'], dimension: 'urine' }
+];
+const urineOnly = [
+    { q: '小便情况', a: '小便黄。', keywords: ['小便'], dimension: 'urine' }
 ];
 
-// [输入, 期望返回的维度列表]（空数组 = 中性回答）
-const cases = [
-    ['便秘吗？', ['stool']],                    // 测试1：只答大便
-    ['大便怎么样？', ['stool']],                // 测试2：只答大便
-    ['小便有什么不舒服吗？', ['urine']],        // 测试3：只答小便
-    ['小便量多少？', ['urine']],                // 测试4：只答尿量
-    ['大小便怎么样？', ['stool', 'urine']],     // 测试5：联合
-    ['二便如何？', ['stool', 'urine']],         // 测试6：联合
-    ['排泄怎么样？', []],                       // 无联合关键词（“排泄情况”才算）-> 中性
-    ['睡眠怎么样？', ['sleep']],                // 回归：其他维度不受影响
-    ['胃口如何？', ['diet']]                    // 回归：其他维度不受影响
-];
+/* ---- 单维匹配（既有规则，不得回归） ---- */
+assert.strictEqual(resolveInquiry(stoolOnly, '便秘吗？').answer, '大便干结，2-3天一解。');   // 测试1
+assert.ok(!resolveInquiry(stoolOnly, '便秘吗？').answer.includes('小便'));
 
-for (const [text, want] of cases) {
-    const res = resolveInquiry(questions, text);
-    const got = res.type === 'joint'
-        ? ['stool', 'urine']
-        : res.type === 'match' ? [questions[res.index].dimension]
-        : [];
-    assert.deepStrictEqual(got, want, `"${text}" -> [${got}]，期望 [${want}]`);
-    if (res.type === 'joint') {
-        assert.ok(!res.answer.includes('。，'), '联合回答拼接不应残留多余标点');
-        assert.strictEqual(res.indices.length, 2);
-    }
+/* ---- 病例未记录该维度：患者口吻，不虚构“正常”，不说“未记录” ---- */
+const t2 = resolveInquiry(stoolOnly, '小便怎么样？');                                        // 测试2
+assert.strictEqual(t2.answer, '小便方面没有特别不适。');
+assert.ok(!t2.answer.includes('正常') && !t2.answer.includes('未记录') && !t2.answer.includes('未特别记录'));
+
+const t2b = resolveInquiry(urineOnly, '大便怎么样？');
+assert.strictEqual(t2b.answer, '大便方面没有特别不适。');
+
+/* ---- 二便联合询问：缺失信息补患者口吻，资料齐全照答 ---- */
+const t3 = resolveInquiry(stoolOnly, '大小便怎么样？');                                      // 测试3
+assert.strictEqual(t3.answer, '大便干结，2-3天一解，小便方面没有特别不适。');
+assert.deepStrictEqual(t3.indices, [0]); // 缺失信息不是病例题，不进线索
+
+const t4 = resolveInquiry(bothCase, '大小便怎么样？');                                       // 测试4
+assert.strictEqual(t4.answer, '大便干结，小便短赤。');
+assert.deepStrictEqual(t4.indices, [0, 1]);
+
+const t5 = resolveInquiry(bothNormal, '大小便怎么样？');                                     // 测试5（二便调）
+assert.strictEqual(t5.answer, '大便调，小便调。');
+
+const t5b = resolveInquiry(urineOnly, '二便如何？');
+assert.strictEqual(t5b.answer, '小便黄，大便方面没有特别不适。');
+
+const t5c = resolveInquiry([], '大小便怎么样？');
+assert.strictEqual(t5c.answer, '大小便方面没有明显不适。');
+
+/* ---- 禁止无依据补充“正常” ---- */
+for (const ans of [
+    resolveInquiry(stoolOnly, '小便怎么样？').answer,
+    resolveInquiry(urineOnly, '大便怎么样？').answer
+]) {
+    assert.ok(!/正常|调[。？]/.test(ans), '未记录维度不得回答“正常/调”：' + ans);
 }
 
-// 联合回答必须是合并成一句，而不是两个标题
-const joint = resolveInquiry(questions, '大小便怎么样？');
-assert.strictEqual(joint.answer, '大便正常，每日一行，小便正常。');
+/* ---- 回归：其他维度行为不变 ---- */
+assert.strictEqual(resolveInquiry(stoolOnly, '睡眠怎么样？').answer, '睡眠尚可。');
+assert.strictEqual(resolveInquiry(stoolOnly, '有什么爱好？').type, 'neutral');
+assert.strictEqual(resolveInquiry(stoolOnly, '有什么爱好？').answer, '（患者）这方面我没特别留意。');
 
-console.log('✅ 问诊匹配测试全部通过（' + cases.length + ' 例）');
+console.log('✅ 问诊匹配测试全部通过（14 项断言）');

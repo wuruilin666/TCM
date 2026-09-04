@@ -74,6 +74,15 @@ function isJointStoolUrine(text){
 // 没有病例证据时，使用“中性”回答，绝不虚构“正常”，也不暗示“正常”。
 const GENERIC_NEUTRAL = '（患者）这方面我没特别留意。';
 
+// 二便未记录时的患者自然表达：没有记录 ≠ 正常，只用“没有特别不适”这类
+// 患者口吻的模糊表达，绝不说“正常/调”，也绝不说“未记录/原病例未记载”。
+// 这些句子只用于患者对话，不会进入线索（addClue），因此不参与辨证评分。
+const MISSING_REPLY = {
+    stool: '大便方面没有特别不适。',
+    urine: '小便方面没有特别不适。'
+};
+const MISSING_BOTH_REPLY = '大小便方面没有明显不适。';
+
 // 关键词权重：长度 >= 2 的词按 len*len 计分（长词优先）；
 // 长度为 1 的单字只记 1 分，不足以压过任何长词，避免“口”压过“口苦”、“便”压过“大便”。
 function keywordWeight(k){
@@ -157,8 +166,8 @@ function matchQuestion(questions, text){
 export function resolveInquiry(questions, text){
     if (isCatchAll(text)) return { type: 'catchall', index: -1, answer: CATCH_ALL_REPLY };
 
-    // 第一步：二便联合询问 -> 同时返回 stool + urine，合并成一句患者回答（不拆两个标题）。
-    // 病例里只缺其一维度时退化为单题回答；两者都没有则落回常规匹配。
+    // 第一步：二便联合询问 -> 合并成一句患者回答（不拆两个标题）。
+    // 资料齐全照答；只缺其一用 MISSING_REPLY 补患者口吻；两者都没记录则总述一句。
     if (isJointStoolUrine(text)){
         const pick = (dim) => {
             let best = -1, bestS = 0;
@@ -172,16 +181,31 @@ export function resolveInquiry(questions, text){
             return best;
         };
         const si = pick('stool'), ui = pick('urine');
-        const idxs = [...new Set([si, ui].filter(i => i >= 0))];
-        if (idxs.length === 1) return { type: 'match', index: idxs[0], answer: questions[idxs[0]].a };
-        if (idxs.length === 2){
+        if (si >= 0 && ui >= 0){
             const merged = questions[si].a.replace(/[。！？；]+$/, '') + '，' + questions[ui].a;
-            return { type: 'joint', index: si, indices: idxs, answer: merged };
+            return { type: 'joint', index: si, indices: [si, ui], answer: merged };
         }
+        // 只有其一有资料：有资料的部分照答，缺的用患者口吻补一句，绝不虚构“正常”
+        if (si >= 0){
+            const merged = questions[si].a.replace(/[。！？；]+$/, '') + '，' + MISSING_REPLY.urine;
+            return { type: 'joint', index: si, indices: [si], answer: merged };
+        }
+        if (ui >= 0){
+            const merged = questions[ui].a.replace(/[。！？；]+$/, '') + '，' + MISSING_REPLY.stool;
+            return { type: 'joint', index: ui, indices: [ui], answer: merged };
+        }
+        // 两个维度病例都没记录
+        return { type: 'neutral', index: -1, answer: MISSING_BOTH_REPLY };
     }
 
     const idx = matchQuestion(questions, text);
     if (idx >= 0) return { type: 'match', index: idx, answer: questions[idx].a };
+    // 二便单维问法但病例未记录该维度：患者口吻的自然表达，不虚构“正常”
+    const dims = detectInputDimensions(text);
+    const hasStool = dims.includes('stool'), hasUrine = dims.includes('urine');
+    if (hasStool && hasUrine) return { type: 'neutral', index: -1, answer: MISSING_BOTH_REPLY };
+    if (hasStool) return { type: 'neutral', index: -1, answer: MISSING_REPLY.stool };
+    if (hasUrine) return { type: 'neutral', index: -1, answer: MISSING_REPLY.urine };
     // 无病例证据 ≠ 正常：统一中性回答，不虚构、不暗示正常。
     return { type: 'neutral', index: -1, answer: GENERIC_NEUTRAL };
 }
@@ -222,7 +246,8 @@ export function sendInquiry() {
             answer += '（这个问题刚才已经回答过了）';
         }
     } else if (res.type === 'joint') {
-        // 联合回答：stool + urine 两题分别记入线索与已问，但患者只回一句合并话术
+        // 联合回答：只把病例中真实存在的题目记入线索与已问；
+        // “XX方面没有特别不适”是患者对话补充，不进线索、不参与辨证评分。
         for (const idx of res.indices) {
             if (!state.askedInquiryQuestions.includes(idx)) {
                 state.askedInquiryQuestions.push(idx);
