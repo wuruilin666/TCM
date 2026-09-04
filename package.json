@@ -1,8 +1,0 @@
-{
-  "name": "tcm",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "node test/inquiry.test.mjs"
-  }
-}
