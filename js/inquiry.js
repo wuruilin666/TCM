@@ -11,8 +11,10 @@ const TCM_SYNONYMS = {
     sweat:       ['汗出','出汗','盗汗','自汗','流汗','无汗','少汗','汗多','恶风','汗'],
     diet:        ['饮食','吃饭','食欲','胃口','纳差','纳食','饭量','吃东西','吃得下','就餐','食量','进食','饿','饱','厌油','生冷','嗜食','辛辣','肥甘','厚腻','吃'],
     sleep:       ['睡眠','睡觉','失眠','入睡','易醒','早醒','多梦','夜眠','夜休','休息','寐','睡','眠'],
-    stool:       ['大便','排便','便秘','便干','便溏','干结','腹泻','拉肚','解大便','完谷','里急后重','溏','泻','屎'],
-    urine:       ['小便','排尿','尿频','尿急','尿痛','夜尿','尿色','尿黄','溺','尿'],
+    // 二便严格分开：“便”绝不能作为 stool 的单独关键词（否则“小便”会被误判为大便）。
+    // 联合询问（大小便 / 二便 / 排泄情况）由 JOINT_STOOL_URINE 单独处理。
+    stool:       ['大便','排便','便秘','泄泻','大便干','大便稀','便溏','排便情况','便干','干结','腹泻','拉肚','解大便','完谷','里急后重','溏','泻','屎'],
+    urine:       ['小便','排尿','尿量','尿频','尿急','尿痛','夜尿','尿黄','尿色','尿','溺'],
     emotion:     ['情绪','心情','情志','急躁','烦躁','焦虑','抑郁','易怒','紧张','心烦','生气','脾气','不畅','郁','怒','烦'],
     thirst:      ['口干','口苦','口渴','咽干','喝水','饮水','口黏','口淡','口咸','想喝','渴'],
     // pain 只收“无需部位限定”的通用疼痛问法；隐痛/胀痛/刺痛 等性质词是修饰语，
@@ -61,6 +63,13 @@ function isCatchAll(text){
     return false;
 }
 const CATCH_ALL_REPLY = '（患者）你可以逐项问我，我会根据你问的情况回答。';
+
+// 二便联合询问：只有出现这些明确联合关键词时，才允许 stool + urine 同时回答。
+// 平时“便秘吗 / 小便怎么样”等单维问法，两个维度严格分开，绝不串答。
+const JOINT_STOOL_URINE = ['大小便','二便','大小便情况','二便情况','排泄情况'];
+function isJointStoolUrine(text){
+    return JOINT_STOOL_URINE.some(k => text.includes(k));
+}
 
 // 没有病例证据时，使用“中性”回答，绝不虚构“正常”，也不暗示“正常”。
 const GENERIC_NEUTRAL = '（患者）这方面我没特别留意。';
@@ -143,9 +152,34 @@ function matchQuestion(questions, text){
     return -1;                                           // 已有明确维度但无对应题目 -> 中性回答
 }
 
-// 对外解析：返回 { type:'catchall'|'match'|'neutral', index, answer }
+// 对外解析：返回 { type:'catchall'|'match'|'joint'|'neutral', index, answer }
+// joint = 二便联合回答（answer 为合并后的一句话，indices 为命中的 stool/urine 题目索引）
 export function resolveInquiry(questions, text){
     if (isCatchAll(text)) return { type: 'catchall', index: -1, answer: CATCH_ALL_REPLY };
+
+    // 第一步：二便联合询问 -> 同时返回 stool + urine，合并成一句患者回答（不拆两个标题）。
+    // 病例里只缺其一维度时退化为单题回答；两者都没有则落回常规匹配。
+    if (isJointStoolUrine(text)){
+        const pick = (dim) => {
+            let best = -1, bestS = 0;
+            for (let i = 0; i < questions.length; i++){
+                if (questions[i].dimension !== dim) continue;
+                if (best < 0) best = i;
+                let s = 0;
+                for (const k of (questions[i].keywords || [])) if (text.includes(k)) s += keywordWeight(k);
+                if (s > bestS){ bestS = s; best = i; }
+            }
+            return best;
+        };
+        const si = pick('stool'), ui = pick('urine');
+        const idxs = [...new Set([si, ui].filter(i => i >= 0))];
+        if (idxs.length === 1) return { type: 'match', index: idxs[0], answer: questions[idxs[0]].a };
+        if (idxs.length === 2){
+            const merged = questions[si].a.replace(/[。！？；]+$/, '') + '，' + questions[ui].a;
+            return { type: 'joint', index: si, indices: idxs, answer: merged };
+        }
+    }
+
     const idx = matchQuestion(questions, text);
     if (idx >= 0) return { type: 'match', index: idx, answer: questions[idx].a };
     // 无病例证据 ≠ 正常：统一中性回答，不虚构、不暗示正常。
@@ -186,6 +220,14 @@ export function sendInquiry() {
             addClue('inquiry', answer, '问诊·' + questions[idx].q);
         } else {
             answer += '（这个问题刚才已经回答过了）';
+        }
+    } else if (res.type === 'joint') {
+        // 联合回答：stool + urine 两题分别记入线索与已问，但患者只回一句合并话术
+        for (const idx of res.indices) {
+            if (!state.askedInquiryQuestions.includes(idx)) {
+                state.askedInquiryQuestions.push(idx);
+                addClue('inquiry', questions[idx].a, '问诊·' + questions[idx].q);
+            }
         }
     }
     // catchall / neutral 不写入线索、不计入已问，避免剧透或虚构“正常”
