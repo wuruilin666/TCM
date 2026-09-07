@@ -51,12 +51,12 @@ export function startChallenge() { if (showPageFn) showPageFn('Game'); resetGame
 export function resetGameUI() {
     state.currentDifficulty = null; state.currentCase = null; state.collectedClues = []; state.exploredDiags = {}; state.gameStarted = false;
     state.inquiryHistory = []; state.askedInquiryQuestions = []; state.unfinishedCases = []; state.currentCaseIndex = 0; state.inspectionNonTongueAdded = false; state.lastAnswerWasCorrect = false;
-    document.getElementById('chiefComplaintCard').style.display = 'none';
+    const picker = document.getElementById('difficultyPicker');
+    const ws = document.getElementById('caseWorkspace');
+    if (picker) picker.style.display = 'block';
+    if (ws) ws.style.display = 'none';
     document.getElementById('fourDiagBtns').style.display = 'none';
     document.getElementById('btnOtherCheck').style.display = 'none';
-    document.getElementById('clueCollectionCard').style.display = 'none';
-    document.getElementById('answerCard').style.display = 'none';
-    document.getElementById('gameExtraBtns').style.display = 'none';
     document.getElementById('historyBtn').style.display = 'none';
     document.getElementById('clueArea').innerHTML = '';
     document.getElementById('answerFeedback').innerHTML = '';
@@ -64,6 +64,8 @@ export function resetGameUI() {
     document.getElementById('inputSyndrome').value = '';
     document.getElementById('inputDisease').value = '';
     document.getElementById('inputBasis').value = '';
+    collapseAnswerCard();
+    updateAnswerClosedHint(true);
     document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
     ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
 }
@@ -77,7 +79,7 @@ export function selectDifficulty(diff, btnEl) {
     const completed = getCompletedCases();
     state.unfinishedCases = pool.filter(c => !completed.includes(c.id));
     if (state.unfinishedCases.length === 0) {
-        openSimpleResultModal('🎉 闯关完毕', '该难度下所有病例均已完成，无新病例可学习。您可以在病例题库中复习已完成的病例。');
+        openSimpleResultModal('闯关完毕', '该难度下所有病例均已完成，无新病例可学习。您可以在病例题库中复习已完成的病例。');
         document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.remove('selected'));
         state.currentDifficulty = null;
         return;
@@ -91,25 +93,30 @@ export function showCurrentCase() {
     state.currentCase = state.unfinishedCases[state.currentCaseIndex];
     state.collectedClues = []; state.exploredDiags = { inspection: false, auscultation: false, inquiry: false, pulse: false };
     state.inquiryHistory = []; state.askedInquiryQuestions = []; state.gameStarted = true; state.inspectionNonTongueAdded = false; state.lastAnswerWasCorrect = false;
-    document.getElementById('chiefComplaintCard').style.display = 'block';
     document.getElementById('chiefComplaintText').textContent = state.currentCase.chiefComplaint;
     document.getElementById('historyBtn').style.display = 'inline-flex';
     document.getElementById('fourDiagBtns').style.display = 'grid';
-    document.getElementById('clueCollectionCard').style.display = 'block';
-    document.getElementById('answerCard').style.display = 'block';
-    document.getElementById('gameExtraBtns').style.display = 'flex';
     document.getElementById('clueArea').innerHTML = '';
     document.getElementById('answerFeedback').innerHTML = '';
     document.getElementById('fullAnalysisArea').innerHTML = '';
     document.getElementById('inputSyndrome').value = '';
     document.getElementById('inputDisease').value = '';
     document.getElementById('inputBasis').value = '';
+    collapseAnswerCard();
+    updateAnswerClosedHint(true);
     ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
+    const diffMeta = { basic: '入门训练', intermediate: '综合训练', advanced: '临床思维' };
+    document.getElementById('caseTopDiffName').textContent = diffMeta[state.currentDifficulty] || state.currentDifficulty;
+    document.getElementById('caseTopCounter').textContent = `${state.currentCaseIndex + 1} / ${state.unfinishedCases.length}`;
     document.getElementById('caseCounter').textContent = `病例 ${state.currentCaseIndex + 1} / ${state.unfinishedCases.length}`;
     document.getElementById('prevCaseBtn').style.display = (state.unfinishedCases.length > 1 && state.currentCaseIndex > 0) ? 'inline-flex' : 'none';
     document.getElementById('nextCaseBtn').style.display = (state.unfinishedCases.length > 1 && state.currentCaseIndex < state.unfinishedCases.length - 1) ? 'inline-flex' : 'none';
     const otherCheckBtn = document.getElementById('btnOtherCheck');
     otherCheckBtn.style.display = 'block';
+    const picker = document.getElementById('difficultyPicker');
+    const ws = document.getElementById('caseWorkspace');
+    if (picker) picker.style.display = 'none';
+    if (ws) ws.style.display = 'block';
     document.getElementById('chiefComplaintCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
@@ -133,7 +140,7 @@ export function exploreDiag(type) {
 
 export function showOtherCheck() {
     if (!state.currentCase) return;
-    openSimpleResultModal('📋 其他检查', state.currentCase.otherCheck || '无');
+    openSimpleResultModal('其他检查', state.currentCase.otherCheck || '无');
 }
 
 export function markExplored(type) {
@@ -146,14 +153,36 @@ export function addClue(type, content, tagText) {
     const nameMap = { inspection: '望诊', auscultation: '闻诊', inquiry: '问诊', pulse: '切脉' };
     const tag = tagText || nameMap[type];
     if (state.collectedClues.some(c => c.content === content && c.tag === tag)) return;
+    const wasEmpty = state.collectedClues.length === 0;
     state.collectedClues.push({ tag, tagClass: tagMap[type], content });
     renderClues();
+    if (wasEmpty) { expandAnswerCard(); updateAnswerClosedHint(false); }
 }
 
 export function renderClues() {
     const area = document.getElementById('clueArea');
     area.innerHTML = state.collectedClues.map(c => `<div class="clue-item"><span class="clue-tag ${escapeHtml(c.tagClass)}">${escapeHtml(c.tag)}</span><span>${escapeHtmlWithBreaks(c.content)}</span></div>`).join('');
     area.scrollTop = area.scrollHeight;
+}
+
+function collapseAnswerCard() {
+    const body = document.getElementById('answerBody');
+    const label = document.getElementById('answerToggleLabel');
+    if (body) body.style.display = 'none';
+    if (label) label.textContent = '展开';
+}
+
+function expandAnswerCard() {
+    const body = document.getElementById('answerBody');
+    const label = document.getElementById('answerToggleLabel');
+    if (body) body.style.display = 'block';
+    if (label) label.textContent = '收起';
+}
+
+function updateAnswerClosedHint(empty) {
+    const hint = document.getElementById('answerClosedHint');
+    if (!hint) return;
+    hint.textContent = empty ? '先探查至少一诊，再来立证。' : '线索已有，可以写下你的判断。';
 }
 
 /* ===================== 提交辨证 ===================== */
@@ -179,20 +208,20 @@ export function submitAnswer() {
     state.lastAnswerWasCorrect = isCorrect;
     let feedbackHtml = '';
     if (isCorrect) {
-        feedbackHtml = `<div class="result-box success"><h4>🎉 辨证正确！</h4><p>${escapeHtml(correct.disease)} · ${escapeHtml(correct.syndrome)}</p>`;
+        feedbackHtml = `<div class="result-box success"><h4>辨证正确</h4><p>${escapeHtml(correct.disease)} · ${escapeHtml(correct.syndrome)}</p>`;
         removeWrongCase(state.currentCase.id);
     } else {
         if (!dOk && !sOk) {
-            feedbackHtml = `<div class="result-box fail"><h4>🤔 辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
+            feedbackHtml = `<div class="result-box fail"><h4>辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
         } else {
             const parts = [];
-            if (dOk) parts.push('✅ 病名基本正确'); else parts.push('⚠️ 病名需调整');
-            if (sOk) parts.push('✅ 证型判断准确'); else parts.push('⚠️ 证型需斟酌');
-            feedbackHtml = `<div class="result-box fail"><h4>🔍 部分正确</h4><p>${parts.join('，')}</p>`;
+            if (dOk) parts.push('病名基本正确'); else parts.push('病名需调整');
+            if (sOk) parts.push('证型判断准确'); else parts.push('证型需斟酌');
+            feedbackHtml = `<div class="result-box fail"><h4>部分正确</h4><p>${parts.join('，')}</p>`;
         }
         saveWrongCase({ syndrome, disease, basis }, state.currentCase, state.currentDifficulty);
     }
-    feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">💡 显示答案</button></div>`;
+    feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">显示答案</button></div>`;
     fb.innerHTML = feedbackHtml;
     analysis.innerHTML = '';
     fb.scrollIntoView({ behavior: 'smooth' });
@@ -209,14 +238,14 @@ export function viewAnswer() {
 export function showFullAnalysis(el) {
     const fa = state.currentCase.fullAnalysis;
     const sourceHtml = state.currentCase.source ? `<p><strong>病例来源：</strong><span class="source-tag">${escapeHtml(state.currentCase.source)}</span></p>` : '';
-    el.innerHTML = `<div class="result-box success"><h4>📋 完整医案解析</h4>
+    el.innerHTML = `<div class="result-box success"><h4>完整医案解析</h4>
         <p><strong>中医病证：</strong>${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）</p>
         <p><strong>西医诊断：</strong>${escapeHtml(fa.westernDiagnosis)}</p>
         ${sourceHtml}
         <hr><p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
         <hr><p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
         <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
-        <hr><p style="color:var(--text-muted);font-size:0.9em;">💡 提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
+        <hr><p style="color:var(--text-muted);font-size:0.9em;">提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
 }
 
 export function resetCurrentCase() {
@@ -230,11 +259,13 @@ export function resetCurrentCase() {
         document.getElementById('inputSyndrome').value = '';
         document.getElementById('inputDisease').value = '';
         document.getElementById('inputBasis').value = '';
+        collapseAnswerCard();
+        updateAnswerClosedHint(true);
         ['btnWang','btnWen','btnAsk','btnPulse'].forEach(id => document.getElementById(id)?.classList.remove('explored'));
     }
 }
 
 export function showHistory() {
     if (!state.currentCase) return;
-    openSimpleResultModal('📜 病史（既往史）', state.currentCase.history || '无');
+    openSimpleResultModal('病史（既往史）', state.currentCase.history || '无');
 }

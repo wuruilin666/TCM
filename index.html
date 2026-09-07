@@ -3,8 +3,8 @@
 <head>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'self' https://formsubmit.co">
     <meta property="og:title" content="中医辨证推演馆 - 海龟汤模式">
-<meta property="og:description" content="模拟门诊看病，通过望闻问切四诊探寻线索，逐步推理完成辨证论治。">
-<meta property="og:type" content="website">
+    <meta property="og:description" content="模拟门诊看病，通过望闻问切四诊探寻线索，逐步推理完成辨证论治。">
+    <meta property="og:type" content="website">
     <meta property="og:image" content="https://wrltcm.pages.dev/og-image.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -12,172 +12,200 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>中医辨证推演馆 - 海龟汤模式</title>
     <meta name="description" content="中医辨证推演馆，通过海龟汤模式进行四诊探案，学习中医辨证论治。">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='48' fill='%238b4513'/%3E%3Ctext x='50' y='52' font-family='KaiTi,STKaiti,serif' font-size='48' fill='%23fdf8f3' text-anchor='middle' dominant-baseline='central'%3E%E8%BE%A8%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='84' height='84' rx='8' fill='none' stroke='%239c2b1b' stroke-width='7'/%3E%3Ctext x='50' y='54' font-family='Songti SC,STSong,serif' font-size='52' fill='%239c2b1b' text-anchor='middle' dominant-baseline='central'%3E%E8%BE%A8%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
 
 <header class="site-header">
-    <nav class="top-nav" id="topNav">
-        <span class="nav-link nav-active" id="navHome" onclick="goHome()">🏠 首页</span>
-        <span class="nav-link" id="navGame" onclick="startChallenge()">🎯 闯关</span>
-        <span class="nav-link" id="navAbout" onclick="showAbout()">📖 关于</span>
-    </nav>
+    <div class="site-header-inner" id="siteHeaderInner">
+        <a class="brand" href="#" onclick="goHome(); return false;">
+            <span class="seal-mark" aria-hidden="true">辨</span>
+            <span class="brand-name full">中医辨证推演馆</span>
+            <span class="brand-name short">推演馆</span>
+        </a>
+        <nav class="top-nav" id="topNav">
+            <span class="nav-link nav-active" id="navHome" onclick="goHome()">首页</span>
+            <span class="nav-link" id="navClinic" onclick="startChallenge()">接诊</span>
+            <span class="nav-link" id="navBank" onclick="openCaseBank()">题库</span>
+            <span class="nav-link" id="navMe" onclick="showMe()">我的</span>
+        </nav>
+    </div>
 </header>
 
 <main class="app-container" id="appContainer">
     <div id="loadingIndicator" style="text-align:center;padding:40px;">
-        <div style="font-size:1.2em;color:var(--text-muted);">📚 病例数据加载中...</div>
+        <div style="font-size:14px;color:var(--text-muted);">病例数据加载中…</div>
     </div>
 </main>
 
 <footer class="site-footer">
-    <div class="copyright">© wuruilin</div>
+    <div class="site-footer-inner" id="siteFooterInner">
+        <p>本馆内容仅供中医学习与病例推演，不构成诊断或医疗建议。</p>
+        <p>© wuruilin</p>
+    </div>
 </footer>
 
-<!-- 模态框 -->
+<!-- 问诊 -->
 <div class="modal-overlay" id="inquiryModal" style="display:none;">
-    <div class="modal" style="max-width:600px;">
-        <button class="modal-close" onclick="closeInquiryModal()">✕</button>
-        <h3>💬 问诊 — 请向患者提问</h3>
-        <div class="chat-area" id="inquiryChatArea"></div>
-        <div class="chat-input-area">
-            <input type="text" id="inquiryInput" placeholder="输入您想问的问题..." onkeydown="if(event.key==='Enter')sendInquiry()">
-            <button onclick="sendInquiry()">发送</button>
+    <div class="modal">
+        <div class="modal-head">问诊</div>
+        <button class="modal-close" onclick="closeInquiryModal()" aria-label="关闭">✕</button>
+        <div class="modal-body">
+            <p class="inquiry-hint">患者只答你问到的。可从寒热、汗出、饮食、睡眠、二便、情志、口渴、疼痛问起。</p>
+            <div class="chat-area" id="inquiryChatArea"></div>
+            <div class="chat-input-area">
+                <input type="text" id="inquiryInput" placeholder="例如：有没有怕冷、出汗？" onkeydown="if(event.key==='Enter')sendInquiry()">
+                <button onclick="sendInquiry()">询问</button>
+            </div>
         </div>
-        <p class="inquiry-hint">提示：可从寒热、汗出、饮食、睡眠、二便、情志、口渴、疼痛等方面提问</p>
     </div>
 </div>
 
+<!-- 望诊 -->
 <div class="modal-overlay" id="inspectionModal" style="display:none;">
-    <div class="modal" style="max-width:720px;">
-        <button class="modal-close" onclick="closeInspectionModal()">✕</button>
-        <h3>👁️ 望诊 — 舌象观察</h3>
-        <div class="tongue-sim" style="flex-direction:column;gap:14px;">
-            <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
-                <button class="inspect-nav" id="inspectPrev" onclick="inspectPrev()" style="display:none;" aria-label="上一张">‹</button>
-                <div class="tongue-img-wrap">
-                    <span class="tongue-badge" id="tongueImageBadge">参考图</span>
-                    <img id="inspectionImg" class="tongue-img-lg" alt="舌象">
+    <div class="modal" style="max-width:640px;">
+        <div class="modal-head">望诊 · 舌象</div>
+        <button class="modal-close" onclick="closeInspectionModal()" aria-label="关闭">✕</button>
+        <div class="modal-body">
+            <div class="tongue-sim" style="flex-direction:column;gap:14px;">
+                <div style="display:flex;align-items:center;justify-content:center;gap:14px;">
+                    <button class="inspect-nav" id="inspectPrev" onclick="inspectPrev()" style="display:none;" aria-label="上一张">‹</button>
+                    <div class="tongue-img-wrap">
+                        <span class="tongue-badge" id="tongueImageBadge">参考图</span>
+                        <img id="inspectionImg" class="tongue-img-lg" alt="舌象">
+                    </div>
+                    <button class="inspect-nav" id="inspectNext" onclick="inspectNext()" style="display:none;" aria-label="下一张">›</button>
                 </div>
-                <button class="inspect-nav" id="inspectNext" onclick="inspectNext()" style="display:none;" aria-label="下一张">›</button>
+                <div id="inspectionCounter" style="text-align:center;color:var(--text-muted);font-size:13px;min-height:1em;"></div>
             </div>
-            <div id="inspectionCounter" style="text-align:center;color:var(--text-muted);font-size:0.85em;min-height:1em;"></div>
-        </div>
-        <div id="inspectionNonTongue" style="background:#fdfaf5;border:1px dashed var(--border);border-radius:10px;padding:10px 14px;margin:10px 0;font-size:0.9em;color:var(--text-light);display:none;"></div>
-        <div class="card" style="margin-top:8px;padding:14px 16px;">
-            <div style="font-weight:700;color:var(--primary);margin-bottom:8px;">🔍 判断舌象</div>
-            <div class="tongue-judge-form">
-                <textarea id="tongueJudgmentInput" rows="3" placeholder="请从舌色、舌形、舌苔等方面综合描述该舌象特征"></textarea>
-                <div style="color:var(--text-muted);font-size:0.82em;margin:2px 2px 0;line-height:1.6;">小提示：可从 <span style="color:var(--text-light);">舌色、舌形、舌苔</span> 等方面观察后进行整体描述。</div>
-                <button class="btn btn--primary" style="margin-top:2px;width:100%;padding:12px 20px;font-size:1em;animation:none;" onclick="submitTongueJudgment()">提交舌象判断</button>
+            <div id="inspectionNonTongue" style="background:var(--paper-sunken);border-radius:8px;padding:10px 14px;margin:10px 0;font-size:14px;color:var(--ink-muted);display:none;"></div>
+            <div style="margin-top:12px;">
+                <div style="font-size:14px;color:var(--ink);margin-bottom:8px;">判断舌象</div>
+                <div class="tongue-judge-form">
+                    <textarea id="tongueJudgmentInput" rows="3" placeholder="从舌色、舌形、舌苔综合描述"></textarea>
+                    <div style="color:var(--text-muted);font-size:13px;margin:2px 2px 0;line-height:1.6;">小提示：可从舌色、舌形、舌苔等方面观察后进行整体描述。</div>
+                    <button class="btn btn--primary btn--block" style="margin-top:4px;" onclick="submitTongueJudgment()">提交舌象判断</button>
+                </div>
             </div>
+            <p style="text-align:center;color:var(--text-muted);font-size:13px;margin:12px 4px 2px;line-height:1.6;">提交舌象判断后，舌象答案将在线索中公布并判定对错；未提交则暂不公布舌象答案。</p>
         </div>
-        <p style="text-align:center;color:var(--text-muted);font-size:0.85em;margin:10px 4px 2px;line-height:1.6;">提交舌象判断后，舌象答案将在「线索收集区」公布并判定对错；未提交则暂不公布舌象答案。</p>
     </div>
 </div>
 
+<!-- 简单结果 -->
 <div class="modal-overlay" id="simpleResultModal" style="display:none;">
     <div class="modal">
-        <button class="modal-close" onclick="closeSimpleResultModal()">✕</button>
-        <h3 id="simpleResultTitle"></h3>
-        <div id="simpleResultContent"></div>
-        <button class="btn btn--primary" style="margin-top:12px;width:100%;animation:none;" onclick="closeSimpleResultModal()">知道了</button>
+        <div class="modal-head" id="simpleResultTitle"></div>
+        <button class="modal-close" onclick="closeSimpleResultModal()" aria-label="关闭">✕</button>
+        <div class="modal-body">
+            <div id="simpleResultContent" style="line-height:1.8;"></div>
+            <button class="btn btn--outline btn--block" style="margin-top:16px;" onclick="closeSimpleResultModal()">知道了</button>
+        </div>
     </div>
 </div>
 
-<div class="modal-overlay" id="caseBankModal" style="display:none;">
-    <div class="modal" style="max-width:600px; max-height:80vh; overflow-y:auto;">
-        <button class="modal-close" onclick="closeCaseBank()">✕</button>
-        <h3>📚 病例题库</h3>
-        <div id="caseBankContent"></div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="recordsModal" style="display:none;">
-    <div class="modal" style="max-width:600px;">
-        <button class="modal-close" onclick="closeRecords()">✕</button>
-        <h3>📝 我的错题</h3>
-        <div id="recordsContent"></div>
-    </div>
-</div>
-
+<!-- 病例解析 -->
 <div class="modal-overlay" id="caseDetailModal" style="display:none;">
-    <div class="modal" style="max-width:650px; max-height:85vh; overflow-y:auto;">
-        <button class="modal-close" onclick="closeCaseDetail()">✕</button>
-        <h3 id="caseDetailTitle">📋 病例解析</h3>
-        <div id="caseDetailContent"></div>
+    <div class="modal" style="max-width:640px;">
+        <div class="modal-head" id="caseDetailTitle">病例解析</div>
+        <button class="modal-close" onclick="closeCaseDetail()" aria-label="关闭">✕</button>
+        <div class="modal-body">
+            <div id="caseDetailContent"></div>
+        </div>
     </div>
 </div>
 
+<!-- 我的错题 -->
+<div class="modal-overlay" id="recordsModal" style="display:none;">
+    <div class="modal">
+        <div class="modal-head">我的错题</div>
+        <button class="modal-close" onclick="closeRecords()" aria-label="关闭">✕</button>
+        <div class="modal-body">
+            <div id="recordsContent"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 投稿病例 -->
 <div class="modal-overlay" id="submissionModal" style="display:none;">
-    <div class="modal" style="max-width:650px; max-height:90vh; overflow-y:auto;">
-        <button class="modal-close" onclick="closeSubmissionModal()">✕</button>
-        <h3>📤 投稿病例</h3>
-        <p style="font-size:0.9em;color:var(--text-muted);margin-bottom:12px;">请填写以下病例信息，带 <span class="required-star">*</span> 为必填项。</p>
-        <form id="submissionForm" class="submission-form" action="https://formsubmit.co/1507238873@qq.com" method="POST" enctype="multipart/form-data" onsubmit="return validateSubmissionForm()">
-            <input type="hidden" name="_subject" value="新病例投稿">
-            <input type="hidden" name="_template" value="table">
-            <input type="hidden" name="_next" id="formNext" value="">
-            <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
-            <div>
-                <label>选择难度 <span class="required-star">*</span></label>
-                <div class="difficulty-select" id="difficultySelect">
-                    <div class="difficulty-select-display" onclick="toggleDifficultyOptions()">
-                        <span id="difficultyDisplay">点击选择难度</span>
-                        <span class="arrow">▼</span>
+    <div class="modal" style="max-width:640px;">
+        <div class="modal-head">投稿病例</div>
+        <button class="modal-close" onclick="closeSubmissionModal()" aria-label="关闭">✕</button>
+        <div class="modal-body">
+            <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">请填写以下病例信息，带 <span class="required-star">*</span> 为必填项。</p>
+            <form id="submissionForm" class="submission-form" action="https://formsubmit.co/1507238873@qq.com" method="POST" enctype="multipart/form-data" onsubmit="return validateSubmissionForm()">
+                <input type="hidden" name="_subject" value="新病例投稿">
+                <input type="hidden" name="_template" value="table">
+                <input type="hidden" name="_next" id="formNext" value="">
+                <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+                <div>
+                    <label>选择难度 <span class="required-star">*</span></label>
+                    <div class="difficulty-select" id="difficultySelect" style="margin-top:6px;">
+                        <div class="difficulty-select-display" onclick="toggleDifficultyOptions()">
+                            <span id="difficultyDisplay">点击选择难度</span>
+                            <span class="arrow">▼</span>
+                        </div>
+                        <div class="difficulty-options" id="difficultyOptions" style="display:none;">
+                            <button type="button" class="difficulty-option" data-value="basic" onclick="selectDifficultyOption('basic', '入门训练', this)">入门训练</button>
+                            <button type="button" class="difficulty-option" data-value="intermediate" onclick="selectDifficultyOption('intermediate', '综合训练', this)">综合训练</button>
+                            <button type="button" class="difficulty-option" data-value="advanced" onclick="selectDifficultyOption('advanced', '临床思维', this)">临床思维</button>
+                        </div>
                     </div>
-                    <div class="difficulty-options" id="difficultyOptions" style="display:none;">
-                        <button type="button" class="difficulty-option" data-value="basic" onclick="selectDifficultyOption('basic', '🌱 入门训练', this)">🌱 入门训练</button>
-                        <button type="button" class="difficulty-option" data-value="intermediate" onclick="selectDifficultyOption('intermediate', '🌿 综合训练', this)">🌿 综合训练</button>
-                        <button type="button" class="difficulty-option" data-value="advanced" onclick="selectDifficultyOption('advanced', '🌳 临床思维', this)">🌳 临床思维</button>
-                    </div>
+                    <input type="hidden" name="difficulty" id="subDifficulty" value="">
                 </div>
-                <input type="hidden" name="difficulty" id="subDifficulty" value="">
-            </div>
-            <div><label for="subCaseSource">病例来源 <span class="required-star">*</span></label><input type="text" id="subCaseSource" name="case_source" required placeholder="如：中国中医药临床案例成果库、某本医书、某个博主等"></div>
-            <div><label for="subChiefComplaint">主诉 <span class="required-star">*</span></label><textarea id="subChiefComplaint" name="chief_complaint" required placeholder="患者主要症状、持续时间等"></textarea></div>
-            <div><label for="subPastHistory">既往史 <span class="required-star">*</span></label><textarea id="subPastHistory" name="past_history" required placeholder="既往疾病、手术、过敏史等"></textarea></div>
-            <div class="form-row">
-                <div><label for="subInspection">望诊 <span class="required-star">*</span></label><textarea id="subInspection" name="inspection" required placeholder="面色、舌象、形态等"></textarea></div>
-                <div><label for="subAuscultation">闻诊 <span class="required-star">*</span></label><textarea id="subAuscultation" name="auscultation" required placeholder="声音、气味等"></textarea></div>
-            </div>
-            <div class="form-row">
-                <div><label for="subInquiry">问诊 <span class="required-star">*</span></label><textarea id="subInquiry" name="inquiry" required placeholder="寒热、汗出、饮食、二便、睡眠等"></textarea></div>
-                <div><label for="subPulse">切诊 <span class="required-star">*</span></label><textarea id="subPulse" name="pulse" required placeholder="脉象、按诊等"></textarea></div>
-            </div>
-            <div><label for="subOtherCheck">其他检查 <span class="form-hint">（如有则填写）</span></label><textarea id="subOtherCheck" name="other_check" placeholder="如体格检查、实验室检查、影像学检查等"></textarea></div>
-            <div><label for="subAnalysis">辩证分析过程 <span class="required-star">*</span></label><textarea id="subAnalysis" name="analysis" required placeholder="病机分析、辨证思路等"></textarea></div>
-            <div class="form-row">
-                <div><label for="subSyndrome">证型 <span class="required-star">*</span></label><input type="text" id="subSyndrome" name="syndrome" required placeholder="如：肝郁脾虚证"></div>
-                <div><label for="subDisease">病名 <span class="required-star">*</span></label><input type="text" id="subDisease" name="disease" required placeholder="如：胃脘痛"></div>
-            </div>
-            <div><label for="subWesternDiagnosis">西医诊断 <span class="required-star">*</span></label><input type="text" id="subWesternDiagnosis" name="western_diagnosis" required placeholder="如：慢性胃炎"></div>
-            <div><label for="subPrescription">推荐要方 <span class="form-hint">（如有则填写）</span></label><input type="text" id="subPrescription" name="prescription" placeholder="如：柴胡疏肝散加减"></div>
-            <div><label for="subTonguePhoto">舌象照片 <span class="form-hint">（如有则上传，大小不超过10MB，仅支持 JPG、PNG、WebP）</span></label><div class="file-input"><input type="file" id="subTonguePhoto" name="attachment" accept="image/jpeg,image/png,image/webp"></div></div>
-            <div class="form-hint" style="line-height:1.7;background:#fdfaf5;padding:10px 12px;border-radius:10px;">隐私提示：投稿内容会发送至第三方表单服务并转发给站点维护者。请勿填写姓名、电话、身份证号、精确住址等可识别个人信息；病例和图片须先完成脱敏。</div>
-            <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;"><input type="checkbox" id="submissionConsent" name="privacy_consent" value="confirmed" required style="margin-top:5px;flex:none;"> <span>我确认已对病例和图片完成脱敏，并同意按上述方式处理投稿内容。<span class="required-star">*</span></span></label>
-            <button type="submit" class="btn-submit">📨 提交病例</button>
-            <div id="submissionFeedback" style="margin-top:10px;"></div>
-        </form>
+                <div><label for="subCaseSource">病例来源 <span class="required-star">*</span></label><input type="text" id="subCaseSource" name="case_source" required placeholder="如：中国中医药临床案例成果库、某本医书、某个博主等"></div>
+                <div><label for="subChiefComplaint">主诉 <span class="required-star">*</span></label><textarea id="subChiefComplaint" name="chief_complaint" required placeholder="患者主要症状、持续时间等"></textarea></div>
+                <div><label for="subPastHistory">既往史 <span class="required-star">*</span></label><textarea id="subPastHistory" name="past_history" required placeholder="既往疾病、手术、过敏史等"></textarea></div>
+                <div class="form-row">
+                    <div><label for="subInspection">望诊 <span class="required-star">*</span></label><textarea id="subInspection" name="inspection" required placeholder="面色、舌象、形态等"></textarea></div>
+                    <div><label for="subAuscultation">闻诊 <span class="required-star">*</span></label><textarea id="subAuscultation" name="auscultation" required placeholder="声音、气味等"></textarea></div>
+                </div>
+                <div class="form-row">
+                    <div><label for="subInquiry">问诊 <span class="required-star">*</span></label><textarea id="subInquiry" name="inquiry" required placeholder="寒热、汗出、饮食、二便、睡眠等"></textarea></div>
+                    <div><label for="subPulse">切诊 <span class="required-star">*</span></label><textarea id="subPulse" name="pulse" required placeholder="脉象、按诊等"></textarea></div>
+                </div>
+                <div><label for="subOtherCheck">其他检查 <span class="form-hint">（如有则填写）</span></label><textarea id="subOtherCheck" name="other_check" placeholder="如体格检查、实验室检查、影像学检查等"></textarea></div>
+                <div><label for="subAnalysis">辩证分析过程 <span class="required-star">*</span></label><textarea id="subAnalysis" name="analysis" required placeholder="病机分析、辨证思路等"></textarea></div>
+                <div class="form-row">
+                    <div><label for="subSyndrome">证型 <span class="required-star">*</span></label><input type="text" id="subSyndrome" name="syndrome" required placeholder="如：肝郁脾虚证"></div>
+                    <div><label for="subDisease">病名 <span class="required-star">*</span></label><input type="text" id="subDisease" name="disease" required placeholder="如：胃脘痛"></div>
+                </div>
+                <div><label for="subWesternDiagnosis">西医诊断 <span class="required-star">*</span></label><input type="text" id="subWesternDiagnosis" name="western_diagnosis" required placeholder="如：慢性胃炎"></div>
+                <div><label for="subPrescription">推荐要方 <span class="form-hint">（如有则填写）</span></label><input type="text" id="subPrescription" name="prescription" placeholder="如：柴胡疏肝散加减"></div>
+                <div><label for="subTonguePhoto">舌象照片 <span class="form-hint">（如有则上传，大小不超过10MB，仅支持 JPG、PNG、WebP）</span></label><div class="file-input" style="margin-top:6px;"><input type="file" id="subTonguePhoto" name="attachment" accept="image/jpeg,image/png,image/webp"></div></div>
+                <div class="form-hint" style="line-height:1.7;background:var(--paper-sunken);padding:12px;border-radius:8px;">隐私提示：投稿内容会发送至第三方表单服务并转发给站点维护者。请勿填写姓名、电话、身份证号、精确住址等可识别个人信息；病例和图片须先完成脱敏。</div>
+                <label style="display:flex;gap:8px;align-items:flex-start;font-weight:400;"><input type="checkbox" id="submissionConsent" name="privacy_consent" value="confirmed" required style="margin-top:4px;flex:none;"> <span>我确认已对病例和图片完成脱敏，并同意按上述方式处理投稿内容。<span class="required-star">*</span></span></label>
+                <button type="submit" class="btn-submit">提交病例</button>
+                <div id="submissionFeedback" style="margin-top:10px;"></div>
+            </form>
+        </div>
     </div>
 </div>
 
+<!-- 恢复 -->
 <div class="modal-overlay" id="importModal" style="display:none;">
-    <div class="modal" style="max-width:560px;">
-        <button class="modal-close" onclick="closeImportModal()">✕</button>
-        <h3>📥 恢复学习进度</h3>
-        <div id="importModalBody"></div>
+    <div class="modal">
+        <div class="modal-head">恢复学习进度</div>
+        <button class="modal-close" onclick="closeImportModal()" aria-label="关闭">✕</button>
+        <div class="modal-body">
+            <div id="importModalBody"></div>
+        </div>
     </div>
 </div>
 
+<!-- 备份 -->
 <div class="modal-overlay" id="backupModal" style="display:none;">
-    <div class="modal" style="max-width:560px;">
-        <button class="modal-close" onclick="closeBackupModal()">✕</button>
-        <h3>📤 备份学习进度</h3>
-        <div id="backupModalBody"></div>
+    <div class="modal">
+        <div class="modal-head">备份学习进度</div>
+        <button class="modal-close" onclick="closeBackupModal()" aria-label="关闭">✕</button>
+        <div class="modal-body">
+            <div id="backupModalBody"></div>
+        </div>
     </div>
 </div>
+
+<input type="file" id="importFileInput" accept=".json,application/json" style="display:none;" onchange="if(this.files[0]) importProgress(this.files[0]); this.value='';">
 
 <script type="module" src="js/app.js"></script>
 </body>

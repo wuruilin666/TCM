@@ -73,7 +73,7 @@ export function submitTongueJudgment() {
     // 正确答案直接用病例对舌象的原始描述，不自行补充「舌形正常」等原病例未提及的内容
     const correctText = (state.currentCase.clues.inspection.tongueDesc || '').trim()
         || `舌色${tj.color || '未述'}，舌苔${tj.coating || '未述'}`;
-    const clueText = `舌象判断\n${ok ? '✅' : '❌'} 你的描述：${userText}\n正确答案：${correctText}`;
+    const clueText = `舌象判断\n${ok ? '判断正确' : '判断有偏差'}：你的描述：${userText}\n正确答案：${correctText}`;
     addClue('inspection', clueText, '望诊·舌象');
     state.exploredDiags.inspection = true;
     markExplored('inspection');
