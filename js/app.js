@@ -187,9 +187,9 @@ function initApp() {
                             <input type="text" id="inputSyndrome" placeholder="证型，如肝郁脾虚">
                             <input type="text" id="inputDisease" placeholder="病名，如胃脘痛">
                         </div>
-                        <div style="margin-top:12px;">
-                            <label style="font-size:14px;color:var(--text-muted);">辨证依据</label>
-                            <textarea id="inputBasis" placeholder="病机分析、取舍思路。写出你为什么这样辨。" style="margin-top:6px;"></textarea>
+                        <div class="basis-area">
+                            <label class="basis-label" for="inputBasis">辨证依据</label>
+                            <textarea id="inputBasis" placeholder="结合主诉与四诊线索，写出你的辨证思路与主要依据。"></textarea>
                         </div>
                         <button class="btn btn--primary btn--block" style="margin-top:12px;" onclick="submitAnswer()">提交</button>
                     </div>
