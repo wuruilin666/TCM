@@ -105,15 +105,6 @@ function initApp() {
                     </div>
                 </div>
             </section>
-            <section>
-                <div class="four-diagnosis-hero">
-                    <div class="cell"><b>望</b><span>诊</span></div>
-                    <div class="cell"><b>闻</b><span>诊</span></div>
-                    <div class="cell"><b>问</b><span>诊</span></div>
-                    <div class="cell"><b>切</b><span>脉</span></div>
-                </div>
-                <p class="hero-footnote">四诊是本馆唯一的主操作</p>
-            </section>
         </div>
 
         <div class="page" id="pageGame">
