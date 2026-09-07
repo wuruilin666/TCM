@@ -37,25 +37,25 @@ export const tongueImageTypeMap = {
 
 // 一级分类映射：代码 -> {名称, emoji}
 export const categoryMap = {
-    'all': { name: '全部病例', emoji: '📂' },
-    'pulmonary': { name: '肺系病证', emoji: '🌬' },
-    'heart': { name: '心系病证', emoji: '❤' },
-    'spleen_stomach': { name: '脾胃系病证', emoji: '🥣' },
-    'liver_gallbladder': { name: '肝胆系病证', emoji: '🫁' },
-    'kidney': { name: '肾系病证', emoji: '💧' },
-    'qi_blood_fluid': { name: '气血津液病证', emoji: '🌡' },
-    'limb_meridian': { name: '肢体经络病证', emoji: '🦴' },
-    'gynecology': { name: '妇科病证', emoji: '👩' },
-    'pediatrics': { name: '儿科病证', emoji: '👶' },
-    'surgery_dermatology': { name: '外科/皮肤科病证', emoji: '🧴' },
-    'ent': { name: '五官病证', emoji: '👁' }
+    'all': { name: '全部病例', emoji: '' },
+    'pulmonary': { name: '肺系病证', emoji: '' },
+    'heart': { name: '心系病证', emoji: '' },
+    'spleen_stomach': { name: '脾胃系病证', emoji: '' },
+    'liver_gallbladder': { name: '肝胆系病证', emoji: '' },
+    'kidney': { name: '肾系病证', emoji: '' },
+    'qi_blood_fluid': { name: '气血津液病证', emoji: '' },
+    'limb_meridian': { name: '肢体经络病证', emoji: '' },
+    'gynecology': { name: '妇科病证', emoji: '' },
+    'pediatrics': { name: '儿科病证', emoji: '' },
+    'surgery_dermatology': { name: '外科/皮肤科病证', emoji: '' },
+    'ent': { name: '五官病证', emoji: '' }
 };
 
 // 训练阶段映射：代码 -> {名称, emoji}
 export const diffMap = {
-    'basic': { name: '入门训练', emoji: '🌱' },
-    'intermediate': { name: '综合训练', emoji: '🌿' },
-    'advanced': { name: '临床思维', emoji: '🌳' }
+    'basic': { name: '入门训练', emoji: '' },
+    'intermediate': { name: '综合训练', emoji: '' },
+    'advanced': { name: '临床思维', emoji: '' }
 };
 
 export const diffOrder = ['basic', 'intermediate', 'advanced'];
@@ -149,7 +149,7 @@ export async function loadCaseData(initCallback) {
         if (typeof initCallback === 'function') initCallback();
     } catch (error) {
         console.error('加载病例数据出错:', error);
-        document.getElementById('loadingIndicator').textContent = '❌ 病例数据加载失败，请刷新重试';
+        document.getElementById('loadingIndicator').textContent = '病例数据加载失败，请刷新重试';
     }
 }
 

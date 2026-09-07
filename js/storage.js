@@ -114,7 +114,7 @@ export function exportProgress() {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    alert('✅ 学习进度已导出\n已完成 ' + completed.length + ' 例 · 错题 ' + wrongs.length + ' 条');
+    alert('学习进度已导出\n已完成 ' + completed.length + ' 例 · 错题 ' + wrongs.length + ' 条');
 }
 
 // 严格校验导入文件，返回 { ok, data?, error? }
@@ -196,11 +196,11 @@ function openImportModal() { const m = document.getElementById('importModal'); i
 function showImportError(msg, showDiag) {
     const body = document.getElementById('importModalBody');
     const m = document.getElementById('importModal');
-    if (!body || !m) { alert('❌ ' + msg); return; }
+    if (!body || !m) { alert(msg); return; }
     const html = escapeHtml(msg).replace(/\n/g, '<br>');
     // 普通用户不再展示“复制诊断信息”按钮；诊断能力仍保留在 Console（见 copyDiagnosticInfo / lastRestoreDiag）。
     void showDiag;
-    body.innerHTML = '<div class="result-box fail" style="margin:6px 0;">❌ ' + html + '</div>' +
+    body.innerHTML = '<div class="result-box fail" style="margin:6px 0;">' + html + '</div>' +
         '<div style="text-align:center;margin-top:12px;"><button class="btn btn--outline btn--sm" onclick="closeImportModal()">知道了</button></div>';
     openImportModal();
 }
@@ -227,7 +227,7 @@ function buildDiagnosticText(diag) {
 export function copyDiagnosticInfo() {
     const text = buildDiagnosticText(lastRestoreDiag);
     if (!text) { alert('暂无可复制的诊断信息'); return; }
-    const ok = () => alert('✅ 诊断信息已复制（不含备份码内容）');
+    const ok = () => alert('诊断信息已复制（不含备份码内容）');
     const fail = () => {
         try {
             const ta = document.createElement('textarea');
@@ -248,14 +248,14 @@ function showImportConfirm(data) {
     if (!body) return;
     const dateStr = data.exportedAt ? formatDate(data.exportedAt) : '';
     body.innerHTML =
-        '<div style="font-size:1.15em;color:var(--accent);font-weight:700;margin-bottom:10px;">✅ 找到学习进度</div>' +
+        '<div style="font-size:1.15em;color:var(--accent);font-weight:700;margin-bottom:10px;">找到学习进度</div>' +
         '<div style="background:#fdfaf5;border:1px dashed var(--border);border-radius:10px;padding:12px 14px;font-size:0.92em;line-height:1.8;">' +
         '已完成：<strong>' + data.completedCases.length + '</strong> 例<br>' +
         '错题：<strong>' + data.wrongCases.length + '</strong> 条<br>' +
         '备份时间：' + (dateStr || '未知') + '</div>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">' +
-        '<button class="btn btn--primary btn--sm" style="animation:none;" onclick="applyImportMode(\'merge\')">🤝 合并到当前进度</button>' +
-        '<button class="btn btn--outline btn--sm" onclick="applyImportMode(\'cover\')">♻️ 覆盖当前进度</button>' +
+        '<button class="btn btn--primary btn--sm" style="animation:none;" onclick="applyImportMode(\'merge\')">合并到当前进度</button>' +
+        '<button class="btn btn--outline btn--sm" onclick="applyImportMode(\'cover\')">覆盖当前进度</button>' +
         '<button class="btn btn--ghost btn--sm" onclick="closeImportModal()">取消</button>' +
         '</div>' +
         '<p style="color:var(--text-muted);font-size:0.85em;margin:12px 0 0;line-height:1.6;">合并：保留当前记录　覆盖：使用备份中的记录替换当前记录</p>';
@@ -267,7 +267,7 @@ export function applyImportMode(mode) {
     if (mode === 'cover') {
         const body = document.getElementById('importModalBody');
         if (body) body.innerHTML =
-            '<div style="font-size:1.15em;color:var(--accent);font-weight:700;margin-bottom:8px;">⚠️ 覆盖当前进度</div>' +
+            '<div style="font-size:1.15em;color:var(--accent);font-weight:700;margin-bottom:8px;">覆盖当前进度</div>' +
             '<p style="color:var(--text-light);line-height:1.8;margin-bottom:14px;">这会替换当前浏览器中的学习记录，当前记录可能丢失。</p>' +
             '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
             '<button class="btn btn--ghost btn--sm" onclick="closeImportModal()">取消</button>' +
@@ -288,7 +288,7 @@ function doApplyImport(mode) {
     const body = document.getElementById('importModalBody');
     if (body) {
         body.innerHTML =
-            '<div class="result-box success" style="margin:6px 0;">✅ 学习进度导入成功</div>' +
+            '<div class="result-box success" style="margin:6px 0;">学习进度导入成功</div>' +
             '<div style="background:#fdfaf5;border:1px dashed var(--border);border-radius:10px;padding:12px 14px;font-size:0.92em;line-height:1.8;margin-top:10px;">' +
             '已完成病例：<strong>' + data.completedCases.length + '</strong> 例<br>' +
             '错题记录：<strong>' + data.wrongCases.length + '</strong> 条</div>' +
@@ -587,9 +587,9 @@ function sizeHintHtml(code) {
     const n = code ? code.length : 0;
     if (n <= LEN_OK) return '';
     if (n <= LEN_WARN) {
-        return '<div class="form-hint" style="margin:0;">⚠️ 当前备份码较长，直接发送到聊天软件可能存在长度限制。建议使用「保存备份文件」长期保存。</div>';
+        return '<div class="form-hint" style="margin:0;">当前备份码较长，直接发送到聊天软件可能存在长度限制。建议使用「保存备份文件」长期保存。</div>';
     }
-    return '<div class="form-hint" style="margin:0;">⚠️ 当前备份码较长，不建议直接粘贴到聊天消息中。建议使用「保存备份文件」进行跨设备传输。</div>';
+    return '<div class="form-hint" style="margin:0;">当前备份码较长，不建议直接粘贴到聊天消息中。建议使用「保存备份文件」进行跨设备传输。</div>';
 }
 
 // 解析并校验备份码，返回 { ok, data?, error?, kind? }
@@ -786,18 +786,16 @@ export function renderBackupChoice() {
         // 第一张：保存备份文件（推荐方式，作为主要备份选项）
         '<button type="button" class="backup-option" style="border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);" onclick="saveBackupFile()">' +
             '<span style="display:inline-block;background:var(--accent);color:#fff;font-size:0.72em;font-weight:700;line-height:1;padding:3px 9px;border-radius:999px;margin-bottom:8px;">推荐</span>' +
-            '<div class="backup-option-icon">📄</div>' +
             '<div class="backup-option-title">保存备份文件</div>' +
             '<div class="backup-option-desc">适合换设备、大量学习记录和长期保存。</div>' +
         '</button>' +
         // 第二张：使用备份码（备用方案，快速跨设备传输）
         '<button type="button" class="backup-option" onclick="showBackupCode()">' +
-            '<div class="backup-option-icon">📋</div>' +
             '<div class="backup-option-title">使用备份码</div>' +
             '<div class="backup-option-desc">复制后可通过微信等聊天工具传输。数据较多时会自动分段。</div>' +
         '</button>' +
         '</div>' +
-        '<p class="form-hint" style="margin:14px 2px 0;font-size:0.85em;line-height:1.6;">💡 提示：若暂时不方便保存或找不到备份文件的位置，也可以使用备份码进行跨设备备份。</p>';
+        '<p class="form-hint" style="margin:14px 2px 0;font-size:0.85em;line-height:1.6;">提示：若暂时不方便保存或找不到备份文件的位置，也可以使用备份码进行跨设备备份。</p>';
 }
 export async function showBackupCode() {
     const body = document.getElementById('backupModalBody');
@@ -809,7 +807,7 @@ export async function showBackupCode() {
         body.innerHTML =
             '<textarea id="backupCodeArea" readonly class="backup-code-area">' + escapeHtml(code) + '</textarea>' +
             '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">' +
-            '<button type="button" class="btn btn--primary btn--sm" onclick="copyBackupCode()">📋 复制备份码</button>' +
+            '<button type="button" class="btn btn--primary btn--sm" onclick="copyBackupCode()">复制备份码</button>' +
             '<button type="button" class="btn btn--ghost btn--sm" onclick="renderBackupChoice()">返回</button></div>' +
             '<div id="backupCodeMsg" style="margin-top:10px;"></div>';
         const ta = document.getElementById('backupCodeArea');
@@ -821,11 +819,11 @@ export async function showBackupCode() {
     const fileStrong = total >= PARTS_FILE_STRONGLY_RECOMMEND;
     let note;
     if (fileStrong) {
-        note = '📄 当前备份数据较大，已自动分成 ' + total + ' 段。\n\n为了避免逐段发送带来的不便，建议优先使用“保存备份文件”进行跨设备传输。\n\n如果仍需通过聊天工具传输，请将每一段分别发送。收到全部分段后，再一起粘贴到恢复框即可。';
+        note = '当前备份数据较大，已自动分成 ' + total + ' 段。\n\n为了避免逐段发送带来的不便，建议优先使用“保存备份文件”进行跨设备传输。\n\n如果仍需通过聊天工具传输，请将每一段分别发送。收到全部分段后，再一起粘贴到恢复框即可。';
     } else if (total >= PARTS_FILE_RECOMMEND) {
-        note = '⚠️ 备份数据较多，已自动分成 ' + total + ' 段。\n\n由于聊天工具可能限制单条消息长度，请将每一段分别发送。也建议使用“保存备份文件”进行更方便的跨设备传输和长期保存。';
+        note = '备份数据较多，已自动分成 ' + total + ' 段。\n\n由于聊天工具可能限制单条消息长度，请将每一段分别发送。也建议使用“保存备份文件”进行更方便的跨设备传输和长期保存。';
     } else {
-        note = '⚠️ 备份码较长，已自动分成 ' + total + ' 段。\n\n部分聊天工具可能限制单条消息长度，因此请将每一段分别发送到目标设备。\n\n收到全部分段后，再将它们一起粘贴到网站恢复框中即可。网站会自动识别并恢复。';
+        note = '备份码较长，已自动分成 ' + total + ' 段。\n\n部分聊天工具可能限制单条消息长度，因此请将每一段分别发送到目标设备。\n\n收到全部分段后，再将它们一起粘贴到网站恢复框中即可。网站会自动识别并恢复。';
     }
     let blocks = '';
     for (let i = 0; i < total; i++) {
@@ -833,11 +831,11 @@ export async function showBackupCode() {
             '<div style="margin-top:12px;">' +
             '<div style="font-size:0.9em;color:var(--text-muted);margin-bottom:4px;">第 ' + (i + 1) + ' 段 / 共 ' + total + ' 段</div>' +
             '<textarea readonly class="backup-code-area" style="min-height:90px;max-height:140px;">' + escapeHtml(parts[i]) + '</textarea>' +
-            '<div style="margin-top:6px;"><button type="button" class="btn btn--primary btn--sm" onclick="copyBackupPart(' + i + ')">📋 复制第 ' + (i + 1) + ' 段</button></div>' +
+            '<div style="margin-top:6px;"><button type="button" class="btn btn--primary btn--sm" onclick="copyBackupPart(' + i + ')">复制第 ' + (i + 1) + ' 段</button></div>' +
             '</div>';
     }
     const fileBtn = '<button type="button" class="' + (fileStrong ? 'btn btn--primary btn--sm' : 'btn btn--ghost btn--sm') +
-        '" style="' + (fileStrong ? 'background:var(--accent);' : '') + '" onclick="saveBackupFile()">📄 ' +
+        '" style="' + (fileStrong ? 'background:var(--accent);' : '') + '" onclick="saveBackupFile()">' +
         (fileStrong ? '推荐：保存备份文件' : '保存备份文件') + '</button>';
     body.innerHTML =
         '<div class="form-hint" style="margin:0 0 6px;white-space:pre-line;">' + escapeHtml(note) + '</div>' +
@@ -859,8 +857,8 @@ export function copyBackupCode() {
     sha256Hex(code).then(d => { lastGeneratedSummary = { length: code.length, segLength: segLen, digest: d }; }).catch(() => {});
     const done = () => {
         const success = currentBackup.isSegmented
-            ? '<div class="result-box success" style="margin:0;">✅ 已复制全部 ' + currentBackup.parts.length + ' 段备份码<br>请一起发送到微信、QQ、邮箱或保存到备忘录。</div>'
-            : '<div class="result-box success" style="margin:0;">✅ 已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>';
+            ? '<div class="result-box success" style="margin:0;">已复制全部 ' + currentBackup.parts.length + ' 段备份码<br>请一起发送到微信、QQ、邮箱或保存到备忘录。</div>'
+            : '<div class="result-box success" style="margin:0;">已复制备份码<br>可发送到微信、QQ、邮箱或保存到备忘录。</div>';
         const hint = currentBackup.isSegmented
             ? '<div class="form-hint" style="margin:0;">已自动分成 ' + currentBackup.parts.length + ' 段，请全部发送。若某一段丢失将无法恢复。</div>'
             : sizeHintHtml(code);
@@ -885,7 +883,7 @@ export function copyBackupPart(index) {
     // 诊断摘要（仅内存、不可逆，不含学习内容）
     lastGeneratedBackupCode = part;
     sha256Hex(part).then(d => { lastGeneratedSummary = { length: part.length, digest: d }; }).catch(() => {});
-    const success = '<div class="result-box success" style="margin:0;">✅ 第 ' + (index + 1) + ' 段已复制<br>请将这一段单独发送到目标设备。</div>';
+    const success = '<div class="result-box success" style="margin:0;">第 ' + (index + 1) + ' 段已复制<br>请将这一段单独发送到目标设备。</div>';
     const done = () => { if (msg) msg.innerHTML = success; verifyClipboard(part, success); };
     const fallback = () => {
         // 分段模式下每个段对应一个只读 textarea（按出现顺序），临时可编辑后 execCommand 复制
@@ -910,7 +908,7 @@ function verifyClipboard(code, successHtml) {
             const msg = document.getElementById('backupCodeMsg');
             if (norm && norm !== code && msg) {
                 msg.innerHTML = successHtml +
-                    '<div class="form-hint" style="margin-top:8px;">⚠️ 剪贴板内容可能发生变化，请使用下方备份码手动复制。</div>';
+                    '<div class="form-hint" style="margin-top:8px;">剪贴板内容可能发生变化，请使用下方备份码手动复制。</div>';
             }
         }).catch(() => {});
     } catch (e) { /* 忽略 */ }
@@ -926,19 +924,17 @@ export function openRestoreChoice() {
         '<div class="backup-options">' +
         // 第一张：从备份文件恢复（推荐方式，作为主要恢复选项）
         '<button type="button" class="backup-option" style="border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 16%, transparent);" onclick="triggerFileRestore()">' +
-            '<span style="display:inline-block;background:var(--accent);color:#fff;font-size:0.72em;font-weight:700;line-height:1;padding:3px 9px;border-radius:999px;margin-bottom:8px;">⭐ 推荐</span>' +
-            '<div class="backup-option-icon">📄</div>' +
+            '<span style="display:inline-block;background:var(--accent);color:#fff;font-size:0.72em;font-weight:700;line-height:1;padding:3px 9px;border-radius:999px;margin-bottom:8px;">推荐</span>' +
             '<div class="backup-option-title">从备份文件恢复</div>' +
             '<div class="backup-option-desc">适合换设备、大量学习记录和长期保存。</div>' +
         '</button>' +
         // 第二张：使用备份码恢复（备用方案，快速跨设备）
         '<button type="button" class="backup-option" onclick="startCodeRestore()">' +
-            '<div class="backup-option-icon">📋</div>' +
             '<div class="backup-option-title">使用备份码恢复</div>' +
             '<div class="backup-option-desc">快速跨设备恢复，备份码较长时会自动支持分段。</div>' +
         '</button>' +
         '</div>' +
-        '<p class="form-hint" style="margin:14px 2px 0;font-size:0.85em;line-height:1.6;">💡 提示：备份文件通常更方便、可靠；若暂时没有备份文件，也可以使用备份码恢复。</p>';
+        '<p class="form-hint" style="margin:14px 2px 0;font-size:0.85em;line-height:1.6;">提示：备份文件通常更方便、可靠；若暂时没有备份文件，也可以使用备份码恢复。</p>';
 }
 export function startCodeRestore() {
     const body = document.getElementById('importModalBody');
