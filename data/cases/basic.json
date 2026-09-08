@@ -30,9 +30,13 @@
               "keywords": [
                 "口渴",
                 "口干",
-                "喝水"
+                "喝水",
+                "想喝",
+                "饮水",
+                "渴"
               ],
-              "dimension": "thirst"
+              "dimension": "thirst",
+              "intent": "thirst.general"
             },
             {
               "q": "大便情况",
@@ -40,20 +44,29 @@
               "keywords": [
                 "大便",
                 "便秘",
-                "干结"
+                "干结",
+                "排便",
+                "几天一解"
               ],
-              "dimension": "stool"
+              "dimension": "stool",
+              "intent": "stool.general"
             },
             {
               "q": "汗出情况",
               "a": "无汗出，不恶寒",
               "keywords": [
+                "汗出",
                 "出汗",
-                "汗",
+                "无汗",
+                "汗多",
                 "恶寒",
                 "怕冷"
               ],
-              "dimension": "sweat"
+              "dimension": "sweat",
+              "intent": [
+                "sweat.general",
+                "chillHeat.general"
+              ]
             },
             {
               "q": "饮食与嗳气",
@@ -61,9 +74,10 @@
               "keywords": [
                 "嗳气",
                 "打嗝",
-                "食欲"
+                "呃逆"
               ],
-              "dimension": "vomiting"
+              "dimension": "vomiting",
+              "intent": "vomiting.belching"
             },
             {
               "q": "鼻涕情况",
@@ -71,9 +85,11 @@
               "keywords": [
                 "鼻涕",
                 "鼻塞",
-                "流涕"
+                "流涕",
+                "鼻子"
               ],
-              "dimension": "nose"
+              "dimension": "nose",
+              "intent": "nose.general"
             }
           ]
         },
@@ -136,23 +152,31 @@
               "keywords": [
                 "反酸",
                 "烧心",
-                "胃",
-                "酸",
-                "胃脘"
+                "胃脘",
+                "灼热",
+                "泛酸",
+                "吐酸"
               ],
-              "dimension": "abdomen"
+              "dimension": "abdomen",
+              "intent": "abdomen.reflux"
             },
             {
               "q": "胃痛胃胀情况",
               "a": "胃胀，偶有胃痛。",
               "keywords": [
                 "胃痛",
-                "胀",
-                "胃",
+                "胃胀",
                 "胃脘",
-                "胀痛"
+                "胃脘痛",
+                "胀痛",
+                "上腹疼痛",
+                "胃部疼痛"
               ],
-              "dimension": "abdomen"
+              "dimension": "abdomen",
+              "intent": [
+                "abdomen.pain",
+                "abdomen.distension"
+              ]
             },
             {
               "q": "饮食情况",
@@ -160,9 +184,14 @@
               "keywords": [
                 "饮食",
                 "食欲",
-                "纳"
+                "纳食",
+                "纳差",
+                "胃口",
+                "吃得下",
+                "纳谷"
               ],
-              "dimension": "diet"
+              "dimension": "diet",
+              "intent": "diet.appetite"
             },
             {
               "q": "口干口苦情况",
@@ -170,19 +199,22 @@
               "keywords": [
                 "口干",
                 "口苦",
-                "口"
+                "口渴",
+                "咽干"
               ],
-              "dimension": "thirst"
+              "dimension": "thirst",
+              "intent": "thirst.general"
             },
             {
               "q": "头痛情况",
               "a": "无头痛。",
               "keywords": [
                 "头痛",
-                "头",
-                "晕"
+                "头疼",
+                "头部疼痛"
               ],
-              "dimension": "head"
+              "dimension": "head",
+              "intent": "head.headache"
             },
             {
               "q": "情绪情况",
@@ -195,7 +227,8 @@
                 "急躁",
                 "易怒"
               ],
-              "dimension": "emotion"
+              "dimension": "emotion",
+              "intent": "emotion.general"
             }
           ]
         },
@@ -260,9 +293,15 @@
                 "月经",
                 "延后",
                 "后期",
-                "经期"
+                "经期",
+                "周期",
+                "月经推迟"
               ],
-              "dimension": "menstruation"
+              "dimension": "menstruation",
+              "intent": [
+                "menstruation.cycle",
+                "menstruation.general"
+              ]
             },
             {
               "q": "情绪情况",
@@ -274,38 +313,49 @@
                 "急躁",
                 "烦躁"
               ],
-              "dimension": "emotion"
+              "dimension": "emotion",
+              "intent": "emotion.general"
             },
             {
               "q": "胸胁情况",
               "a": "胸胁胀痛。",
               "keywords": [
                 "胸胁",
-                "胁",
-                "胀痛",
-                "两胁"
+                "两胁",
+                "胁肋",
+                "胁痛",
+                "胸胁胀痛"
               ],
-              "dimension": "chest"
+              "dimension": "chest",
+              "intent": [
+                "chest.pain",
+                "chest.distension",
+                "chest.oppression",
+                "pain.location"
+              ]
             },
             {
               "q": "脊背情况",
               "a": "脊背不舒。",
               "keywords": [
                 "脊背",
-                "背",
-                "后背"
+                "后背",
+                "背部"
               ],
-              "dimension": "back"
+              "dimension": "back",
+              "intent": "back.general"
             },
             {
               "q": "腹胀情况",
               "a": "腹胀。",
               "keywords": [
                 "腹胀",
-                "腹",
-                "肚子"
+                "肚子胀",
+                "腹部胀",
+                "脘腹"
               ],
-              "dimension": "abdomen"
+              "dimension": "abdomen",
+              "intent": "abdomen.distension"
             },
             {
               "q": "大便情况",
@@ -313,31 +363,38 @@
               "keywords": [
                 "便秘",
                 "大便",
-                "便"
+                "排便",
+                "干结"
               ],
-              "dimension": "stool"
+              "dimension": "stool",
+              "intent": "stool.general"
             },
             {
               "q": "饮食情况",
               "a": "纳可。",
               "keywords": [
-                "纳",
                 "饮食",
-                "食",
-                "食欲"
+                "食欲",
+                "胃口",
+                "纳食",
+                "纳谷",
+                "纳差"
               ],
-              "dimension": "diet"
+              "dimension": "diet",
+              "intent": "diet.appetite"
             },
             {
               "q": "睡眠情况",
               "a": "寐一般。",
               "keywords": [
-                "寐",
                 "睡眠",
+                "入睡",
+                "寐",
                 "眠",
-                "入睡"
+                "睡觉"
               ],
-              "dimension": "sleep"
+              "dimension": "sleep",
+              "intent": "sleep.general"
             }
           ]
         },
@@ -405,56 +462,72 @@
                 "多梦",
                 "易醒",
                 "睡眠",
-                "睡"
+                "睡觉",
+                "睡不着"
               ],
-              "dimension": "sleep"
+              "dimension": "sleep",
+              "intent": "sleep.general"
             },
             {
               "q": "耳鸣情况",
               "a": "时有耳鸣。",
               "keywords": [
                 "耳鸣",
-                "耳"
+                "耳朵"
               ],
-              "dimension": "ear"
+              "dimension": "ear",
+              "intent": "ear.general"
             },
             {
               "q": "胸部感觉",
               "a": "胸闷。",
               "keywords": [
                 "胸闷",
-                "胸",
-                "胸痛"
+                "胸口",
+                "胸部",
+                "憋闷"
               ],
-              "dimension": "chest"
+              "dimension": "chest",
+              "intent": "chest.oppression"
             },
             {
               "q": "饮食情况",
               "a": "纳可。",
               "keywords": [
-                "纳",
                 "饮食",
-                "食"
+                "食欲",
+                "胃口",
+                "纳食",
+                "纳谷"
               ],
-              "dimension": "diet"
+              "dimension": "diet",
+              "intent": "diet.appetite"
             },
             {
               "q": "大便情况",
               "a": "大便调。",
               "keywords": [
                 "大便",
-                "便"
+                "排便",
+                "便秘"
               ],
-              "dimension": "stool"
+              "dimension": "stool",
+              "intent": "stool.general"
             },
             {
               "q": "小便情况",
               "a": "小便调。",
               "keywords": [
                 "小便",
-                "尿"
+                "排尿",
+                "尿量",
+                "尿频",
+                "尿急",
+                "夜尿",
+                "尿黄"
               ],
-              "dimension": "urine"
+              "dimension": "urine",
+              "intent": "urine.general"
             }
           ]
         },
