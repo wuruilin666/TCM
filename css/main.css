@@ -353,6 +353,20 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 }
 .tag-wang, .tag-wen, .tag-ask, .tag-pulse { background: none; color: var(--cinnabar); }
 
+/* ===================== 舌象判断线索（默认折叠，折叠态直接显示正确舌象与正误） ===================== */
+.clue-tongue .clue-tongue-body { flex: 1; min-width: 0; }
+.clue-tongue .clue-tongue-summary { font-weight: 500; }
+.clue-tongue .clue-tongue-detail { display: none; margin-top: 6px; color: var(--ink-muted); }
+.clue-tongue.expanded .clue-tongue-detail { display: block; }
+.clue-toggle {
+    margin-top: 6px; padding: 2px 12px; font-size: 12px; font-family: var(--font-body);
+    background: none; border: 1px solid var(--hairline); border-radius: 999px;
+    color: var(--ink-muted); cursor: pointer;
+}
+.clue-toggle .when-expanded { display: none; }
+.clue-tongue.expanded .clue-toggle .when-folded { display: none; }
+.clue-tongue.expanded .clue-toggle .when-expanded { display: inline; }
+
 /* ===================== 提交辨证 / 表单控件 ===================== */
 .answer-area { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
 .answer-area input,
