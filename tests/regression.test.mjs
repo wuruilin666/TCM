@@ -125,12 +125,27 @@ try {
     tongueInput.value = game.getCurrentCase().clues.inspection.tongueDesc;
     window.submitTongueJudgment();
     check('提交舌象判断后弹窗关闭', document.getElementById('inspectionModal').style.display === 'none');
-    const tongueClue = [...document.querySelectorAll('#clueArea .clue-item')].find(el => el.textContent.includes('舌象判断'));
-    check('舌象判断写入线索', !!tongueClue);
+    const tongueClue = document.querySelector('#clueArea .clue-item[data-clue-type="tongue"]');
+    check('舌象判断写入线索（带 tongue 类型标识）', !!tongueClue);
     check('答出病例原文 → 线索显示「判断正确」',
         !!tongueClue && /判断正确/.test(tongueClue.textContent), tongueClue && tongueClue.textContent);
     check('舌象线索含逐维度反馈：病例未提供的维度标「本病例未提供」',
         !!tongueClue && /本病例未提供/.test(tongueClue.textContent));
+    check('折叠态：正确舌象直接可见（含病例 tongueDesc）',
+        !!tongueClue && tongueClue.querySelector('.clue-tongue-summary').textContent.includes(
+            game.getCurrentCase().clues.inspection.tongueDesc.trim()));
+    check('折叠态：详情默认不可见（未加 expanded，详情由 CSS 隐藏）',
+        !!tongueClue && !tongueClue.classList.contains('expanded'));
+    tongueClue.querySelector('.clue-toggle').click();
+    check('点击展开后详情可见（你的判断 + 逐维度判断）',
+        tongueClue.classList.contains('expanded')
+        && /你的判断/.test(tongueClue.querySelector('.clue-tongue-detail').textContent)
+        && /逐维度判断/.test(tongueClue.querySelector('.clue-tongue-detail').textContent));
+    tongueClue.querySelector('.clue-toggle').click();
+    check('再次点击收起', !tongueClue.classList.contains('expanded'));
+    check('普通线索不折叠（无 tongue 标识）',
+        [...document.querySelectorAll('#clueArea .clue-item')].filter(el => el !== tongueClue)
+            .every(el => !el.hasAttribute('data-clue-type')));
     check('望诊按钮标记为已探索', document.getElementById('btnWang').classList.contains('explored'));
 
     /* ---------------- E. 问诊匹配 ---------------- */
