@@ -60,6 +60,18 @@ export function isSafeCaseId(value) {
     return typeof value === 'string' && SAFE_CASE_ID.test(value);
 }
 
+/* ===================== 望诊图片路径解析 ===================== */
+// 舌象图片路径的唯一解析入口：病例显式配置的 inspectionImages 优先，
+// 没有配置时按约定回退到 tongue/<caseId>.jpg（仓库里的图片就是这么放的）。
+// 返回新数组，调用方拿到的是副本，改不到病例数据本身。
+// 病例 ID 不合法时返回空数组——绝不拿它去拼路径。
+export function getInspectionImages(caseData) {
+    const explicit = caseData?.inspectionImages;
+    if (Array.isArray(explicit) && explicit.length > 0) return [...explicit];
+    if (!isSafeCaseId(caseData?.id)) return [];
+    return [`tongue/${caseData.id}.jpg`];
+}
+
 /* 问诊维度白名单：每道问诊题必须标注唯一主维度，且必须属于该集合。
    新增病例时若缺少 dimension 或使用未登记的维度，病例数据将被判定为无效。 */
 export const VALID_INQUIRY_DIMENSIONS = new Set([
