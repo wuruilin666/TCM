@@ -72,19 +72,21 @@ function matchTerm(userText, correctVal) {
     return false;
 }
 
-// 用户写到过哪些维度：按标点切句，每句归给一个维度（苔 > 舌形 > 舌色）。
+// 用户写到过哪些维度：按标点切句，各维度独立判断——同一片段可同时命中多个维度
+//（「舌红苔黄」须同时得到 color + coating，不能因先命中「苔」而漏掉舌色）。
+// 舌色用「舌X」组合词而非裸「舌」识别，避免「舌形正常」「舌体胖大」因含「舌」被误判为舌色。
 // 只用于区分「写了但写错」与「根本没写」，不参与命中判断（命中只看 matchTerm）。
 const COATING_MARKER = /苔/;
 const SHAPE_MARKER = /形|体|齿痕|胖|瘦|裂纹|嫩|老|点刺|瘀斑|肿大/;
-const COLOR_MARKER = /舌/;
+const COLOR_MARKER = /舌色|舌质|舌红|舌淡|舌绛|舌紫|舌青|舌白|舌暗/;
 
 function mentionedDimensions(userText) {
     const found = new Set();
     for (const seg of String(userText).split(/[，,。；;：:、\s]+/)) {
         if (!seg) continue;
         if (COATING_MARKER.test(seg)) found.add('coating');
-        else if (SHAPE_MARKER.test(seg)) found.add('shape');
-        else if (COLOR_MARKER.test(seg)) found.add('color');
+        if (SHAPE_MARKER.test(seg)) found.add('shape');
+        if (COLOR_MARKER.test(seg)) found.add('color');
     }
     return found;
 }
