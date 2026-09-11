@@ -1,18 +1,27 @@
 /* ===================== 病例题库 / 我的错题 / 病例解析 ===================== */
-import { state, resetGameUI, showCurrentCase } from './game.js';
-import {
-    getAllCases, diffMap, categoryMap, diffOrder, escapeHtml, escapeHtmlWithBreaks
-} from './data.js';
-import { getCompletedCases, getWrongCases, formatDate } from './storage.js';
+// 职责：题库展示、分类/难度筛选、搜索、错题列表、病例详情、病例解析渲染。
+// 依赖方式：
+//   - 读取病例数据 → data.js
+//   - 读取学习记录 → progress-storage.js
+//   - 启动病例练习 → game.js 的公开接口 startCasePractice / resetGameUI
+// 题库不直接改写 game 的内部状态，也不直接操作 localStorage。
 
-// 题库筛选状态
+import { getAllCases, diffMap, categoryMap, diffOrder } from './data.js';
+import { escapeHtml, escapeHtmlWithBreaks } from './html-utils.js';
+import { getCompletedCases, getWrongCases, clearWrongCases, formatDate } from './storage/progress-storage.js';
+import { startCasePractice } from './game.js';
+
+// 题库筛选状态（题库自己的 UI 状态，不属于 Game）
 let bankCategory = 'all';
 let bankDiff = 'all';
 
 // 由 app.js 注入 showPage（避免循环依赖）
 let showPageFn = null;
-export function registerNav(fns) { showPageFn = fns.showPage || showPageFn; }
+export function registerNav(fns) {
+    if (fns && fns.showPage) showPageFn = fns.showPage;
+}
 
+/* ===================== 题库页面 ===================== */
 export function openCaseBank() {
     bankCategory = 'all'; bankDiff = 'all';
     document.getElementById('caseBankContent').innerHTML = `
@@ -27,18 +36,15 @@ export function openCaseBank() {
     if (showPageFn) showPageFn('Bank');
 }
 
-// 获取 casesDB 中实际存在的一级分类（保持 categoryMap 顺序，不含 'all'）
+// 获取实际存在病例的一级分类（保持 categoryMap 顺序，不含 'all'）
 function getActiveCategories() {
-    const cases = getAllCases();
-    const present = new Set();
-    for (const c of cases) present.add(c.category);
-    return Object.keys(categoryMap).filter(k => present.has(k));
+    const present = new Set(getAllCases().map(c => c.category));
+    return Object.keys(categoryMap).filter(k => k !== 'all' && present.has(k));
 }
-// 获取 casesDB 中实际存在的训练阶段（保持 diffOrder 顺序，不含 'all'）
+
+// 获取实际存在病例的训练阶段（保持 diffOrder 顺序）
 function getActiveDifficulties() {
-    const cases = getAllCases();
-    const present = new Set();
-    for (const c of cases) present.add(c.difficulty);
+    const present = new Set(getAllCases().map(c => c.difficulty));
     return diffOrder.filter(d => present.has(d));
 }
 
@@ -91,14 +97,12 @@ function filterCaseBank() {
     filtered.sort((a, b) => {
         const ca = completedIds.includes(a.id) ? 1 : 0;
         const cb = completedIds.includes(b.id) ? 1 : 0;
-        if (ca !== cb) return ca - cb;
-        return 0; // 保持原顺序（Array.sort 稳定）
+        return ca - cb;
     });
 
-    let html = '';
     const count = filtered.length;
     const doneCount = filtered.filter(c => completedIds.includes(c.id)).length;
-    html += `<div class="bank-summary">共 ${count} 例（未完成 ${count - doneCount} · 已完成 ${doneCount}）</div>`;
+    let html = `<div class="bank-summary">共 ${count} 例（未完成 ${count - doneCount} · 已完成 ${doneCount}）</div>`;
 
     if (filtered.length === 0) {
         if (bankCategory !== 'all') {
@@ -111,14 +115,13 @@ function filterCaseBank() {
         return;
     }
 
-    filtered.forEach((c) => {
+    filtered.forEach(c => {
         const isCompleted = completedIds.includes(c.id);
         const isWrong = wrongIds.includes(c.id);
-        const diffMeta = diffMap[c.difficulty] || { name: c.difficulty, emoji: '' };
-        const catMeta = categoryMap[c.category] || { name: c.category, emoji: '' };
+        const diffMeta = diffMap[c.difficulty];
+        const catMeta = categoryMap[c.category];
         // 主标题：完整主诉（保留换行）；卡片不暴露诊断（病名/证型）
         const fullComplaint = escapeHtmlWithBreaks(c.chiefComplaint);
-        // 右上角标签：分类 + 难度
         const tag = `<span class="case-tag case-tag-cat">${catMeta.name}</span> <span class="case-tag">${diffMeta.name}</span>`;
         const header = `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;">
             <div style="font-weight:700;color:var(--text-light);flex:1;min-width:0;font-size:0.95em;line-height:1.6;">${fullComplaint}</div>
@@ -131,7 +134,6 @@ function filterCaseBank() {
                 <div class="case-full">${renderFullCase(c)}</div>
             </div>`;
         } else if (isCompleted && isWrong) {
-            // 做错过：提供"重新挑战"
             html += `<div class="case-bank-item wrong" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;line-height:1.7;">
                 ${header}
                 <div style="margin-top:8px;">
@@ -140,7 +142,6 @@ function filterCaseBank() {
                 </div>
             </div>`;
         } else {
-            // 未做过：提供"挑战病例"
             html += `<div class="case-bank-item todo" style="padding:12px;margin:8px 0;background:#fdfaf5;border-radius:8px;border:1px solid var(--border);font-size:0.9em;line-height:1.7;">
                 ${header}
                 <div style="margin-top:8px;">
@@ -153,40 +154,52 @@ function filterCaseBank() {
     listEl.innerHTML = html;
 }
 
-// 从题库点击"挑战病例"：跳转到闯关页并练习该病例
+/* ===================== 触发练习（调用 Game 公开接口） ===================== */
 function challengeCaseFromBank(caseId) {
-    const c = findCaseById(caseId);
-    if (!c) { alert('病例不存在。'); return; }
-    closeCaseBank();
-    if (showPageFn) showPageFn('Game');
-    resetGameUI();
-    state.currentDifficulty = c.difficulty;
-    document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.toggle('selected', b.dataset.diff === c.difficulty));
-    const completed = getCompletedCases();
-    state.unfinishedCases = getAllCases().filter(x => x.difficulty === c.difficulty && !completed.includes(x.id));
-    if (!state.unfinishedCases.some(x => x.id === caseId)) state.unfinishedCases.push(c);
-    state.currentCaseIndex = state.unfinishedCases.findIndex(x => x.id === caseId);
-    if (state.currentCaseIndex < 0) state.currentCaseIndex = 0;
-    showCurrentCase();
+    startCasePractice(caseId);
 }
 
+function rechallengeCase(caseId) {
+    closeRecords();
+    startCasePractice(caseId);
+}
+
+/* ===================== 病例详情 / 完整医案渲染 ===================== */
 function renderFullCase(c) {
     const fa = c.fullAnalysis; const cl = c.clues;
     let html = `<div style="margin:6px 0 10px 0;"><strong>主诉 / 基本情况：</strong><br>${escapeHtmlWithBreaks(c.chiefComplaint)}</div>`;
     if (c.history) html += `<div style="margin:6px 0 10px 0;"><strong>既往史：</strong><br>${escapeHtmlWithBreaks(c.history)}</div>`;
     html += `<div style="margin:6px 0 10px 0;"><strong>四诊情况：</strong><br>`;
     html += `【望诊】${escapeHtml(cl.inspection.displayContent)}<br>【闻诊】${escapeHtml(cl.auscultation.displayContent)}<br>`;
-    if (cl.inquiry && cl.inquiry.questions) html += `【问诊】<br>` + cl.inquiry.questions.map(q => `· ${escapeHtml(q.q)}：${escapeHtml(q.a)}`).join('<br>') + `<br>`;
+    html += `【问诊】<br>` + cl.inquiry.questions.map(q => `· ${escapeHtml(q.q)}：${escapeHtml(q.a)}`).join('<br>') + `<br>`;
     html += `【切诊】${escapeHtml(cl.pulse.displayContent)}</div>`;
     if (c.otherCheck) html += `<div style="margin:6px 0 10px 0;"><strong>其他检查：</strong><br>${escapeHtmlWithBreaks(c.otherCheck)}</div>`;
     html += `<div style="margin:6px 0 4px 0;"><strong>辨证分析过程：</strong><br>中医病证：${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）<br>`;
-    if (fa.westernDiagnosis) html += `西医诊断：${escapeHtml(fa.westernDiagnosis)}<br>`;
+    html += `西医诊断：${escapeHtml(fa.westernDiagnosis)}<br>`;
     if (c.source) html += `<span class="source-tag">病例来源：${escapeHtml(c.source)}</span><br>`;
     html += `病机分析：${escapeHtml(fa.pathogenesis)}<br>推荐方药：${escapeHtml(fa.prescription)}<br>`;
-    if (fa.knowledgePoints && fa.knowledgePoints.length) html += `知识点：${fa.knowledgePoints.map(escapeHtml).join('；')}`;
+    html += `知识点：${fa.knowledgePoints.map(escapeHtml).join('；')}`;
     html += `</div>`;
     html += `<div style="margin-top:6px;color:var(--text-muted);font-size:0.88em;">提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</div>`;
     return html;
+}
+
+function findCaseById(caseId) {
+    return getAllCases().find(x => x.id === caseId) || null;
+}
+
+function openCaseDetail(c) {
+    document.getElementById('caseDetailTitle').textContent = c.title;
+    document.getElementById('caseDetailContent').innerHTML = renderFullCase(c);
+    document.getElementById('caseDetailModal').style.display = 'flex';
+}
+
+function closeCaseDetail() { document.getElementById('caseDetailModal').style.display = 'none'; }
+
+function viewWrongCaseAnalysis(caseId) {
+    const c = findCaseById(caseId);
+    if (!c) { alert('病例不存在。'); return; }
+    openCaseDetail(c);
 }
 
 function closeCaseBank() { /* 题库已改为独立页面，关闭动作由顶部导航接管 */ }
@@ -222,56 +235,17 @@ function openRecords() {
 
 function closeRecords() { document.getElementById('recordsModal').style.display = 'none'; }
 
-function clearRecords() { if (confirm('清空我的错题？')) { try { localStorage.removeItem('tcm_wrong_cases'); } catch (e) {} closeRecords(); } }
-
-function findCaseById(caseId) {
-    return getAllCases().find(x => x.id === caseId) || null;
-}
-
-function findCaseDifficulty(caseId) {
-    const c = findCaseById(caseId);
-    return c ? c.difficulty : null;
-}
-
-function rechallengeCase(caseId) {
+function clearRecords() {
+    if (!confirm('清空我的错题？')) return;
+    clearWrongCases();
     closeRecords();
-    const diff = findCaseDifficulty(caseId);
-    if (!diff) { alert('病例不存在。'); return; }
-    if (showPageFn) showPageFn('Game');
-    resetGameUI();
-    state.currentDifficulty = diff;
-    document.querySelectorAll('#difficultyBtns .btn--difficulty').forEach(b => b.classList.toggle('selected', b.dataset.diff === diff));
-    const pool = getAllCases().filter(c => c.difficulty === diff);
-    const completed = getCompletedCases();
-    state.unfinishedCases = pool.filter(c => !completed.includes(c.id));
-    if (!state.unfinishedCases.some(c => c.id === caseId)) {
-        const c = findCaseById(caseId);
-        if (c) state.unfinishedCases.push(c);
-    }
-    state.currentCaseIndex = state.unfinishedCases.findIndex(c => c.id === caseId);
-    if (state.currentCaseIndex < 0) state.currentCaseIndex = 0;
-    showCurrentCase();
 }
-
-function viewWrongCaseAnalysis(caseId) {
-    const c = findCaseById(caseId);
-    if (!c) { alert('病例不存在。'); return; }
-    openCaseDetail(c);
-}
-
-function openCaseDetail(c) {
-    document.getElementById('caseDetailTitle').textContent = c.title;
-    document.getElementById('caseDetailContent').innerHTML = renderFullCase(c);
-    document.getElementById('caseDetailModal').style.display = 'flex';
-}
-
-function closeCaseDetail() { document.getElementById('caseDetailModal').style.display = 'none'; }
 
 /* ===================== 导出（供 app.js 暴露到 window） ===================== */
 export {
     selectBankCategory, selectBankDiff, filterCaseBank,
     challengeCaseFromBank, renderFullCase, closeCaseBank,
-    openRecords, closeRecords, findCaseById, findCaseDifficulty,
+    openRecords, closeRecords, findCaseById,
     rechallengeCase, viewWrongCaseAnalysis, openCaseDetail, closeCaseDetail,
     clearRecords, getActiveCategories, getActiveDifficulties, renderBankFilters
 };

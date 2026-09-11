@@ -1,20 +1,31 @@
-/* ===================== 应用入口（页面结构 / 导航 / 全局事件 / window 暴露） ===================== */
-// 本模块负责页面 HTML 结构生成（initApp）、导航、投稿表单、全局事件，以及「我的」页。
-// 视觉复刻解压文件 UI；功能逻辑全部复用既有模块（game / case-bank / storage / inquiry / inspection）。
+/* ===================== 应用入口（装配 / 导航 / 页面结构 / 全局事件） =====================
+ * 本模块是组合根（composition root）：
+ *   - 加载病例数据并驱动应用启动
+ *   - 生成页面结构（initApp）
+ *   - 页面导航与「我的」页统计
+ *   - 投稿表单
+ *   - 把各模块的公开接口注入到需要它们的地方（register*），并把内联 onclick 需要的函数挂到 window
+ *
+ * 不负责：病例规则、问诊匹配、答案判定、备份编码、学习记录读写实现。
+ * ================================================================================== */
 
-import { loadCaseData, getAllCases } from './data.js';
+import { loadAllCases, getAllCases, diffOrder, diffMap } from './data.js';
 import {
-    renderDataStats, resetAllProgress, exportProgress, importProgress,
-    applyImportMode, confirmCoverImport, closeImportModal,
+    getCompletedCases, markCaseCompleted, saveWrongCase, removeWrongCase,
+    getProgressSummary, clearAllProgress
+} from './storage/progress-storage.js';
+import {
+    exportProgress, importProgress, applyImportMode, confirmCoverImport, closeImportModal,
     createProgressBackupCode, parseProgressBackupCode,
-    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart, renderBackupChoice, saveBackupFile,
-    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo,
-    getCompletedCases, getWrongCases
-} from './storage.js';
+    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart,
+    renderBackupChoice, saveBackupFile, openRestoreChoice, startCodeRestore, checkBackupCode,
+    triggerFileRestore, copyDiagnosticInfo, registerProgressChangeHandler
+} from './storage/backup-service.js';
 import {
-    startChallenge, resetGameUI, selectDifficulty, showCurrentCase, prevCase, nextCase,
+    startChallenge, resetGameUI, selectDifficulty, prevCase, nextCase,
     exploreDiag, showOtherCheck, submitAnswer, viewAnswer, resetCurrentCase, showHistory,
-    openSimpleResultModal, closeSimpleResultModal, registerModalOpeners, registerNav
+    openSimpleResultModal, closeSimpleResultModal, registerModalOpeners, registerNav,
+    registerProgressService, registerCaseSource
 } from './game.js';
 import { openInquiryModal, sendInquiry, closeInquiryModal } from './inquiry.js';
 import {
@@ -23,7 +34,7 @@ import {
 import {
     openCaseBank, closeCaseBank, selectBankCategory, selectBankDiff, filterCaseBank,
     challengeCaseFromBank, openRecords, closeRecords, clearRecords,
-    rechallengeCase, viewWrongCaseAnalysis, openCaseDetail, closeCaseDetail, renderFullCase,
+    rechallengeCase, viewWrongCaseAnalysis, openCaseDetail, closeCaseDetail,
     registerNav as registerBankNav
 } from './case-bank.js';
 
@@ -36,12 +47,10 @@ function showPage(name) {
     const map = { Home: 'navHome', Game: 'navClinic', Bank: 'navBank', Me: 'navMe' };
     const navId = map[name];
     if (navId) document.getElementById(navId)?.classList.add('nav-active');
-    // 对齐解压文件：首页/我的页使用 wide 壳层
     const widePages = ['Home', 'Me'];
     const wide = widePages.includes(name);
     ['siteHeaderInner', 'appContainer', 'siteFooterInner'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.toggle('wide', wide);
+        document.getElementById(id)?.classList.toggle('wide', wide);
     });
 }
 function goHome() { showPage('Home'); }
@@ -50,30 +59,25 @@ function showMe() { renderMeStats(); showPage('Me'); }
 
 /* ===================== 「我的」页统计 ===================== */
 function renderMeStats() {
-    const total = getAllCases().length;
-    const done = getCompletedCases().length;
-    const wrong = getWrongCases().length;
-    const pct = total ? Math.round(done / total * 100) : 0;
+    const { done, wrong, remaining, percent } = getProgressSummary(getAllCases().length);
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
     set('meStatDone', done);
     set('meStatWrong', wrong);
-    set('meStatRemain', Math.max(0, total - done));
-    set('meProgressPct', pct + '%');
+    set('meStatRemain', remaining);
+    set('meProgressPct', percent + '%');
     set('meWrongCountBadge', wrong + ' 条');
     const bar = document.getElementById('meProgressBar');
-    if (bar) bar.style.width = pct + '%';
+    if (bar) bar.style.width = percent + '%';
     const wrongEmpty = document.getElementById('meWrongEmpty');
     const wrongAction = document.getElementById('meWrongAction');
     const wrongBtn = document.getElementById('meWrongBtn');
     if (wrongEmpty) wrongEmpty.style.display = wrong === 0 ? 'block' : 'none';
     if (wrongAction) wrongAction.style.display = wrong === 0 ? 'none' : 'flex';
     if (wrongBtn) wrongBtn.textContent = '打开错题本 · ' + wrong + ' 条';
-    renderDataStats();
 }
 
 function toggleMeDetail(id) {
-    const card = document.getElementById(id);
-    if (card) card.classList.toggle('open');
+    document.getElementById(id)?.classList.toggle('open');
 }
 
 function toggleAnswerCard() {
@@ -87,9 +91,28 @@ function toggleAnswerCard() {
     if (hint) hint.style.display = open ? 'block' : 'none';
 }
 
+function resetProgress() {
+    if (!confirm('确定要清空所有学习进度和错题吗？此操作不可恢复。')) return;
+    clearAllProgress();
+    renderMeStats();
+    alert('已重置全部本地学习数据。');
+}
+
 /* ===================== 页面结构 ===================== */
 function initApp() {
     const appContainer = document.getElementById('appContainer');
+
+    // 关卡按钮由难度元数据生成，避免计数/文案在多处硬编码
+    const difficultyButtonsHtml = diffOrder.map(diff => `
+                    <button class="btn--difficulty" data-diff="${diff}" onclick="selectDifficulty('${diff}', this)">
+                        <div><div class="difficulty-name">${diffMap[diff].name}</div><div class="difficulty-blurb">${
+                            { basic: '证候较显，用来熟悉「读主诉 → 四诊 → 辨证」的节奏。',
+                              intermediate: '线索交叉，需要取舍，不再是单证对号入座。',
+                              advanced: '更接近真实门诊：信息不完全，判断要自己立住。' }[diff]
+                        }</div></div>
+                        <div class="difficulty-count" id="diffCount_${diff}">—</div>
+                    </button>`).join('');
+
     appContainer.innerHTML = `
         <div class="page active" id="pageHome">
             <section class="hero">
@@ -112,19 +135,7 @@ function initApp() {
                 <p class="eyebrow">接诊</p>
                 <h1 class="page-title">选择关卡</h1>
                 <p class="page-sub">选好难度后，只会出现主诉。四诊要你自己点开，线索不会预先摆上桌。</p>
-                <div class="difficulty-list" id="difficultyBtns">
-                    <button class="btn--difficulty" data-diff="basic" onclick="selectDifficulty('basic', this)">
-                        <div><div class="difficulty-name">入门训练</div><div class="difficulty-blurb">证候较显，用来熟悉「读主诉 → 四诊 → 辨证」的节奏。</div></div>
-                        <div class="difficulty-count" id="diffCount_basic">—</div>
-                    </button>
-                    <button class="btn--difficulty" data-diff="intermediate" onclick="selectDifficulty('intermediate', this)">
-                        <div><div class="difficulty-name">综合训练</div><div class="difficulty-blurb">线索交叉，需要取舍，不再是单证对号入座。</div></div>
-                        <div class="difficulty-count" id="diffCount_intermediate">—</div>
-                    </button>
-                    <button class="btn--difficulty" data-diff="advanced" onclick="selectDifficulty('advanced', this)">
-                        <div><div class="difficulty-name">临床思维</div><div class="difficulty-blurb">更接近真实门诊：信息不完全，判断要自己立住。</div></div>
-                        <div class="difficulty-count" id="diffCount_advanced">—</div>
-                    </button>
+                <div class="difficulty-list" id="difficultyBtns">${difficultyButtonsHtml}
                 </div>
             </section>
 
@@ -197,7 +208,7 @@ function initApp() {
         <div class="page" id="pageBank">
             <p class="eyebrow">题库</p>
             <h1 class="page-title">病例题库</h1>
-            <p class="page-sub" id="bankCount">点开即可按原关卡规则重诊。</p>
+            <p class="page-sub" id="bankCount"></p>
             <div id="caseBankContent"></div>
         </div>
 
@@ -268,7 +279,7 @@ function initApp() {
                 <div class="data-actions">
                     <button onclick="openBackupModal()">备份</button>
                     <button onclick="openRestoreChoice()">恢复</button>
-                    <button onclick="resetAllProgress(); renderMeStats();">重置进度</button>
+                    <button onclick="resetProgress()">重置进度</button>
                 </div>
                 <p class="form-hint" style="margin-top:12px;font-size:13px;color:var(--text-muted);line-height:1.7;">学习记录只保存在当前浏览器，换设备或其他浏览器前建议先备份。</p>
                 <p id="dataStats" class="data-stats"></p>
@@ -279,12 +290,12 @@ function initApp() {
     // 难度计数
     const all = getAllCases();
     const done = new Set(getCompletedCases());
-    ['basic', 'intermediate', 'advanced'].forEach(diff => {
+    for (const diff of diffOrder) {
         const pool = all.filter(c => c.difficulty === diff);
         const remain = pool.filter(c => !done.has(c.id)).length;
         const el = document.getElementById('diffCount_' + diff);
         if (el) el.textContent = remain + ' / ' + pool.length;
-    });
+    }
     // 题库计数
     const bc = document.getElementById('bankCount');
     if (bc) bc.textContent = '共 ' + all.length + ' 则。点开即可按原关卡规则重诊。';
@@ -304,6 +315,7 @@ function openSubmissionModal() {
     document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
 }
 function closeSubmissionModal() { document.getElementById('submissionModal').style.display = 'none'; }
+
 function toggleDifficultyOptions() {
     const options = document.getElementById('difficultyOptions');
     options.style.display = options.style.display === 'none' ? 'block' : 'none';
@@ -339,7 +351,7 @@ function validateSubmissionForm() {
 /* ===================== 全局事件 ===================== */
 document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) e.target.style.display = 'none'; });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); });
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
     if (window.location.search.includes('submitted=true')) {
         if (history.replaceState) history.replaceState(null, '', window.location.pathname);
         openSubmissionModal();
@@ -347,82 +359,56 @@ window.addEventListener('load', function() {
     }
 });
 
-/* ===================== 模块间依赖注入 ===================== */
+/* ===================== 模块装配 ===================== */
+// 注入游戏会话所需的外部能力，避免 Game 反向依赖 Storage / 题库 / 弹窗模块
+registerCaseSource(getAllCases);
+registerProgressService({
+    getCompletedIds: getCompletedCases,
+    markCompleted: markCaseCompleted,
+    saveWrong: saveWrongCase,
+    removeWrong: removeWrongCase
+});
 registerModalOpeners({ openInquiry: openInquiryModal, openInspection: openInspectionModal });
 registerNav({ showPage });
 registerBankNav({ showPage });
+// 学习数据发生变化时刷新界面（避免 Infrastructure 直接调用页面模块）
+registerProgressChangeHandler(() => {
+    renderMeStats();
+    if (document.getElementById('recordsModal')?.style.display === 'flex') openRecords();
+    if (document.getElementById('caseBankList')) filterCaseBank();
+});
 
 /* ===================== 暴露到 window（供内联 onclick 使用） ===================== */
-window.goHome = goHome;
-window.showAbout = showAbout;
-window.showMe = showMe;
-window.renderMeStats = renderMeStats;
-window.toggleMeDetail = toggleMeDetail;
-window.toggleAnswerCard = toggleAnswerCard;
-window.startChallenge = startChallenge;
-window.openCaseBank = openCaseBank;
-window.openRecords = openRecords;
-window.openSubmissionModal = openSubmissionModal;
-window.closeSubmissionModal = closeSubmissionModal;
-window.selectDifficulty = selectDifficulty;
-window.showHistory = showHistory;
-window.prevCase = prevCase;
-window.nextCase = nextCase;
-window.exploreDiag = exploreDiag;
-window.showOtherCheck = showOtherCheck;
-window.submitAnswer = submitAnswer;
-window.viewAnswer = viewAnswer;
-window.resetCurrentCase = resetCurrentCase;
-window.openSimpleResultModal = openSimpleResultModal;
-window.closeSimpleResultModal = closeSimpleResultModal;
-window.sendInquiry = sendInquiry;
-window.closeInquiryModal = closeInquiryModal;
-window.openInspectionModal = openInspectionModal;
-window.closeInspectionModal = closeInspectionModal;
-window.inspectPrev = inspectPrev;
-window.inspectNext = inspectNext;
-window.submitTongueJudgment = submitTongueJudgment;
-window.closeCaseBank = closeCaseBank;
-window.filterCaseBank = filterCaseBank;
-window.selectBankCategory = selectBankCategory;
-window.selectBankDiff = selectBankDiff;
-window.challengeCaseFromBank = challengeCaseFromBank;
-window.closeRecords = closeRecords;
-window.clearRecords = clearRecords;
-window.rechallengeCase = rechallengeCase;
-window.viewWrongCaseAnalysis = viewWrongCaseAnalysis;
-window.openCaseDetail = openCaseDetail;
-window.closeCaseDetail = closeCaseDetail;
-window.toggleDifficultyOptions = toggleDifficultyOptions;
-window.selectDifficultyOption = selectDifficultyOption;
-window.validateSubmissionForm = validateSubmissionForm;
-window.resetAllProgress = resetAllProgress;
-window.exportProgress = exportProgress;
-window.importProgress = importProgress;
-window.applyImportMode = applyImportMode;
-window.confirmCoverImport = confirmCoverImport;
-window.closeImportModal = closeImportModal;
-window.createProgressBackupCode = createProgressBackupCode;
-window.parseProgressBackupCode = parseProgressBackupCode;
-window.openBackupModal = openBackupModal;
-window.closeBackupModal = closeBackupModal;
-window.showBackupCode = showBackupCode;
-window.copyBackupCode = copyBackupCode;
-window.copyBackupPart = copyBackupPart;
-window.renderBackupChoice = renderBackupChoice;
-window.saveBackupFile = saveBackupFile;
-window.openRestoreChoice = openRestoreChoice;
-window.startCodeRestore = startCodeRestore;
-window.checkBackupCode = checkBackupCode;
-window.triggerFileRestore = triggerFileRestore;
-window.copyDiagnosticInfo = copyDiagnosticInfo;
-
-// 仅用于调试 / 兼容
-window._getAllCases = getAllCases;
-window._openCaseDetail = openCaseDetail;
-window._renderFullCase = renderFullCase;
-window._resetGameUI = resetGameUI;
-window._showCurrentCase = showCurrentCase;
+Object.assign(window, {
+    goHome, showAbout, showMe, renderMeStats, toggleMeDetail, toggleAnswerCard,
+    startChallenge, openCaseBank, openRecords,
+    openSubmissionModal, closeSubmissionModal, toggleDifficultyOptions, selectDifficultyOption, validateSubmissionForm,
+    selectDifficulty, showHistory, prevCase, nextCase, exploreDiag, showOtherCheck,
+    submitAnswer, viewAnswer, resetCurrentCase, resetGameUI,
+    openSimpleResultModal, closeSimpleResultModal,
+    sendInquiry, closeInquiryModal,
+    openInspectionModal, closeInspectionModal, inspectPrev, inspectNext, submitTongueJudgment,
+    closeCaseBank, filterCaseBank, selectBankCategory, selectBankDiff, challengeCaseFromBank,
+    closeRecords, clearRecords, rechallengeCase, viewWrongCaseAnalysis,
+    openCaseDetail, closeCaseDetail,
+    resetProgress, exportProgress, importProgress,
+    applyImportMode, confirmCoverImport, closeImportModal,
+    createProgressBackupCode, parseProgressBackupCode,
+    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart,
+    renderBackupChoice, saveBackupFile,
+    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo
+});
 
 /* ===================== 启动 ===================== */
-loadCaseData(initApp);
+async function boot() {
+    const loading = document.getElementById('loadingIndicator');
+    try {
+        await loadAllCases();
+        initApp();
+    } catch (error) {
+        console.error('加载病例数据出错:', error);
+        if (loading) loading.innerHTML = '<div style="font-size:14px;color:var(--text-muted);">病例数据加载失败，请刷新重试</div>';
+    }
+}
+
+boot();
