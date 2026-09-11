@@ -10,7 +10,7 @@
 
 import { getCurrentCase, addClue, setExplored, getSession,
     setInspectionIndex, setInspectionNonTongueAdded } from './game.js';
-import { judgeTongue, describeTongueReference } from './core/tongue-judge.js';
+import { judgeTongue, describeTongueReference, TONGUE_RESULT, TONGUE_DIM_STATUS } from './core/tongue-judge.js';
 import { tongueImageTypeMap } from './data.js';
 
 export function openInspectionModal() {
@@ -108,6 +108,28 @@ export function closeInspectionModal() {
     document.getElementById('inspectionImg').removeAttribute('src');
 }
 
+const TONGUE_DIM_LABEL = { color: '舌色', shape: '舌形', coating: '舌苔' };
+
+// 把判定结果写成「总体结论 + 逐维度反馈」。
+// 病例没提供的维度标「本病例未提供」（not_tested），与用户没写的「未提及」（missing）
+// 以及写错的（wrong）区分开；未考查的维度不进分母。
+function formatTongueVerdict(verdict) {
+    if (verdict.status === TONGUE_RESULT.NOT_TESTABLE) return '本病例没有可供舌象判断的结构化考点。';
+    const headline = {
+        [TONGUE_RESULT.CORRECT]: '判断正确',
+        [TONGUE_RESULT.PARTIAL]: '部分正确',
+        [TONGUE_RESULT.WRONG]: '判断有误'
+    }[verdict.status] || '判断有误';
+    const lines = Object.entries(verdict.dimensions).map(([dim, d]) => {
+        const label = TONGUE_DIM_LABEL[dim] || dim;
+        if (d.status === TONGUE_DIM_STATUS.NOT_TESTED) return `${label} — 本病例未提供`;
+        if (d.status === TONGUE_DIM_STATUS.MISSING) return `${label} ○ 未提及`;
+        if (d.status === TONGUE_DIM_STATUS.CORRECT) return `${label} ✅`;
+        return `${label} ❌ 应为「${d.expected}」`;
+    });
+    return `${headline}（${verdict.matched}/${verdict.total}）：\n${lines.join('\n')}`;
+}
+
 export function submitTongueJudgment() {
     const currentCase = getCurrentCase();
     if (!currentCase) return;
@@ -115,9 +137,10 @@ export function submitTongueJudgment() {
     if (!userText) { alert('请填写你的舌象判断。'); return; }
 
     const inspection = currentCase.clues.inspection;
-    const ok = judgeTongue(inspection.tongueJudgment || {}, userText);
+    // 第三个参数是病例原文舌象描述：用于判断病例里的「正常」有没有原文依据
+    const verdict = judgeTongue(inspection.tongueJudgment, userText, inspection.tongueDesc || '');
     const correctText = describeTongueReference(inspection);
-    const clueText = `舌象判断\n${ok ? '判断正确' : '判断有偏差'}：你的描述：${userText}\n正确答案：${correctText}`;
+    const clueText = `舌象判断\n${formatTongueVerdict(verdict)}\n你的描述：${userText}\n正确答案：${correctText}`;
 
     addClue('inspection', clueText, '望诊·舌象');
     setExplored('inspection');
