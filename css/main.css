@@ -159,18 +159,21 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 
 /* ===================== 首页 hero ===================== */
 /* 仅首页激活时，主内容区撑满首屏剩余空间（不影响其他 .page） */
-.app-container:has(.pageHome.active) {
+.app-container:has(#pageHome.active) {
     flex: 1 0 auto;
     display: flex;
     flex-direction: column;
+    /* 归一化上下 padding，避免原 40px/64px 不对称导致视觉中心偏上 */
+    padding-top: 32px;
+    padding-bottom: 32px;
 }
 /* 首页容器填充剩余空间，hero 在其中垂直居中 */
-.pageHome {
+#pageHome {
     flex: 1;
     justify-content: center;
 }
-.hero { max-width: 672px; margin: 0 auto; padding-top: 24px; padding-bottom: 24px; text-align: center; }
-@media (min-width: 640px) { .hero { padding-top: 24px; padding-bottom: 24px; } }
+.hero { max-width: 672px; margin: 0 auto; padding: 0; text-align: center; }
+@media (min-width: 640px) { .hero { padding: 0; } }
 /* mobile-first：主标题是全页第一视觉焦点，次级导航弱但明确可点 */
 .hero-title {
     font-family: var(--font-heading); font-weight: 700;
