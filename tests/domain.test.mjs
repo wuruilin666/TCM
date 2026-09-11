@@ -33,7 +33,7 @@ check('空输入为假', !isDiseaseCorrect('', '胃脘痛'));
 
 // 回归：单字片段不得凭 substring 蒙对病名（旧实现下 "热" 会被 "胃热证" 包含）
 check('单字病名片段不得命中', !isDiseaseCorrect('胃热证', '热'));
-check('另一个单字病片段不得命中', !isDiseaseCorrect('胃脘痛', '胃'));
+check('另一个单字片段不得命中', !isDiseaseCorrect('胃脘痛', '胃'));
 check('完整病名主体仍然命中', isDiseaseCorrect('胃脘痛证', '胃脘痛'));
 check('完全匹配仍然命中', isDiseaseCorrect('胃脘痛', '胃脘痛'));
 check('无关病名仍然不命中', !isDiseaseCorrect('头痛', '胃脘痛'));
