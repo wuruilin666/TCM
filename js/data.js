@@ -1,75 +1,64 @@
-/* ===================== 数据与配置（纯数据，无 DOM / 无游戏状态） ===================== */
-// 本模块仅负责：病例数据的定义、加载、校验、安全输出工具，以及各类映射表。
+/* ===================== 病例数据规则（数据定义 / 加载 / 校验，纯逻辑） =====================
+ * 本模块负责：
+ *   - 病例数据的元信息映射（难度、分类、舌象图片路径）
+ *   - 病例数据的校验契约
+ *   - 病例 JSON 的按难度加载与合并
+ *
+ * 不负责：通用 HTML 工具（已拆到 html-utils.js）、游戏状态、DOM、localStorage。
+ * ================================================================================== */
 
-export let casesDB = null;
+import { isNonEmptyString } from './html-utils.js';
 
+/* ===================== 数据源配置 ===================== */
 export const caseDiffFiles = {
     basic: 'data/cases/basic.json',
     intermediate: 'data/cases/intermediate.json',
     advanced: 'data/cases/advanced.json'
 };
 
-export const tongueImages = {
-    'basic-001': 'tongue/basic-001.jpg',
-    'basic-002': 'tongue/basic-002.jpg',
-    'basic-003': 'tongue/basic-003.jpg',
-    'basic-004': 'tongue/basic-004.jpg',
-    'inter-001': 'tongue/inter-001.jpg',
-    'inter-002': 'tongue/inter-002.jpg',
-    'inter-003': 'tongue/inter-003.jpg',
-    'inter-004': 'tongue/inter-004.jpg',
-    'inter-005': 'tongue/inter-005.jpg',
-    'inter-006': 'tongue/inter-006.jpg',
-    'inter-007': 'tongue/inter-007.jpg',
-    'inter-008': 'tongue/inter-008.jpg',
-    'adv-001': 'tongue/adv-001.jpg',
-    'adv-002': 'tongue/adv-002.jpg',
-    'adv-003': 'tongue/adv-003.jpg',
-    'adv-004': 'tongue/adv-004.jpg',
-    'adv-005': 'tongue/adv-005.jpg',
-    'adv-006': 'tongue/adv-006.jpg',
-    'adv-007': 'tongue/adv-007.jpg',
-};
-
-export const tongueImageTypeMap = {
-    'basic-001': '参考图', 'inter-001': '参考图', 'inter-002': '参考图', 'inter-003': '参考图', 'inter-004': '参考图', 'inter-005': '参考图', 'adv-001': '参考图', 'basic-004': '参考图'
-};
-
-// 一级分类映射：代码 -> {名称, emoji}
-export const categoryMap = {
-    'all': { name: '全部病例', emoji: '' },
-    'pulmonary': { name: '肺系病证', emoji: '' },
-    'heart': { name: '心系病证', emoji: '' },
-    'spleen_stomach': { name: '脾胃系病证', emoji: '' },
-    'liver_gallbladder': { name: '肝胆系病证', emoji: '' },
-    'kidney': { name: '肾系病证', emoji: '' },
-    'qi_blood_fluid': { name: '气血津液病证', emoji: '' },
-    'limb_meridian': { name: '肢体经络病证', emoji: '' },
-    'gynecology': { name: '妇科病证', emoji: '' },
-    'pediatrics': { name: '儿科病证', emoji: '' },
-    'surgery_dermatology': { name: '外科/皮肤科病证', emoji: '' },
-    'ent': { name: '五官病证', emoji: '' }
-};
-
-// 训练阶段映射：代码 -> {名称, emoji}
+// 训练阶段映射：代码 -> {名称}
 export const diffMap = {
-    'basic': { name: '入门训练', emoji: '' },
-    'intermediate': { name: '综合训练', emoji: '' },
-    'advanced': { name: '临床思维', emoji: '' }
+    'basic': { name: '入门训练' },
+    'intermediate': { name: '综合训练' },
+    'advanced': { name: '临床思维' }
 };
 
 export const diffOrder = ['basic', 'intermediate', 'advanced'];
 
-/* ===================== 数据与输出安全 ===================== */
+// 一级分类映射：代码 -> {名称}
+export const categoryMap = {
+    'all': { name: '全部病例' },
+    'pulmonary': { name: '肺系病证' },
+    'heart': { name: '心系病证' },
+    'spleen_stomach': { name: '脾胃系病证' },
+    'liver_gallbladder': { name: '肝胆系病证' },
+    'kidney': { name: '肾系病证' },
+    'qi_blood_fluid': { name: '气血津液病证' },
+    'limb_meridian': { name: '肢体经络病证' },
+    'gynecology': { name: '妇科病证' },
+    'pediatrics': { name: '儿科病证' },
+    'surgery_dermatology': { name: '外科/皮肤科病证' },
+    'ent': { name: '五官病证' }
+};
+
+// 舌象图片来源标注：仅用于页面角标文案，不代表病例数据的正确性判断。
+// 病例的舌象判断契约由 case.clues.inspection.tongueJudgment 显式定义，见 inspection.js。
+export const tongueImageTypeMap = {
+    'basic-001': '参考图', 'inter-001': '参考图', 'inter-002': '参考图', 'inter-003': '参考图',
+    'inter-004': '参考图', 'inter-005': '参考图', 'adv-001': '参考图', 'basic-004': '参考图'
+};
+
+// 望诊图片校验用的文件名规则
+const TONGUE_IMAGE_RE = /^tongue\/[\w-]+\.jpg$/;
+
+
+/* ===================== 病例校验契约 ===================== */
 export const SAFE_CASE_ID = /^[a-z]+-\d{3}$/;
 export const MAX_STORED_TEXT_LENGTH = 2000;
 
-export function escapeHtml(value) {
-    return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
+export function isSafeCaseId(value) {
+    return typeof value === 'string' && SAFE_CASE_ID.test(value);
 }
-export function escapeHtmlWithBreaks(value) { return escapeHtml(value).replace(/\r?\n/g, '<br>'); }
-export function isNonEmptyString(value) { return typeof value === 'string' && value.trim().length > 0; }
-export function isSafeCaseId(value) { return typeof value === 'string' && SAFE_CASE_ID.test(value); }
 
 /* 问诊维度白名单：每道问诊题必须标注唯一主维度，且必须属于该集合。
    新增病例时若缺少 dimension 或使用未登记的维度，病例数据将被判定为无效。 */
@@ -92,66 +81,80 @@ export function isValidInquiryQuestion(q) {
         && VALID_INQUIRY_DIMENSIONS.has(q.dimension.trim());
 }
 
-export function validateCaseData(data) {
-    if (!data || !Array.isArray(data.cases) || data.cases.length === 0) throw new Error('病例数据格式无效');
+// 校验单个病例。返回病例本身；不合法时抛出带病例 ID 的明确错误。
+export function validateCase(c) {
+    if (!c || !isSafeCaseId(c.id)) throw new Error('病例 ID 无效：' + (c && c.id));
+    if (!isNonEmptyString(c.title) || !isNonEmptyString(c.chiefComplaint) || !categoryMap[c.category] || !diffMap[c.difficulty]) {
+        throw new Error(`病例 ${c.id} 缺少基础字段`);
+    }
+    const clues = c.clues;
+    if (!clues || !['inspection', 'auscultation', 'pulse'].every(key => clues[key] && isNonEmptyString(clues[key].displayTitle) && isNonEmptyString(clues[key].displayContent) && isNonEmptyString(clues[key].textSummary))) {
+        throw new Error(`病例 ${c.id} 的四诊字段无效`);
+    }
+    if (!clues.inquiry || !Array.isArray(clues.inquiry.questions) || clues.inquiry.questions.length === 0 || !clues.inquiry.questions.every(isValidInquiryQuestion)) {
+        throw new Error(`病例 ${c.id} 的问诊字段无效（每题必须含 q / a / keywords / 合法 dimension）`);
+    }
+    const answer = c.correctAnswer, analysis = c.fullAnalysis;
+    if (!answer || !['disease', 'syndrome', 'westernDiagnosis'].every(key => isNonEmptyString(answer[key]))) {
+        throw new Error(`病例 ${c.id} 的答案字段无效`);
+    }
+    if (!analysis || !['disease', 'syndrome', 'westernDiagnosis', 'pathogenesis', 'prescription'].every(key => isNonEmptyString(analysis[key]))
+        || !Array.isArray(analysis.knowledgePoints) || !analysis.knowledgePoints.every(isNonEmptyString)) {
+        throw new Error(`病例 ${c.id} 的解析字段无效`);
+    }
+    if (c.inspectionImages !== undefined) {
+        if (!Array.isArray(c.inspectionImages) || c.inspectionImages.length === 0
+            || !c.inspectionImages.every(path => typeof path === 'string' && TONGUE_IMAGE_RE.test(path))) {
+            throw new Error(`病例 ${c.id} 的望诊图片路径无效（应为 tongue/xxx.jpg 数组）`);
+        }
+    }
+    return c;
+}
+
+// 校验一份难度文件。返回其中的病例数组；不合法时抛出错误。
+// 注意：结构错误必须暴露，不能静默跳过病例——静默跳过会让题库「少一例」而无人察觉。
+export function validateCaseFile(data, diff) {
+    if (!data || !Array.isArray(data.cases) || data.cases.length === 0) {
+        throw new Error(`病例数据 ${diff} 格式无效：缺少非空的 cases 数组`);
+    }
     const ids = new Set();
     for (const c of data.cases) {
-        if (!c || !isSafeCaseId(c.id) || ids.has(c.id)) throw new Error('病例 ID 无效或重复');
+        validateCase(c);
+        if (ids.has(c.id)) throw new Error(`病例数据 ${diff} 存在重复 ID：${c.id}`);
         ids.add(c.id);
-        if (!isNonEmptyString(c.title) || !isNonEmptyString(c.chiefComplaint) || !categoryMap[c.category] || !diffMap[c.difficulty]) throw new Error(`病例 ${c.id} 缺少基础字段`);
-        const clues = c.clues;
-        if (!clues || !['inspection', 'auscultation', 'pulse'].every(key => clues[key] && isNonEmptyString(clues[key].displayTitle) && isNonEmptyString(clues[key].displayContent) && isNonEmptyString(clues[key].textSummary))) throw new Error(`病例 ${c.id} 的四诊字段无效`);
-        if (!clues.inquiry || !Array.isArray(clues.inquiry.questions) || clues.inquiry.questions.length === 0 || !clues.inquiry.questions.every(isValidInquiryQuestion)) throw new Error(`病例 ${c.id} 的问诊字段无效（每题必须含 q / a / keywords / 合法 dimension）`);
-        const answer = c.correctAnswer, analysis = c.fullAnalysis;
-        if (!answer || !['disease', 'syndrome', 'westernDiagnosis'].every(key => isNonEmptyString(answer[key])) || !analysis || !['disease', 'syndrome', 'westernDiagnosis', 'pathogenesis', 'prescription'].every(key => isNonEmptyString(analysis[key])) || !Array.isArray(analysis.knowledgePoints) || !analysis.knowledgePoints.every(isNonEmptyString)) throw new Error(`病例 ${c.id} 的答案或解析字段无效`);
-        if (c.inspectionImages && (!Array.isArray(c.inspectionImages) || !c.inspectionImages.every(path => typeof path === 'string' && /^tongue\/[\w-]+\.jpg$/.test(path)))) throw new Error(`病例 ${c.id} 的图片路径无效`);
     }
-    return data;
+    return data.cases;
 }
 
-/* ===================== 数据加载（拆分 + 按需） ===================== */
-// 按难度加载完整病例文件（缓存，避免重复请求）
-export const _fullCache = {};
+/* ===================== 病例加载 ===================== */
+// 按难度缓存已加载病例：一份数据只请求一次。
+const casesByDiff = new Map();
 
-export async function ensureDiffLoaded(diff) {
-    if (_fullCache[diff]) return _fullCache[diff];
+// 按难度加载并缓存病例；文件不存在或数据非法时抛错，由调用方决定如何呈现失败。
+export async function loadCasesByDifficulty(diff) {
+    if (casesByDiff.has(diff)) return casesByDiff.get(diff);
     const file = caseDiffFiles[diff];
-    if (!file) return [];
+    if (!file) throw new Error('未知的训练阶段：' + diff);
     const r = await fetch(file);
-    if (!r.ok) throw new Error('病例数据加载失败：' + diff);
-    const data = await r.json();
-    _fullCache[diff] = (data.cases || []).map(validateCaseDataSafe);
-    return _fullCache[diff];
+    if (!r.ok) throw new Error(`病例数据加载失败：${diff}（HTTP ${r.status}）`);
+    const cases = validateCaseFile(await r.json(), diff);
+    casesByDiff.set(diff, cases);
+    return cases;
 }
 
-// 对单个病例做基本字段校验（复用 validateCaseData 的规则，失败则跳过该例）
-export function validateCaseDataSafe(c) {
-    try { validateCaseData({ cases: [c] }); return c; }
-    catch (e) { console.warn('跳过无效病例:', c && c.id, e.message); return null; }
+// 加载全部难度病例，返回扁平数组（顺序：basic → intermediate → advanced）
+export async function loadAllCases() {
+    const lists = [];
+    for (const diff of diffOrder) lists.push(await loadCasesByDifficulty(diff));
+    return lists.flat();
 }
 
-// 把已加载的完整病例合并进 casesDB.cases（保持 getAllCases 兼容）
-export function mergeLoadedCases() {
-    const list = [];
-    for (const diff of Object.keys(caseDiffFiles)) {
-        if (_fullCache[diff]) list.push(..._fullCache[diff].filter(Boolean));
+// 已加载病例的读取入口（同步）。未加载完成时返回空数组，由启动流程保证先加载后使用。
+export function getAllCases() {
+    const lists = [];
+    for (const diff of diffOrder) {
+        const cached = casesByDiff.get(diff);
+        if (cached) lists.push(...cached);
     }
-    casesDB = casesDB || {};
-    casesDB.cases = list;
+    return lists;
 }
-
-export async function loadCaseData(initCallback) {
-    try {
-        // 并行加载三份难度病例 JSON（basic / intermediate / advanced），合入 casesDB
-        await Promise.all(Object.keys(caseDiffFiles).map(diff => ensureDiffLoaded(diff)));
-        mergeLoadedCases();
-        document.getElementById('loadingIndicator').style.display = 'none';
-        if (typeof initCallback === 'function') initCallback();
-    } catch (error) {
-        console.error('加载病例数据出错:', error);
-        document.getElementById('loadingIndicator').textContent = '病例数据加载失败，请刷新重试';
-    }
-}
-
-// 供其它模块使用：获取全部已加载病例
-export function getAllCases() { return (casesDB && casesDB.cases) ? casesDB.cases : []; }
