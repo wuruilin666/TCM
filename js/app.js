@@ -123,8 +123,6 @@ function initApp() {
                     <button class="btn btn--primary btn--lg" style="min-width:208px;" onclick="startChallenge()">开始接诊</button>
                     <div class="home-secondary">
                         <a href="#" onclick="showAbout(); return false;">关于</a>
-                        <span class="dot">·</span>
-                        <a href="#" onclick="openCaseBank(); return false;">题库</a>
                     </div>
                 </div>
             </section>

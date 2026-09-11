@@ -71,7 +71,8 @@ body {
     background-attachment: fixed;
     min-height: 100dvh;
     line-height: 1.6;
-    display: block;
+    display: flex;
+    flex-direction: column;
     position: relative;
 }
 
@@ -157,8 +158,19 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .card--highlight { background: var(--paper-raised); border: 1px solid var(--hairline-strong); }
 
 /* ===================== 首页 hero ===================== */
-.hero { max-width: 672px; margin: 0 auto; padding-top: 48px; padding-bottom: 8px; text-align: center; }
-@media (min-width: 640px) { .hero { padding-top: 80px; padding-bottom: 16px; } }
+/* 仅首页激活时，主内容区撑满首屏剩余空间（不影响其他 .page） */
+.app-container:has(.pageHome.active) {
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+/* 首页容器填充剩余空间，hero 在其中垂直居中 */
+.pageHome {
+    flex: 1;
+    justify-content: center;
+}
+.hero { max-width: 672px; margin: 0 auto; padding-top: 24px; padding-bottom: 24px; text-align: center; }
+@media (min-width: 640px) { .hero { padding-top: 24px; padding-bottom: 24px; } }
 /* mobile-first：主标题是全页第一视觉焦点，次级导航弱但明确可点 */
 .hero-title {
     font-family: var(--font-heading); font-weight: 700;
@@ -179,7 +191,6 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 }
 .home-secondary a:hover { color: var(--ink); border-bottom-color: var(--cinnabar); }
 .home-secondary a:active { color: var(--cinnabar); background: var(--cinnabar-soft); }
-.home-secondary .dot { color: var(--ink-faint); }
 
 /* ===================== 按钮体系（对齐解压：方角 / 朱砂 / 克制阴影） ===================== */
 .btn {
