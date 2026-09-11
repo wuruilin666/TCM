@@ -1,6 +1,17 @@
-/* ===================== 问诊（问什么，只回答什么） ===================== */
-import { state, addClue, markExplored } from './game.js';
+/* ===================== 问诊（问什么，只回答什么） =====================
+ * 职责：
+ *   - 问诊弹窗的交互与消息渲染
+ *   - 调用 inquiry-matcher 解析用户输入
+ *   - 通过 Game Session 的公开接口把结果写回会话
+ *
+ * 不直接读写 game 的 state，也不负责匹配算法（属于 inquiry-matcher）。
+ * ================================================================================== */
+
 import { resolveInquiry as resolveByIntent, detectIntents } from './inquiry-matcher.js';
+import {
+    getSession, getCurrentCase, appendInquiryMessage, recordInquiryTurn,
+    setExplored, getInquiryProgress
+} from './game.js';
 
 // 开发调试：地址栏加 ?debug=1 或 localStorage.setItem('inquiryDebug','1')
 const DEBUG = (() => {
@@ -26,39 +37,44 @@ export function resolveInquiry(questions, text) {
 
 /* ===================== 问诊弹窗 ===================== */
 export function openInquiryModal() {
-    if (!state.currentCase) return;
+    if (!getCurrentCase()) return;
     document.getElementById('inquiryChatArea').innerHTML = '';
-    state.inquiryHistory.forEach(m => appendChat(m.role, m.text));
+    getSession().inquiryHistory.forEach(m => appendChat(m.role, m.text));
     document.getElementById('inquiryInput').value = '';
     document.getElementById('inquiryModal').style.display = 'flex';
     document.getElementById('inquiryInput').focus();
 }
 
 function appendChat(role, text) {
+    const area = document.getElementById('inquiryChatArea');
     const div = document.createElement('div');
     div.className = 'chat-bubble ' + (role === 'user' ? 'user' : 'patient');
     div.textContent = text;
-    document.getElementById('inquiryChatArea').appendChild(div);
-    document.getElementById('inquiryChatArea').scrollTop = document.getElementById('inquiryChatArea').scrollHeight;
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
 }
 
 export function sendInquiry() {
     const input = document.getElementById('inquiryInput');
     const q = input.value.trim();
-    if (!q || !state.currentCase) return;
-    state.inquiryHistory.push({ role: 'user', text: q }); appendChat('user', q);
+    const currentCase = getCurrentCase();
+    if (!q || !currentCase) return;
+
+    appendInquiryMessage('user', q);
+    appendChat('user', q);
     input.value = '';
-    const questions = state.currentCase.clues.inquiry.questions;
+
+    const questions = currentCase.clues.inquiry.questions;
     const res = resolveInquiry(questions, q);
     let answer = res.answer;
+
     if (res.type === 'match' || res.type === 'joint') {
         // 多意图合并回答：逐个记入线索与已问
-        for (const idx of (res.indices && res.indices.length ? res.indices : [res.index])) {
+        const indices = (res.indices && res.indices.length) ? res.indices : [res.index];
+        for (const idx of indices) {
             if (idx == null || idx < 0) continue;
-            if (!state.askedInquiryQuestions.includes(idx)) {
-                state.askedInquiryQuestions.push(idx);
-                addClue('inquiry', questions[idx].a, '问诊·' + questions[idx].q);
-            } else {
+            const turn = recordInquiryTurn(questions[idx].q, questions[idx].a, idx);
+            if (turn.duplicate) {
                 answer += '（这个问题刚才已经回答过了）';
                 break;
             }
@@ -66,14 +82,15 @@ export function sendInquiry() {
     }
     // catchall / neutral 不写入线索、不计入已问，避免剧透或虚构"正常"
     setTimeout(() => {
-        state.inquiryHistory.push({ role: 'patient', text: answer }); appendChat('patient', answer);
-        if (state.askedInquiryQuestions.length >= questions.length) { state.exploredDiags.inquiry = true; markExplored('inquiry'); }
+        appendInquiryMessage('patient', answer);
+        appendChat('patient', answer);
+        const progress = getInquiryProgress();
+        if (progress.allAsked) setExplored('inquiry');
     }, 300);
 }
 
 export function closeInquiryModal() {
     document.getElementById('inquiryModal').style.display = 'none';
-    if (state.currentCase && state.askedInquiryQuestions.length >= state.currentCase.clues.inquiry.questions.length) {
-        state.exploredDiags.inquiry = true; markExplored('inquiry');
-    }
+    if (!getCurrentCase()) return;
+    if (getInquiryProgress().allAsked) setExplored('inquiry');
 }
