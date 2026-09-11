@@ -121,13 +121,16 @@ try {
     check('望诊弹窗打开', document.getElementById('inspectionModal').style.display === 'flex');
     check('舌象来源角标已渲染', document.getElementById('tongueImageBadge').textContent.length > 0);
     const tongueInput = document.getElementById('tongueJudgmentInput');
-    tongueInput.value = '舌淡红，苔薄白';
+    // 用病例原文舌象描述作答：应判为完全正确（病例没提供舌形时，舌形不参与评分）
+    tongueInput.value = game.getCurrentCase().clues.inspection.tongueDesc;
     window.submitTongueJudgment();
     check('提交舌象判断后弹窗关闭', document.getElementById('inspectionModal').style.display === 'none');
     const tongueClue = [...document.querySelectorAll('#clueArea .clue-item')].find(el => el.textContent.includes('舌象判断'));
     check('舌象判断写入线索', !!tongueClue);
-    check('舌象线索包含「判断正确/判断有偏差」',
-        !!tongueClue && /判断正确|判断有偏差/.test(tongueClue.textContent));
+    check('答出病例原文 → 线索显示「判断正确」',
+        !!tongueClue && /判断正确/.test(tongueClue.textContent), tongueClue && tongueClue.textContent);
+    check('舌象线索含逐维度反馈：病例未提供的维度标「本病例未提供」',
+        !!tongueClue && /本病例未提供/.test(tongueClue.textContent));
     check('望诊按钮标记为已探索', document.getElementById('btnWang').classList.contains('explored'));
 
     /* ---------------- E. 问诊匹配 ---------------- */
