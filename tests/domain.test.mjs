@@ -1,5 +1,6 @@
-/* ===================== 判定逻辑等价性测试 =====================
- * 目的：证明重构后的 answer-evaluator / tongue-judge 与重构前行为一致。
+/* ===================== 判定逻辑测试 =====================
+ * 目的：校验 answer-evaluator 的判定规则，以及 tongue-judge 的
+ * 「只考病例真实提供的维度」判定（未描述 ≠ 正常；未提供的维度不进分母）。
  * 运行： node tests/domain.test.mjs
  * ============================================================ */
 import { readFileSync } from 'node:fs';
@@ -126,32 +127,77 @@ check('game.js 不再承载证型判定规则',
 check('game.js 通过注入方式获取进度服务（不 import storage）',
     !/from ['"]\.\/storage/.test(gameCode));
 
-console.log('\n=== 6. 舌象判定 ===\n');
-check('三维中两维相符 → 正确',
-    judgeTongue({ color: '淡红', shape: '正常', coating: '薄白' }, '舌色淡红，舌苔薄白'));
-check('仅一维相符 → 判错',
-    !judgeTongue({ color: '淡红', shape: '胖大', coating: '黄腻' }, '舌质淡红'));
-check('病例述「正常」时用户须也说正常',
-    judgeTongue({ color: '正常', shape: '正常', coating: '正常' }, '舌象正常'));
-check('病例述「正常」但用户说异常 → 判错',
-    !judgeTongue({ color: '正常', shape: '正常', coating: '正常' }, '舌色红绛，苔黄厚'));
-check('空输入为假', !judgeTongue({ color: '淡红' }, ''));
-check('空舌象数据为假', !judgeTongue({}, '舌淡红'));
+console.log('\n=== 6. 舌象判定：只考病例真实提供的维度 ===\n');
 
-// 回归：连续两字窗口容错照旧保留
-check('舌象连续两字命中允许',
-    judgeTongue({ color: '淡红', shape: '正常', coating: '薄白' }, '舌淡红，苔薄白'));
+// 病例只提供舌色 + 舌苔（原文没写舌形）——真实病例里最常见的情况
+const twoDims = { color: '淡红', coating: '淡黄腻' };
+
+const v1 = judgeTongue(twoDims, '舌淡红，苔黄腻');
+check('两维全中 → 整体正确，分母只有 2（舌形不进分母）',
+    v1.status === 'correct' && v1.correct === true && v1.matched === 2 && v1.total === 2, JSON.stringify(v1));
+check('病例没写的维度 status = not_tested',
+    v1.dimensions.shape.status === 'not_tested', JSON.stringify(v1.dimensions.shape));
+check('已提供的两个维度 status = correct',
+    v1.dimensions.color.status === 'correct' && v1.dimensions.coating.status === 'correct');
+
+const v2 = judgeTongue(twoDims, '舌淡红');
+check('用户没写病例已提供的舌苔 → coating = missing，总体 partial（不能算完全正确）',
+    v2.dimensions.coating.status === 'missing' && v2.status === 'partial'
+    && v2.correct === false && v2.matched === 1 && v2.total === 2, JSON.stringify(v2));
+
+const v3 = judgeTongue(twoDims, '舌淡白，苔白');
+check('用户明确写错 → 两个维度 wrong，总体 wrong',
+    v3.dimensions.color.status === 'wrong' && v3.dimensions.coating.status === 'wrong'
+    && v3.status === 'wrong' && v3.correct === false, JSON.stringify(v3));
+
+const v4 = judgeTongue({ color: '淡红', shape: '正常', coating: '薄白' },
+    '舌淡红，舌形正常，苔薄白', '舌质淡红，舌形正常，苔薄白。');
+check('病例原文明确写了「舌形正常」时舌形才是考点，三维全中',
+    v4.status === 'correct' && v4.matched === 3 && v4.total === 3
+    && v4.dimensions.shape.status === 'correct', JSON.stringify(v4));
+
+const v5 = judgeTongue({ color: '淡红', shape: '正常', coating: '薄白' }, '舌形不正常',
+    '舌质淡红，舌形正常，苔薄白。');
+check('「不正常」不得命中「正常」',
+    v5.dimensions.shape.status === 'wrong' && v5.correct === false, JSON.stringify(v5.dimensions.shape));
+
+const v6 = judgeTongue({}, '舌淡红');
+check('tongueJudgment 为空：不崩、total = 0、correct = null',
+    v6.status === 'not_testable' && v6.correct === null && v6.total === 0 && v6.matched === 0,
+    JSON.stringify(v6));
+check('null 入参同样不崩', judgeTongue(null, '舌淡红').total === 0);
+
+// 未描述 ≠ 正常：原文没写「正常」时，数据里的「正常」是推断出来的值，不作为考点
+const v7 = judgeTongue({ color: '淡红', shape: '正常', coating: '淡黄腻' },
+    '舌淡红，苔黄腻', '舌质淡红，苔腻淡黄。');
+check('原文没写舌形 → 数据里的 shape「正常」不作为考点',
+    v7.dimensions.shape.status === 'not_tested' && v7.total === 2 && v7.status === 'correct',
+    JSON.stringify(v7));
+
+// 病例未提供的信息，用户自己写了：既不判错，也不算命中
+const v8 = judgeTongue({ color: '淡红', coating: '淡黄腻' }, '舌质淡红，舌体胖大，苔黄腻');
+check('用户多写病例未提供的舌形：既不算命中也不判错',
+    v8.dimensions.shape.status === 'not_tested' && v8.status === 'correct' && v8.total === 2,
+    JSON.stringify(v8));
+
+check('病例原文写了「正常」时，用户须也说正常才命中',
+    judgeTongue({ color: '正常' }, '舌色正常', '舌质正常。').dimensions.color.status === 'correct');
+check('病例写「正常」而用户写异常 → 判错',
+    judgeTongue({ color: '正常' }, '舌色红绛', '舌质正常。').dimensions.color.status === 'wrong');
+check('维度值为 null / 空串视为未提供',
+    judgeTongue({ color: '淡红', shape: null, coating: '  ' }, '舌淡红').total === 1);
+check('未知字段不影响已支持维度',
+    judgeTongue({ color: '淡红', unknown: 'xxx' }, '舌淡红').status === 'correct');
+check('空输入不可能算正确', judgeTongue({ color: '淡红' }, '').correct !== true);
+
+console.log('\n=== 6b. 舌象判定的容错与窗口边界（回归） ===\n');
+check('近似措辞命中（用户「苔黄腻」≈ 病例「淡黄腻」）',
+    judgeTongue(twoDims, '苔黄腻').dimensions.coating.status === 'correct');
 check('连续两字窗口仍能容错命中长术语（胖大有齿痕 → 舌胖大）',
-    judgeTongue({ color: '淡红', shape: '胖大有齿痕', coating: '薄白' }, '舌淡红，舌胖大，苔薄白'));
-// 回归：窗口边界。旧实现用 substr(i,2) 时末尾会退化成一个单字，
-// 于是「淡红」的尾字「红」也能命中；此处色/苔两维未命中，靠 shape 正常仅得 1 维。
-// 若尾字越界被当成"两字命中"，色维会假命中而凑满 2 维 → 判对。
-check('「淡红」的尾字不得越界充当双字窗口（否则色维假命中凑够两维）',
-    !judgeTongue({ color: '淡红', shape: '正常', coating: '薄白' }, '舌红，正常'));
-check('单字「红」不能作为「淡红」的双字窗口命中', !judgeTongue(
-    { color: '淡红', shape: '胖大', coating: '黄腻' },
-    '舌红'
-));
+    judgeTongue({ color: '淡红', shape: '胖大有齿痕', coating: '薄白' }, '舌淡红，舌胖大，苔薄白').status === 'correct');
+// 窗口边界：旧实现用 substr(i,2) 时末尾会退化成一个单字，于是「淡红」的尾字「红」也能命中
+check('「淡红」的尾字不得越界充当双字窗口（用户只写「红」不算命中）',
+    judgeTongue({ color: '淡红', coating: '薄白' }, '舌红，苔黄腻').dimensions.color.status === 'wrong');
 
 console.log('\n=== 7. 舌象参考答案文案 ===\n');
 const inter6 = byId('inter-006');
@@ -159,9 +205,10 @@ const refText = describeTongueReference(inter6.clues.inspection);
 check('优先使用病例 tongueDesc 原文', refText === inter6.clues.inspection.tongueDesc.trim(),
     `${refText} vs ${inter6.clues.inspection.tongueDesc}`);
 const auto = describeTongueReference({ tongueJudgment: { color: '淡红', coating: '薄白' } });
-check('无 tongueDesc 时由维度拼出', auto === '舌色淡红，舌苔薄白', auto);
-const autoMissing = describeTongueReference({ tongueJudgment: { color: '淡红' } });
-check('缺失维度标注「未述」', autoMissing === '舌色淡红，舌苔未述', autoMissing);
+check('无 tongueDesc 时只拼病例提供的维度', auto === '舌色淡红，舌苔薄白', auto);
+const autoOne = describeTongueReference({ tongueJudgment: { color: '淡红' } });
+check('只提供舌色时不补「未述」占位', autoOne === '舌色淡红', autoOne);
+check('没有任何维度时参考答案为空串', describeTongueReference({ tongueJudgment: {} }) === '');
 
 console.log('\n=== 8. 全病例舌象判定可执行 ===\n');
 let tongueOk = true;
@@ -171,10 +218,27 @@ for (const c of cases) {
     const ref = describeTongueReference(ins);
     if (!ref) { tongueOk = false; console.log(`     ✗ ${c.id} 无法生成参考答案`); continue; }
     // 用参考答案自身作为输入，应判定为正确
-    const selfOk = judgeTongue(ins.tongueJudgment, ref);
-    if (!selfOk) console.log(`     ⚠️  ${c.id} 参考答案自判未通过（数据描述与字段措辞不同所致）：${ref}`);
+    const verdict = judgeTongue(ins.tongueJudgment, ref, ins.tongueDesc || '');
+    if (verdict.correct !== true) {
+        console.log(`     ⚠️  ${c.id} 参考答案自判未通过（数据描述与字段措辞不同所致）：${ref} → ${JSON.stringify(verdict.dimensions)}`);
+    }
 }
 check('全部病例的舌象字段可用且能生成参考答案', tongueOk);
+
+console.log('\n=== 9. 未描述 ≠ 正常（全量病例护栏） ===\n');
+let normalGuardOk = true;
+for (const c of cases) {
+    const ins = c.clues.inspection;
+    const tj = ins.tongueJudgment || {};
+    const desc = ins.tongueDesc || '';
+    const shapeIsNormal = typeof tj.shape === 'string' && /正常/.test(tj.shape);
+    const shapeTested = judgeTongue(tj, '舌淡红', desc).dimensions.shape.status !== 'not_tested';
+    if (shapeIsNormal && !/正常/.test(desc) && shapeTested) {
+        normalGuardOk = false;
+        console.log(`     ✗ ${c.id}：原文没写「正常」，却仍把 shape 当考点`);
+    }
+}
+check('原文没写「正常」的病例，其「正常」字段一律不参与评分', normalGuardOk);
 
 console.log('\n=== 结果 ===');
 console.log(`通过 ${pass}，失败 ${fail}`);
