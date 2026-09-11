@@ -1,9 +1,18 @@
 /* ===================== 答案判定（纯逻辑 Domain） =====================
- * 职责：只根据 correctAnswer 契约与用户输入，判断"正确 / 部分正确 / 错误"。
+ * 职责：只根据 correctAnswer 与用户输入，判断「正确 / 部分正确 / 错误」，
+ * 并区分病名、证型两个子判定，供 UI 展示分项反馈。
+ *
+ * 判定语义（与原有实现等价）：
+ *   - 病名：用户输入去掉结尾的「证」字后，被标准病名包含才算对；
+ *   - 证型：满足以下任一即算对 ——
+ *       · 词素规则（见下）全部命中；
+ *       · 完全相等 / 标准包含用户 / 用户包含标准。
+ *   - 整体正确要求病名与证型同时正确；只有其一正确为「部分正确」。
+ *
+ * 词素规则把原先写死在 submitAnswer 里的病例分支数据化：
+ * 规则只描述「标准证型自身的词素组合」，不引用病例 ID。
  *
  * 不含 DOM、window、fetch、localStorage，不 import 任何其他模块。
- * 病例差异通过数据（correctAnswer.syndromeMatches）表达，
- * 不在此处按病例 ID 或证型名做特判。
  * ================================================================== */
 
 export const ANSWER_RESULT = Object.freeze({
@@ -12,43 +21,46 @@ export const ANSWER_RESULT = Object.freeze({
     WRONG: 'wrong'
 });
 
-/* 病名判定：用户输入包含标准病名，或标准病名包含用户输入（允许简写） */
+/* 病名判定：用户输入去掉结尾的「证」后，被标准病名包含即为对。
+ * 注意：这是单向包含（标准 ⊇ 用户），与原有实现一致。 */
 export function isDiseaseCorrect(correctDisease, userDisease) {
-    const std = (correctDisease || '').trim();
-    const usr = (userDisease || '').trim();
-    if (!std || !usr) return false;
-    return usr.includes(std) || std.includes(usr);
+    if (!userDisease) return false;
+    const u = String(userDisease).replace(/证$/, '');
+    if (!u) return false;
+    return String(correctDisease || '').includes(u);
 }
 
-/* 证型判定：
- * 1. 标准证型的每个关键要素（用匹配规则给出）都必须出现在用户输入中；
- * 2. 若病例提供了 syndromeMatches，则以其中的 all 数组为准；
- * 3. 否则退化为"整体包含"判定。
- * 用"要素齐全"而非"整串相等"，是为了容忍学习者书写顺序与措辞差异。 */
+/* 词素拆解规则：某些标准证型由「病机 + 病位」组合而成，
+ * 学习者只写出关键病机（省略病位）时也应判对。
+ * 例：标准「风热犯肺津伤」—— 用户写「风热津伤」即可（省略「犯肺」）。
+ * when 描述该规则适用于哪些标准证型，all 描述用户输入必须含哪些词素。 */
+const MORPHEME_RULES = [
+    { when: ['风热'], all: ['风热', '津伤'] }
+];
+
+/* 证型判定：先尝试词素规则，再退回通用包含判定。 */
 export function isSyndromeCorrect(correctAnswer, userSyndrome) {
-    const usr = (userSyndrome || '').trim();
-    if (!usr) return false;
+    if (!userSyndrome) return false;
+    const std = String(correctAnswer?.syndrome || '');
+    const u = String(userSyndrome);
 
-    const rules = Array.isArray(correctAnswer?.syndromeMatches) ? correctAnswer.syndromeMatches : [];
-    if (rules.length === 0) {
-        const std = (correctAnswer?.syndrome || '').trim();
-        if (!std) return false;
-        return usr.includes(std) || std.includes(usr);
+    for (const rule of MORPHEME_RULES) {
+        if (rule.when.every(k => std.includes(k)) && rule.all.every(k => u.includes(k))) return true;
     }
-
-    return rules.some(rule => {
-        const keys = Array.isArray(rule?.all) ? rule.all : [];
-        if (keys.length === 0) return false;
-        return keys.every(k => usr.includes(k));
-    });
+    // 通用回退：完全相等 / 标准包含用户 / 用户包含标准
+    return u === std || std.includes(u) || u.includes(std);
 }
 
-/* 综合判定：证型为准，病名作为"部分正确"的依据 */
+/* 综合判定 */
 export function evaluateAnswer(correctAnswer, userAnswer) {
-    const syndromeOk = isSyndromeCorrect(correctAnswer, userAnswer?.syndrome);
     const diseaseOk = isDiseaseCorrect(correctAnswer?.disease, userAnswer?.disease);
+    const syndromeOk = isSyndromeCorrect(correctAnswer, userAnswer?.syndrome);
 
-    if (syndromeOk) return ANSWER_RESULT.CORRECT;
-    if (diseaseOk) return ANSWER_RESULT.PARTIAL;
-    return ANSWER_RESULT.WRONG;
+    const isCorrect = diseaseOk && syndromeOk;
+    let result;
+    if (isCorrect) result = ANSWER_RESULT.CORRECT;
+    else if (diseaseOk || syndromeOk) result = ANSWER_RESULT.PARTIAL;
+    else result = ANSWER_RESULT.WRONG;
+
+    return { result, isCorrect, diseaseOk, syndromeOk };
 }
