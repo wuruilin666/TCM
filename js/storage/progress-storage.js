@@ -98,7 +98,9 @@ export function clearWrongCases() {
 }
 
 /* ===================== 整体替换 / 清空（供备份恢复使用） ===================== */
-// 一次性写入两份数据，保证「覆盖导入」是原子的：不会出现只写了一半的中间状态。
+// 覆盖导入：依次写入两份数据，不做回滚。
+// localStorage 没有事务语义，若第二次写入失败，会留下
+// 「完成记录已更新、错题仍是旧的」这种前后不一致的状态。
 export function replaceProgress({ completedCases, wrongCases }) {
     writeJson(COMPLETED_CASES_KEY, completedCases);
     writeJson(WRONG_CASES_KEY, wrongCases);
@@ -111,8 +113,11 @@ export function mergeProgress({ completedCases, wrongCases }) {
 }
 
 // 错题去重依据：病例 ID + 日期 + 用户答案（证型/病名/辨证依据）
+// 分隔符沿用重构前的原始实现，是 DEL 控制字符 U+007F。
+// 必须写成 \u007f 转义形式，不能写成肉眼不可见的字面字符——
+// 那个字符正是上一轮重构中被悄悄丢掉、导致 key 变成直接拼接的原因。
 function wrongKey(w) {
-    return [w.id, w.date, w.syndrome || '', w.disease || '', w.basis || ''].join('');
+    return [w.id, w.date, w.syndrome || '', w.disease || '', w.basis || ''].join('\u007f');
 }
 
 function mergeWrongCases(current, imported) {

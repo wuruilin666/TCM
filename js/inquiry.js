@@ -4,6 +4,7 @@
  *   - 调用 inquiry-matcher 解析用户输入
  *   - 通过 Game Session 的公开接口把结果写回会话
  *
+ * 会话状态一律通过 getSession() 读取（它返回快照），
  * 不直接读写 game 的 state，也不负责匹配算法（属于 inquiry-matcher）。
  * ================================================================================== */
 
@@ -39,7 +40,7 @@ export function resolveInquiry(questions, text) {
 export function openInquiryModal() {
     if (!getCurrentCase()) return;
     document.getElementById('inquiryChatArea').innerHTML = '';
-    getSession().inquiryHistory.forEach(m => appendChat(m.role, m.text));
+    getSession().inquiry.history.forEach(m => appendChat(m.role, m.text));
     document.getElementById('inquiryInput').value = '';
     document.getElementById('inquiryModal').style.display = 'flex';
     document.getElementById('inquiryInput').focus();

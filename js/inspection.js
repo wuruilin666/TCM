@@ -4,6 +4,7 @@
  *   - 舌象判断流程（判定算法在 core/tongue-judge.js）
  *   - 通过 Game Session 的公开接口写回会话（线索、探索状态、图片索引）
  *
+ * 会话状态一律通过 getSession() 读取（它返回快照），写入走会话的写入接口。
  * 不直接读写 game 的 state。
  * ================================================================================== */
 
@@ -27,7 +28,7 @@ export function openInspectionModal() {
     if (nonTongue) {
         nonTongueEl.style.display = 'block';
         nonTongueEl.textContent = '其他望诊：' + nonTongue;
-        if (!getSession().inspectionNonTongueAdded) {
+        if (!getSession().inspection.nonTongueAdded) {
             setInspectionNonTongueAdded(true);
             addClue('inspection', nonTongue, '望诊·其他');
         }
@@ -41,8 +42,7 @@ export function openInspectionModal() {
     const img = document.getElementById('inspectionImg');
     img.onload = function () {
         this.style.display = 'block';
-        const images = getSession().inspectionImages;
-        const index = getSession().inspectionIndex;
+        const { images, index } = getSession().inspection;
         document.getElementById('inspectionCounter').textContent =
             images.length > 1 ? (index + 1) + ' / ' + images.length : '';
     };
@@ -54,34 +54,34 @@ export function openInspectionModal() {
 }
 
 export function renderInspection() {
-    const { inspectionImages, inspectionIndex } = getSession();
-    document.getElementById('inspectionImg').src = inspectionImages[inspectionIndex] || '';
-    const hasMultiple = inspectionImages.length > 1;
+    const { images, index } = getSession().inspection;
+    document.getElementById('inspectionImg').src = images[index] || '';
+    const hasMultiple = images.length > 1;
     document.getElementById('inspectPrev').style.display = hasMultiple ? 'flex' : 'none';
     document.getElementById('inspectNext').style.display = hasMultiple ? 'flex' : 'none';
     document.getElementById('inspectionCounter').textContent =
-        hasMultiple ? (inspectionIndex + 1) + ' / ' + inspectionImages.length : '';
+        hasMultiple ? (index + 1) + ' / ' + images.length : '';
     preloadNextImage();
 }
 
 // 预加载下一张舌象图片
 export function preloadNextImage() {
-    const { inspectionImages, inspectionIndex } = getSession();
-    const nextIndex = inspectionIndex + 1;
-    if (nextIndex < inspectionImages.length) {
+    const { images, index } = getSession().inspection;
+    const nextIndex = index + 1;
+    if (nextIndex < images.length) {
         const img = new Image();
-        img.src = inspectionImages[nextIndex];
+        img.src = images[nextIndex];
     }
 }
 
 export function inspectPrev() {
-    const { inspectionIndex } = getSession();
-    if (inspectionIndex > 0) { setInspectionIndex(inspectionIndex - 1); renderInspection(); }
+    const { index } = getSession().inspection;
+    if (index > 0) { setInspectionIndex(index - 1); renderInspection(); }
 }
 
 export function inspectNext() {
-    const { inspectionImages, inspectionIndex } = getSession();
-    if (inspectionIndex < inspectionImages.length - 1) { setInspectionIndex(inspectionIndex + 1); renderInspection(); }
+    const { images, index } = getSession().inspection;
+    if (index < images.length - 1) { setInspectionIndex(index + 1); renderInspection(); }
 }
 
 export function closeInspectionModal() {
