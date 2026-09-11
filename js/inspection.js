@@ -9,7 +9,7 @@
  * ================================================================================== */
 
 import { getCurrentCase, addClue, setExplored, getSession,
-    setInspectionIndex, setInspectionNonTongueAdded } from './game.js';
+    setInspectionIndex, setInspectionNonTongueAdded, TONGUE_CLUE_MARK } from './game.js';
 import { judgeTongue, describeTongueReference, TONGUE_RESULT, TONGUE_DIM_STATUS } from './core/tongue-judge.js';
 import { tongueImageTypeMap } from './data.js';
 
@@ -110,24 +110,35 @@ export function closeInspectionModal() {
 
 const TONGUE_DIM_LABEL = { color: '舌色', shape: '舌形', coating: '舌苔' };
 
-// 把判定结果写成「总体结论 + 逐维度反馈」。
-// 病例没提供的维度标「本病例未提供」（not_tested），与用户没写的「未提及」（missing）
-// 以及写错的（wrong）区分开；未考查的维度不进分母。
-function formatTongueVerdict(verdict) {
-    if (verdict.status === TONGUE_RESULT.NOT_TESTABLE) return '本病例没有可供舌象判断的结构化考点。';
-    const headline = {
-        [TONGUE_RESULT.CORRECT]: '判断正确',
-        [TONGUE_RESULT.PARTIAL]: '部分正确',
-        [TONGUE_RESULT.WRONG]: '判断有误'
-    }[verdict.status] || '判断有误';
-    const lines = Object.entries(verdict.dimensions).map(([dim, d]) => {
+// 折叠态摘要用的总体结论（带正误符号），「正确舌象」必须直接可见，防止做完其他三诊后遗忘
+const TONGUE_HEADLINE = {
+    [TONGUE_RESULT.CORRECT]: '✅ 判断正确',
+    [TONGUE_RESULT.PARTIAL]: '△ 部分正确',
+    [TONGUE_RESULT.WRONG]: '❌ 判断有误'
+};
+
+// 逐维度反馈行。病例没提供的维度标「本病例未提供」（not_tested），与「未提及」（missing）、
+// 写错的（wrong）区分开；未考查的维度不进分母。
+function tongueDimensionLines(verdict) {
+    return Object.entries(verdict.dimensions).map(([dim, d]) => {
         const label = TONGUE_DIM_LABEL[dim] || dim;
         if (d.status === TONGUE_DIM_STATUS.NOT_TESTED) return `${label} — 本病例未提供`;
         if (d.status === TONGUE_DIM_STATUS.MISSING) return `${label} ○ 未提及`;
         if (d.status === TONGUE_DIM_STATUS.CORRECT) return `${label} ✅`;
         return `${label} ❌ 应为「${d.expected}」`;
     });
-    return `${headline}（${verdict.matched}/${verdict.total}）：\n${lines.join('\n')}`;
+}
+
+// 舌象判断线索文本。摘要（分隔标记之前）= 正确舌象 + 判断正误，
+// 详情 = 你的判断 → 逐维度反馈；无分隔标记（无可考维度）时整条按普通线索渲染。
+function buildTongueClueText(verdict, userText, correctText) {
+    if (verdict.status === TONGUE_RESULT.NOT_TESTABLE) {
+        return `正确舌象：${correctText}\n本病例没有可供舌象判断的结构化考点。`;
+    }
+    const summary = `正确舌象：${correctText}`
+        + `\n${TONGUE_HEADLINE[verdict.status] || '❌ 判断有误'}（${verdict.matched}/${verdict.total}）`;
+    const detail = `你的判断：${userText}\n逐维度判断：\n${tongueDimensionLines(verdict).join('\n')}`;
+    return `${summary}\n${TONGUE_CLUE_MARK}\n${detail}`;
 }
 
 export function submitTongueJudgment() {
@@ -140,7 +151,7 @@ export function submitTongueJudgment() {
     // 第三个参数是病例原文舌象描述：用于判断病例里的「正常」有没有原文依据
     const verdict = judgeTongue(inspection.tongueJudgment, userText, inspection.tongueDesc || '');
     const correctText = describeTongueReference(inspection);
-    const clueText = `舌象判断\n${formatTongueVerdict(verdict)}\n你的描述：${userText}\n正确答案：${correctText}`;
+    const clueText = buildTongueClueText(verdict, userText, correctText);
 
     addClue('inspection', clueText, '望诊·舌象');
     setExplored('inspection');

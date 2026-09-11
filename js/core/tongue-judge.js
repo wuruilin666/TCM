@@ -60,7 +60,8 @@ function stripPrefix(s) {
 // 单维度比对（容忍顺序与措辞差异）：整体包含，或任意连续两字命中。
 // 两个字符起才谈「连续两字」，且窗口起点最多到倒数第二位，
 // 否则末尾会退化成一个单字（"淡红" 的 "红"）冒充两字命中。
-function matchTerm(userText, correctVal) {
+// 导出供数据一致性测试复用：判断 tongueJudgment 的值在 tongueDesc 中是否有依据。
+export function matchTerm(userText, correctVal) {
     if (!correctVal) return false;
     const cc = stripPrefix(correctVal);
     if (!cc) return false;
