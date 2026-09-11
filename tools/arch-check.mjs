@@ -62,7 +62,7 @@ for (const f of files) if (color.get(f) === WHITE) dfs(f, []);
 if (cycles.length) { cycles.forEach(c => { console.log('  ❌ ' + c); problems++; }); }
 else console.log('  ✅ 无循环依赖');
 
-console.log('\n=== 3. 依赖方向检查 ===');
+console.log('\n=== 3. 架构声明检查 ===');
 // 层级：layer(module) 越小越底层。高层可以依赖低层，低层不得依赖高层。
 const LAYER = {
     'js/app.js': 0,
@@ -79,14 +79,25 @@ const LAYER = {
     'js/core/tongue-judge.js': 5,
     'js/inquiry-matcher.js': 5
 };
+// js/ 下所有业务模块都必须在这里显式声明层级。
+// 未声明的模块会静默绕过依赖方向检查与越界 API 检查，因此按错误处理。
+const undeclared = files.map(rel).filter(f => !(f in LAYER));
+if (undeclared.length) {
+    for (const f of undeclared) console.log(`  ❌ 未声明模块：${f}`);
+    console.log('     请先在 tools/arch-check.mjs 的 LAYER 中声明它属于哪一层，再继续。');
+    problems += undeclared.length;
+} else {
+    console.log(`  ✅ ${files.length} 个模块均已声明层级`);
+}
+
+console.log('\n=== 4. 依赖方向检查 ===');
 let dirProblems = 0;
 for (const [f, deps] of graph) {
     const lf = LAYER[rel(f)];
-    if (lf === undefined) continue;
     for (const d of deps) {
         const ld = LAYER[rel(d)];
-        if (ld === undefined) continue;
-        // 同级允许（同层横向协作），但低层依赖高层禁止
+        // 第 3 节已保证所有模块都声明了层级，因此这里不做静默跳过。
+        // 同级允许（同层横向协作），但低层依赖高层禁止。
         if (ld < lf) {
             console.log(`  ❌ 反向依赖：${rel(f)} (L${lf}) → ${rel(d)} (L${ld})`);
             dirProblems++;
@@ -95,12 +106,13 @@ for (const [f, deps] of graph) {
 }
 if (!dirProblems) console.log('  ✅ 无反向依赖');
 
-console.log('\n=== 4. 禁用 API 越界检查 ===');
-// 记录每个模块允许使用的敏感 API
+console.log('\n=== 5. 禁用 API 越界检查 ===');
+// 规则有两种写法：
+//   { layer: N }    → 对该层所有模块生效（新模块只要声明了层级就自动继承，无法绕过）
+//   { file: '...' } → 只对该文件生效（用于个别模块的额外收紧）
+// 规则指向不存在的模块同样按错误处理，避免模块改名后规则静默失效。
 const FORBIDDEN = [
-    { file: 'js/core/answer-evaluator.js', re: /document\.|window\.|localStorage|fetch\(|alert\(|confirm\(/, why: 'Domain 必须纯净' },
-    { file: 'js/core/tongue-judge.js', re: /document\.|window\.|localStorage|fetch\(|alert\(|confirm\(/, why: 'Domain 必须纯净' },
-    { file: 'js/inquiry-matcher.js', re: /document\.|window\.|localStorage|fetch\(|alert\(|confirm\(/, why: 'Domain 必须纯净' },
+    { layer: 5, re: /document\.|window\.|localStorage|fetch\(|alert\(|confirm\(/, why: 'Domain 必须纯净' },
     { file: 'js/storage/progress-storage.js', re: /document\.|window\.|alert\(|confirm\(/, why: 'Progress Storage 不负责 UI' },
     { file: 'js/storage/backup-code.js', re: /document\.|localStorage|alert\(|confirm\(/, why: 'Backup Code 不负责 UI / Storage' },
     { file: 'js/game.js', re: /localStorage|fetch\(/, why: 'Game 不得直接访问存储 / 网络' },
@@ -120,20 +132,40 @@ function codeLines(src) {
 }
 
 let apiProblems = 0;
+// 把规则展开成「文件 → 规则」清单
+const apiTargets = [];
 for (const rule of FORBIDDEN) {
-    const f = join(ROOT, rule.file);
-    if (!files.includes(f)) continue;
-    codeLines(readFileSync(f, 'utf-8')).forEach((line, i) => {
+    if (rule.layer !== undefined) {
+        const matched = files.filter(f => LAYER[rel(f)] === rule.layer);
+        if (!matched.length) {
+            console.log(`  ❌ LAYER 中不存在任何 L${rule.layer} 模块，该层规则「${rule.why}」不会生效`);
+            apiProblems++;
+            continue;
+        }
+        for (const f of matched) apiTargets.push({ file: rel(f), path: f, re: rule.re, why: rule.why });
+        continue;
+    }
+    const path = join(ROOT, rule.file);
+    if (!files.includes(path)) {
+        console.log(`  ❌ 规则指向的模块不存在：${rule.file}（模块改名后需同步更新 FORBIDDEN）`);
+        apiProblems++;
+        continue;
+    }
+    apiTargets.push({ file: rule.file, path, re: rule.re, why: rule.why });
+}
+
+for (const target of apiTargets) {
+    codeLines(readFileSync(target.path, 'utf-8')).forEach((line, i) => {
         if (!line) return;
-        if (rule.re.test(line)) {
-            console.log(`  ❌ ${rule.file}:${i + 1} 违反「${rule.why}」→ ${line.trim().slice(0, 90)}`);
+        if (target.re.test(line)) {
+            console.log(`  ❌ ${target.file}:${i + 1} 违反「${target.why}」→ ${line.trim().slice(0, 90)}`);
             apiProblems++;
         }
     });
 }
 if (!apiProblems) console.log('  ✅ 无越界 API 调用');
 
-console.log('\n=== 5. 未使用的 import 检查 ===');
+console.log('\n=== 6. 未使用的 import 检查 ===');
 let unused = 0;
 for (const f of files) {
     const src = readFileSync(f, 'utf-8');
