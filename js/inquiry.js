@@ -76,8 +76,9 @@ export function sendInquiry() {
             if (idx == null || idx < 0) continue;
             const turn = recordInquiryTurn(questions[idx].q, questions[idx].a, idx);
             if (turn.duplicate) {
+                // 只跳过这一题：同一句里的其它未问题目仍须记账，否则会漏掉线索与完成度
                 answer += '（这个问题刚才已经回答过了）';
-                break;
+                continue;
             }
         }
     }

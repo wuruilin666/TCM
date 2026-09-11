@@ -3,7 +3,7 @@
  * 并区分病名、证型两个子判定，供 UI 展示分项反馈。
  *
  * 判定语义（与原有实现等价）：
- *   - 病名：用户输入去掉结尾的「证」字后，被标准病名包含才算对；
+ *   - 病名：用户输入规范化（去空白、去结尾的「证」）后至少两字，且被标准病名包含才算对；
  *   - 证型：满足以下任一即算对 ——
  *       · 词素规则（见下）全部命中；
  *       · 完全相等 / 标准包含用户 / 用户包含标准。
@@ -21,13 +21,20 @@ export const ANSWER_RESULT = Object.freeze({
     WRONG: 'wrong'
 });
 
-/* 病名判定：用户输入去掉结尾的「证」后，被标准病名包含即为对。
- * 注意：这是单向包含（标准 ⊇ 用户），与原有实现一致。 */
+/* 病名规范化：去首尾空白、去内部空白、去掉结尾的「证」后缀。 */
+function normalizeDisease(text) {
+    return String(text || '').trim().replace(/\s+/g, '').replace(/证$/, '');
+}
+
+/* 病名判定：规范化后，标准病名包含用户病名即为对，但用户病名至少要两个字。
+ * 注意：
+ *   - 包含是单向的（标准 ⊇ 用户），与原有实现一致；
+ *   - 下限两字是为了挡住「热」「胃」这类单字片段：否则只写一个字就能靠
+ *     substring 蒙对（标准「胃热证」的用户输入「热」）。中文病名不存在单字形式。 */
 export function isDiseaseCorrect(correctDisease, userDisease) {
-    if (!userDisease) return false;
-    const u = String(userDisease).replace(/证$/, '');
-    if (!u) return false;
-    return String(correctDisease || '').includes(u);
+    const u = normalizeDisease(userDisease);
+    if (u.length < 2) return false;
+    return normalizeDisease(correctDisease).includes(u);
 }
 
 /* 词素拆解规则：某些标准证型由「病机 + 病位」组合而成，

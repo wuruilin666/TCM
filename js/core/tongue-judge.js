@@ -24,7 +24,13 @@ function matchTerm(userText, correctVal) {
     const cc = stripPrefix(correctVal);
     if (!cc) return false;
     if (userText.includes(cc)) return true;
-    return cc.length >= 2 && cc.split('').some((_, i) => userText.includes(cc.substr(i, 2)));
+    // 两个字符起才谈「连续两字」；窗口起点最多到倒数第二位，
+    // 否则末尾会退化成一个单字（"淡红" 的 "红"）冒充两字命中。
+    if (cc.length < 2) return false;
+    for (let i = 0; i < cc.length - 1; i++) {
+        if (userText.includes(cc.slice(i, i + 2))) return true;
+    }
+    return false;
 }
 
 function hitDimension(userText, correctVal) {
