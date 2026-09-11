@@ -334,9 +334,9 @@ try {
         `${progressStore.getWrongCases().length} 条`);
 
     const wrongKeySrc = readFileSync(join(ROOT, 'js/storage/progress-storage.js'), 'utf-8');
-    check('wrongKey 使用 \\u007f 转义作为分隔符', /join\('\\u007f'\)/.test(wrongKeySrc));
+    check('wrongKey 使用 \\u007f 转义作为分隔符', /join\('\\\\u007f'\)/.test(wrongKeySrc));
     check('源码中不含肉眼不可见的 DEL 字面字符（防止再次被复制丢失）',
-        !/\u007f/.test(wrongKeySrc));
+        !/\\u007f/.test(wrongKeySrc));
     check('replaceProgress 不再声称「原子」',
         !/原子|atomic/.test(readFileSync(join(ROOT, 'js/storage/progress-storage.js'), 'utf-8').replace(/^\/\/.*$/gm, '')));
 
@@ -530,6 +530,76 @@ try {
         allCases.every(c => c.clues.inquiry.questions.every(q => data.VALID_INQUIRY_DIMENSIONS.has(q.dimension))));
     check('每例都有 tongueJudgment', allCases.every(c => c.clues.inspection.tongueJudgment));
     check('每例都有 correctAnswer.syndrome', allCases.every(c => !!c.correctAnswer.syndrome));
+
+    /* ---------------- S. 多意图问诊：已问的题目不得阻断后续 ---------------- */
+    console.log('\n=== S. 多意图问诊（一个已问 + 两个未问） ===\n');
+    const { resolveInquiry: resolveForTest } = await import(pathToFileURL(join(ROOT, 'js/inquiry-matcher.js')).href);
+    game.startCasePractice('adv-007');
+    const multiQs = game.getCurrentCase().clues.inquiry.questions;
+    const clueNum = () => document.querySelectorAll('#clueArea .clue-item').length;
+    const askedOf = () => game.getSession().inquiry.askedQuestions.slice();
+
+    // 前置：先用只命中一题的输入，把其中一题问成「已问」
+    const preIndices = resolveForTest(multiQs, '末次月经时间').indices;
+    inquiryInput.value = '末次月经时间';
+    window.sendInquiry();
+    await new Promise(r => setTimeout(r, 400));
+    check('S 前置：单意图问诊只记录一题',
+        preIndices.length === 1 && askedOf().join() === preIndices.join(),
+        `${JSON.stringify(preIndices)} / ${JSON.stringify(askedOf())}`);
+
+    // 一句同时问三件事，且第一个索引就是刚问过的那题
+    const multiText = '月经量情况，末次月经时间，月经颜色及血块情况';
+    const multiIndices = resolveForTest(multiQs, multiText).indices.slice();
+    check('S 前置：matcher 对同一句话返回 3 个意图', multiIndices.length === 3, JSON.stringify(multiIndices));
+    check('S 前置：该句的第一个意图确实是已问过的那题',
+        multiIndices[0] === preIndices[0], `${multiIndices[0]} vs ${preIndices[0]}`);
+
+    const cluesBefore = clueNum();
+    inquiryInput.value = multiText;
+    window.sendInquiry();
+    await new Promise(r => setTimeout(r, 400));
+
+    const expected = multiIndices.slice().sort((a, b) => a - b);
+    const askedAfter = askedOf().sort((a, b) => a - b);
+    check('S 已问的题目不重复计入（长度 3，而非卡在 1）',
+        askedAfter.length === expected.length, JSON.stringify(askedAfter));
+    check('S 已问题目不重复、未问题目全部记账',
+        askedAfter.join() === expected.join(),
+        `期望 ${JSON.stringify(expected)} 实际 ${JSON.stringify(askedAfter)}`);
+    check('S 未问的两题各自产生线索',
+        clueNum() === cluesBefore + expected.length - 1,
+        `${clueNum()} vs ${cluesBefore}+${expected.length - 1}`);
+    const multiBubbles = document.querySelectorAll('#inquiryChatArea .chat-bubble');
+    const multiAnswer = multiBubbles[multiBubbles.length - 1].textContent;
+    check('S 患者回答同时含已问提示与两个新问题的答案',
+        multiAnswer.includes('已经回答过') && /经色暗/.test(multiAnswer) && /月经量较少/.test(multiAnswer),
+        multiAnswer);
+    check('S getInquiryProgress 与已问列表一致、未误报完成',
+        game.getInquiryProgress().asked === expected.length && game.getInquiryProgress().allAsked === false,
+        JSON.stringify(game.getInquiryProgress()));
+
+    // 逐题问完剩余问题，完成度应真正到达 100%（旧实现会在重复处提前 break）
+    for (const [i, q] of multiQs.entries()) {
+        if (askedOf().includes(i)) continue;
+        inquiryInput.value = q.q;
+        window.sendInquiry();
+    }
+    await new Promise(r => setTimeout(r, 500));
+    const finalProgress = game.getInquiryProgress();
+    check('S 逐题问完后完成度到达 100%',
+        finalProgress.allAsked === true && finalProgress.asked === finalProgress.total,
+        JSON.stringify(finalProgress));
+
+    // 已全部问过后再问同一句：不得重复计数、不得重复产生线索
+    const cluesAllAsked = clueNum();
+    inquiryInput.value = multiText;
+    window.sendInquiry();
+    await new Promise(r => setTimeout(r, 400));
+    check('S 已全部问过后再问同一句：已问数量不变',
+        askedOf().length === finalProgress.total, JSON.stringify(askedOf()));
+    check('S 已全部问过后再问同一句：不重复产生线索',
+        clueNum() === cluesAllAsked, `${clueNum()} vs ${cluesAllAsked}`);
 
 } catch (e) {
     restoreLog();
