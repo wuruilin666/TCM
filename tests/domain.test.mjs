@@ -199,6 +199,27 @@ check('连续两字窗口仍能容错命中长术语（胖大有齿痕 → 舌�
 check('「淡红」的尾字不得越界充当双字窗口（用户只写「红」不算命中）',
     judgeTongue({ color: '淡红', coating: '薄白' }, '舌红，苔黄腻').dimensions.color.status === 'wrong');
 
+console.log('\n=== 6c. 维度识别：同片段多维 + 「已答但错」≠「未提及」 ===\n');
+// 同一片段须可同时命中多个维度：「舌红苔黄」必须 color + coating 双双识别为已答（旧实现 else-if 只得到 coating）
+const m1 = judgeTongue({ color: '淡红', coating: '淡黄腻' }, '舌红苔黄');
+check('「舌红苔黄」→ color wrong（不能是 missing）', m1.dimensions.color.status === 'wrong', JSON.stringify(m1));
+check('「舌红苔黄」→ coating wrong（按 matchTerm 既有规则判定）', m1.dimensions.coating.status === 'wrong', JSON.stringify(m1));
+check('「舌红苔黄」→ shape not_tested，分母仍为 2', m1.dimensions.shape.status === 'not_tested' && m1.total === 2, JSON.stringify(m1));
+// 「舌形正常」不能因含「舌」被误判为已答舌色：color 维度应保持 missing
+check('「舌形正常」→ 只算 shape 已答，color 保持 missing',
+    judgeTongue({ color: '淡红' }, '舌形正常').dimensions.color.status === 'missing');
+check('病例有舌形考点时「舌形正常」按 shape 判错',
+    judgeTongue({ color: '淡红', shape: '胖大' }, '舌形正常').dimensions.shape.status === 'wrong');
+// 「已答但未中」≠「没答」：「舌红」对「淡红」是 wrong 而非 missing，且不得放宽为正确
+check('「舌红」对「淡红」→ color wrong（不是 missing，也不是 correct）',
+    judgeTongue({ color: '淡红' }, '舌红').dimensions.color.status === 'wrong');
+check('「舌质淡红，苔薄黄」双维命中（淡红 / 薄黄）',
+    judgeTongue({ color: '淡红', coating: '薄黄' }, '舌质淡红，苔薄黄').status === 'correct');
+check('「舌淡红」命中「淡红」',
+    judgeTongue({ color: '淡红' }, '舌淡红').status === 'correct');
+const m2 = judgeTongue({ color: '淡红' }, '舌质淡红，舌体胖大');
+check('用户多写「舌体胖大」不把 shape 纳入分母', m2.dimensions.shape.status === 'not_tested' && m2.total === 1, JSON.stringify(m2));
+
 console.log('\n=== 7. 舌象参考答案文案 ===\n');
 const inter6 = byId('inter-006');
 const refText = describeTongueReference(inter6.clues.inspection);
