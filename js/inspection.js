@@ -17,8 +17,11 @@ export function openInspectionModal() {
     const currentCase = getCurrentCase();
     if (!currentCase) return;
 
-    document.getElementById('inspectionImg').src = '';
-    document.getElementById('inspectionImg').style.display = 'none';
+    const img = document.getElementById('inspectionImg');
+    // 摘掉 src 而不是设成 ''：空 URL 会被浏览器当成一次真实请求并触发 onerror，
+    // 那样「没有图片」就会被误报成「图片加载失败」。
+    img.removeAttribute('src');
+    img.style.display = 'none';
     document.getElementById('inspectionCounter').textContent = '图片加载中...';
     document.getElementById('tongueImageBadge').textContent = tongueImageTypeMap[currentCase.id] || '原始病例图片';
     document.getElementById('tongueJudgmentInput').value = '';
@@ -39,7 +42,6 @@ export function openInspectionModal() {
     renderInspection();
     document.getElementById('inspectionModal').style.display = 'flex';
 
-    const img = document.getElementById('inspectionImg');
     img.onload = function () {
         this.style.display = 'block';
         const { images, index } = getSession().inspection;
@@ -47,6 +49,9 @@ export function openInspectionModal() {
             images.length > 1 ? (index + 1) + ' / ' + images.length : '';
     };
     img.onerror = function () {
+        // 有路径但加载失败：换占位图并明说「图片加载失败」。
+        // 先摘掉 onerror，避免替换 src 时再次触发，形成死循环。
+        this.onerror = null;
         this.style.display = 'block';
         this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="260" height="347" viewBox="0 0 260 347"%3E%3Crect width="260" height="347" fill="%23fdfaf5"/%3E%3Ctext x="130" y="170" font-size="14" fill="%23b5a595" text-anchor="middle"%3E图片加载失败%3C/text%3E%3C/svg%3E';
         document.getElementById('inspectionCounter').textContent = '图片加载失败';
@@ -55,12 +60,25 @@ export function openInspectionModal() {
 
 export function renderInspection() {
     const { images, index } = getSession().inspection;
-    document.getElementById('inspectionImg').src = images[index] || '';
+    const img = document.getElementById('inspectionImg');
+    const counter = document.getElementById('inspectionCounter');
     const hasMultiple = images.length > 1;
+
+    if (images[index]) {
+        // 先藏起来，等 onload 解码成功再显示（避免切换时闪出上一张）
+        img.style.display = 'none';
+        img.src = images[index];
+    } else {
+        // 没有可用图片路径：清掉 src 并明说「暂无舌象图片」，与「图片加载失败」是两种状态
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        counter.textContent = '暂无舌象图片';
+    }
+
     document.getElementById('inspectPrev').style.display = hasMultiple ? 'flex' : 'none';
     document.getElementById('inspectNext').style.display = hasMultiple ? 'flex' : 'none';
-    document.getElementById('inspectionCounter').textContent =
-        hasMultiple ? (index + 1) + ' / ' + images.length : '';
+    if (hasMultiple) counter.textContent = (index + 1) + ' / ' + images.length;
+
     preloadNextImage();
 }
 
@@ -86,8 +104,8 @@ export function inspectNext() {
 
 export function closeInspectionModal() {
     document.getElementById('inspectionModal').style.display = 'none';
-    // 关闭模态框后清空图片地址，释放内存
-    document.getElementById('inspectionImg').src = '';
+    // 关闭模态框后清空图片地址，释放内存（摘掉 src，不设成空 URL）
+    document.getElementById('inspectionImg').removeAttribute('src');
 }
 
 export function submitTongueJudgment() {

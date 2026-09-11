@@ -22,7 +22,7 @@
  * ================================================================================== */
 
 import { escapeHtml, escapeHtmlWithBreaks } from './html-utils.js';
-import { diffMap } from './data.js';
+import { diffMap, getInspectionImages } from './data.js';
 import { evaluateAnswer, ANSWER_RESULT } from './core/answer-evaluator.js';
 
 /* ===================== 会话阶段 ===================== */
@@ -283,8 +283,9 @@ export function showCurrentCase() {
     document.getElementById('btnOtherCheck').style.display = 'block';
     document.getElementById('difficultyPicker').style.display = 'none';
     document.getElementById('caseWorkspace').style.display = 'block';
-    // 望诊图片列表来自病例数据自身，在进入病例时就确定下来
-    setInspectionImages(current.inspectionImages || []);
+    // 望诊图片路径解析只有 data.js 一处（显式配置优先，否则回退 tongue/<caseId>.jpg），
+    // 所有进入病例的入口都经过 showCurrentCase()，不在这里另写一套路径规则。
+    setInspectionImages(getInspectionImages(current));
     document.getElementById('chiefComplaintCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
