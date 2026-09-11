@@ -30,6 +30,21 @@ check('用户更长于标准时不命中（与原实现一致的单向包含）'
 check('不匹配即为假', !isDiseaseCorrect('头痛', '胃脘痛'));
 check('空输入为假', !isDiseaseCorrect('', '胃脘痛'));
 
+// 回归：单字片段不得凭 substring 蒙对病名（旧实现下 "热" 会被 "胃热证" 包含）
+check('单字病名片段不得命中', !isDiseaseCorrect('胃热证', '热'));
+check('另一个单字片段不得命中', !isDiseaseCorrect('胃脘痛', '胃'));
+check('完整病名主体仍然命中', isDiseaseCorrect('胃脘痛证', '胃脘痛'));
+check('完全匹配仍然命中', isDiseaseCorrect('胃脘痛', '胃脘痛'));
+check('无关病名仍然不命中', !isDiseaseCorrect('头痛', '胃脘痛'));
+// 真实病例数据的边界：二字病名必须写全，六字联合病名可只写主病名
+check('真实病例：单字不得命中（胃痛 / 痛）', !isDiseaseCorrect('胃痛', '痛'));
+check('真实病例：二字病名写全即命中（咳嗽 / 咳嗽）', isDiseaseCorrect('咳嗽', '咳嗽'));
+check('真实病例：联合病名可只写主病名（胃脘痛、便秘 / 胃脘痛）',
+    isDiseaseCorrect('胃脘痛、便秘', '胃脘痛'));
+check('真实病例：带「证」后缀的标准病名可省后缀',
+    isDiseaseCorrect('舌象异常/黑舌相关病证', '舌象异常/黑舌相关病'));
+check('真实病例：两个不相干病名不命中（不寐 / 心悸）', !isDiseaseCorrect('不寐', '心悸'));
+
 console.log('\n=== 2. 证型判定 ===\n');
 check('完全匹配', isSyndromeCorrect({ syndrome: '肝郁脾虚' }, '肝郁脾虚'));
 check('双向包含', isSyndromeCorrect({ syndrome: '肝郁脾虚证' }, '肝郁脾虚'));
@@ -122,6 +137,21 @@ check('病例述「正常」但用户说异常 → 判错',
     !judgeTongue({ color: '正常', shape: '正常', coating: '正常' }, '舌色红绛，苔黄厚'));
 check('空输入为假', !judgeTongue({ color: '淡红' }, ''));
 check('空舌象数据为假', !judgeTongue({}, '舌淡红'));
+
+// 回归：连续两字窗口容错照旧保留
+check('舌象连续两字命中允许',
+    judgeTongue({ color: '淡红', shape: '正常', coating: '薄白' }, '舌淡红，苔薄白'));
+check('连续两字窗口仍能容错命中长术语（胖大有齿痕 → 舌胖大）',
+    judgeTongue({ color: '淡红', shape: '胖大有齿痕', coating: '薄白' }, '舌淡红，舌胖大，苔薄白'));
+// 回归：窗口边界。旧实现用 substr(i,2) 时末尾会退化成一个单字，
+// 于是「淡红」的尾字「红」也能命中；此处色/苔两维未命中，靠 shape 正常仅得 1 维。
+// 若尾字越界被当成"两字命中"，色维会假命中而凑满 2 维 → 判对。
+check('「淡红」的尾字不得越界充当双字窗口（否则色维假命中凑够两维）',
+    !judgeTongue({ color: '淡红', shape: '正常', coating: '薄白' }, '舌红，正常'));
+check('单字「红」不能作为「淡红」的双字窗口命中', !judgeTongue(
+    { color: '淡红', shape: '胖大', coating: '黄腻' },
+    '舌红'
+));
 
 console.log('\n=== 7. 舌象参考答案文案 ===\n');
 const inter6 = byId('inter-006');
