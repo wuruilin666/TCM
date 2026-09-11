@@ -337,7 +337,7 @@ try {
         `${progressStore.getWrongCases().length} 条`);
 
     const wrongKeySrc = readFileSync(join(ROOT, 'js/storage/progress-storage.js'), 'utf-8');
-    check('wrongKey 使用 \u007f 转义作为分隔符', /join\('\\u007f'\)/.test(wrongKeySrc));
+    check('wrongKey 使用 \\u007f 转义作为分隔符', /join\('\\u007f'\)/.test(wrongKeySrc));
     check('源码中不含肉眼不可见的 DEL 字面字符（防止再次被复制丢失）',
         !/\u007f/.test(wrongKeySrc));
     check('replaceProgress 不再声称「原子」',
