@@ -20,7 +20,7 @@ function walk(dir) {
 
 const files = walk(JS_DIR);
 const graph = new Map();
-const importRe = /from\s+['"](\.[^'"]+)['"]/g;
+const importRe = /from\s+['"](\.?[^'"]+)['"]/g;
 
 for (const f of files) {
     const src = readFileSync(f, 'utf-8');
@@ -63,7 +63,9 @@ if (cycles.length) { cycles.forEach(c => { console.log('  ❌ ' + c); problems++
 else console.log('  ✅ 无循环依赖');
 
 console.log('\n=== 3. 架构声明检查 ===');
-// 层级：layer(module) 越小越底层。高层可以依赖低层，低层不得依赖高层。
+// 层级：数字越小表示越高层，数字越大表示越底层。
+// 高层可以依赖低层，低层不得依赖高层。
+// 同层模块之间允许横向依赖。
 const LAYER = {
     'js/app.js': 0,
     'js/case-bank.js': 1,
