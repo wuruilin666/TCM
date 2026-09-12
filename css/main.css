@@ -177,7 +177,7 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 /* mobile-first：主标题是全页第一视觉焦点，次级导航弱但明确可点 */
 .hero-title {
     font-family: var(--font-heading); font-weight: 700;
-    font-size: clamp(2.15rem, 9vw, 2.8rem); line-height: 1.25;
+    font-size: clamp(2.4rem, 10vw, 3.2rem); line-height: 1.25;
     letter-spacing: 0.08em; color: var(--ink);
 }
 .hero-subtitle { margin-top: 18px; font-size: 15px; line-height: 1.7; color: var(--ink-muted); }
@@ -615,10 +615,12 @@ textarea { height: auto !important; min-height: 112px; padding: 12px 14px !impor
     .modal { align-items: center; border-radius: 16px; margin: 24px; max-height: 92dvh; }
     .modal-overlay { align-items: center; padding: 24px; }
     .four-diagnosis { grid-template-columns: repeat(4, 1fr); }
-    .hero-title { font-size: 3.75rem; letter-spacing: 0.16em; }
-    .hero-subtitle { margin-top: 20px; font-size: 18px; }
-    .hero-desc { font-size: 14px; letter-spacing: 0.2em; }
-    .home-buttons { margin-top: 48px; }
+    .hero-title { font-size: 4.1rem; letter-spacing: 0.16em; }
+    .hero-subtitle { margin-top: 28px; font-size: 18px; }
+    .hero-desc { margin-top: 18px; font-size: 14px; letter-spacing: 0.2em; }
+    .home-buttons { margin-top: 64px; gap: 20px; }
+    /* 首页主 CTA 桌面端轻微增强（用 width 避开内联 min-width:208px） */
+    #pageHome .home-buttons .btn--lg { width: 232px; height: 52px; }
     .site-footer-inner { flex-direction: row; }
     .brand-name.full { display: inline; }
     .brand-name.short { display: none; }
