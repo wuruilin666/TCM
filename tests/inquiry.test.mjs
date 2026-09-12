@@ -328,24 +328,13 @@ const INTENT_VARIANTS = {
 };
 
 /* ============================================================
- * 6.2 已知缺口黑名单：本次全量测试发现的真实问诊问题
- * 这些 (intent, input) 组合当前会失败，它们**不是**测试基础设施问题，而是
- * inquiry-matcher.js 的真实缺陷。按任务要求「不修改业务代码来掩盖」，因此登记在此、
- * 只诊断不计分（见第 10 节）。修好之后把对应条目从 SKIP 删除，它立刻变回正式用例。
+ * 6.2 已知缺口黑名单
+ * 目前为空：第二阶段把 11 条自然语言覆盖缺口全部修好、adv-002 补齐 breath.phlegm 标注，
+ * 对应条目已删除，它们现在都是必须通过的正式用例。
+ * 保留这个机制，是为了以后发现新缺口时仍能「登记而不掩盖」——
+ * 登记项只诊断不计分；修好后删掉条目，它立刻变回正式用例。
  * ============================================================ */
-const SKIP = new Set([
-    'sleep.general :: 睡得怎么样',
-    'sleep.general :: 晚上睡得怎么样',
-    'sleep.general :: 最近睡得好吗',
-    'stool.general :: 几天排一次便',
-    'chillHeat.general :: 平时手脚凉吗',
-    'head.headache :: 头有没有痛过',
-    'head.distension :: 头有没有发胀',
-    'breath.phlegm :: 痰好不好咳出',
-    'pain.frequency :: 经常痛吗',
-    'breath.shortness :: 活动后喘吗',
-    'pain.general :: 浑身酸痛吗',
-]);
+const SKIP = new Set([]);
 const skipKey = (intent, input) => intent + ' :: ' + input;
 
 /* ---- 工具：答案确实来自承载某 intent 的题目 ---- */
@@ -500,16 +489,11 @@ const CONFUSABLE_PAIRS = [
 
 const negReport = { total: 0, bad: [], landed: 0, miss: 0 };
 
-/* ---- 8.0 已知负例缺口：本次全量测试发现的真实串题，登记而不计分 ----
- * 与 SKIP 同理：它们不是测试基础设施问题，而是 inquiry-matcher.js / 病例标注的真实缺陷。
- * 修好之后删掉对应条目，它立刻变回必须通过的正式负例。 */
-const SKIP_NEGATIVE = new Set([
-    // 病例标注问题（见任务书 §十，本轮不处理）：
-    // adv-002#5「咳嗽咳痰」只标了 breath.cough，没标 breath.phlegm。
-    // 于是「咳痰吗」同时命中 breath.phlegm(40) 与 breath.cough(10)，
-    // 前者在 adv-002 没有对应题、后者有 → 拿了咳嗽题顶上。
-    'breath.cough :: breath.phlegm :: 咳痰吗',
-]);
+/* ---- 8.0 已知负例缺口黑名单 ----
+ * 与 SKIP 同理：只诊断、不计分，修好即删。
+ * 目前为空：adv-002#5「咳嗽咳痰」已补齐 breath.phlegm 标注，
+ * 该病例同时承载 cough 与 phlegm，「咳痰吗」不再被判定为串题。 */
+const SKIP_NEGATIVE = new Set([]);
 
 for (const c of cases) {
     const qs = c.questions;

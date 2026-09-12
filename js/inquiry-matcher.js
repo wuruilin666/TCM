@@ -82,9 +82,9 @@ export const TCM_SYNONYMS = {
 // 命中这些意图后，只在该 intent 的病例问题中匹配，绝不退让给同维度其它 intent。
 export const INTENT_RULES = [
     /* ---- head：头痛 / 头晕 / 头胀 必须严格分开 ---- */
-    { id: 'head.headache',   dim: 'head', words: ['头痛','头疼','头部疼痛','头会不会痛','头会痛','头疼痛'] },
+    { id: 'head.headache',   dim: 'head', words: ['头痛','头疼','头部疼痛','头会不会痛','头会痛','头疼痛','头有没有痛','头有没有疼'] },
     { id: 'head.dizziness',  dim: 'head', words: ['头晕','头昏','眩晕','昏沉','晕不晕','会晕吗','晕吗'] },
-    { id: 'head.distension', dim: 'head', words: ['头胀','头重','头发胀','头昏沉','头闷'] },
+    { id: 'head.distension', dim: 'head', words: ['头胀','头重','头发胀','头昏沉','头闷','头有没有发胀','头会不会发胀','头有没有胀','头会不会胀'] },
 
     /* ---- energy：体力 / 乏力 必须能听懂患者口语 ---- */
     { id: 'energy.general',  dim: 'energy', words: ['身体素质','体质怎么样','体质','体力怎么样','体力','身体怎么样','身体有力','有力气','有力吗','有没有力气','有劲','没劲','有没有劲','身体素质怎么样','素体','虚不虚','身体虚','身体状况','全身情况','全身感觉','全身怎么样'] },
@@ -98,9 +98,9 @@ export const INTENT_RULES = [
     { id: 'diet.afterEating', dim: 'diet', words: ['饭后','餐后','吃完','食后','纳后','进食后','饭后胀'] },
 
     /* ---- breath：气短 / 咳 / 痰 / 喘 分开 ---- */
-    { id: 'breath.shortness', dim: 'breath', words: ['气短','气促','气不够','气不足','喘不上气','喘不过气','呼吸困难','气喘','上气不接下气','气够不够','不够用','气急'] },
+    { id: 'breath.shortness', dim: 'breath', words: ['气短','气促','气不够','气不足','喘不上气','喘不过气','呼吸困难','气喘','上气不接下气','气够不够','不够用','气急','喘吗','会喘','喘不喘'] },
     { id: 'breath.cough',     dim: 'breath', words: ['咳嗽','干咳','咳不咳','咳嗽吗','咳'] },
-    { id: 'breath.phlegm',    dim: 'breath', words: ['咳痰','咯痰','吐痰','有痰','痰多','痰'] },
+    { id: 'breath.phlegm',    dim: 'breath', words: ['咳痰','咯痰','吐痰','有痰','痰多','痰','咳出','咯出'] },
     { id: 'breath.wheeze',    dim: 'breath', words: ['哮鸣','喘息','喘鸣','喉中哮鸣'] },
 
     /* ---- menstruation：末次月经 vs 周期 必须分开 ---- */
@@ -122,17 +122,20 @@ export const INTENT_RULES = [
     { id: 'abdomen.reflux',     dim: 'abdomen', words: ['反酸','烧心','灼热','泛酸','吐酸','胃酸'] },
     { id: 'palpitation.general', dim: 'palpitation', words: ['心慌','心悸','心跳','心脏不舒服','心跳快'] },
 
-    /* ---- pain：有无疼痛 ---- */
+    /* ---- pain：有无疼痛 / 全身性疼痛 ---- */
     { id: 'pain.presence', dim: 'pain', words: ['痛吗','疼吗','痛不痛','疼不疼','会不会痛','会不会疼','有没有痛','有没有疼','还痛吗','还疼吗','会痛','会疼','痛不','疼不'] },
+    // 全身性酸痛是独立意图（病例 inter-008#3「周身疼痛」就标了 pain.general），
+    // 不能因为句子里有「酸痛」就被当成在问疼痛性质。
+    { id: 'pain.general', dim: 'pain', words: ['浑身酸痛','全身酸痛','周身酸痛','浑身都痛','全身都痛','浑身疼痛','全身疼痛','周身疼痛','浑身疼','全身疼'] },
 
     /* ---- 其它常见维度 ---- */
     { id: 'thirst.general',    dim: 'thirst',    words: ['口渴','口干','想喝水','喝水吗','饮水','渴','口淡','口苦'] },
-    { id: 'stool.general',     dim: 'stool',     words: ['大便','排便','便秘','腹泻','拉肚子','解大手','大便怎么样'] },
+    { id: 'stool.general',     dim: 'stool',     words: ['大便','排便','便秘','腹泻','拉肚子','解大手','大便怎么样','排一次便','一次大便'] },
     { id: 'urine.general',     dim: 'urine',     words: ['小便','排尿','尿频','尿急','尿痛','夜尿','尿量','尿色','尿黄','尿多','尿少','小便怎么样'] },
-    { id: 'sleep.general',     dim: 'sleep',     words: ['睡眠','睡觉','失眠','入睡','多梦','易醒','早醒','眠浅','睡不着'] },
+    { id: 'sleep.general',     dim: 'sleep',     words: ['睡眠','睡觉','失眠','入睡','多梦','易醒','早醒','眠浅','睡不着','睡得','睡好'] },
     { id: 'sweat.general',     dim: 'sweat',     words: ['汗出','出汗','盗汗','自汗','汗多','汗'] },
     { id: 'emotion.general',   dim: 'emotion',   words: ['情绪','心情','情志','烦躁','焦虑','急躁','易怒','心烦','抑郁','生气','郁不郁'] },
-    { id: 'chillHeat.general', dim: 'chillHeat', words: ['恶寒','畏寒','怕冷','怕风','发热','发烧','恶热','怕热','潮热','烘热','五心烦热','体温','寒热'] },
+    { id: 'chillHeat.general', dim: 'chillHeat', words: ['恶寒','畏寒','怕冷','怕风','发热','发烧','恶热','怕热','潮热','烘热','五心烦热','体温','寒热','手脚凉','手脚发凉','手脚冰冷','手足凉','手足发凉'] },
     { id: 'vomiting.belching', dim: 'vomiting',  words: ['嗳气','打嗝','呃逆'] },
     { id: 'vomiting.vomiting', dim: 'vomiting',  words: ['恶心','呕吐','干呕','反胃','想吐'] },
     { id: 'nose.general',      dim: 'nose',      words: ['鼻塞','流涕','鼻涕','喷嚏','鼻子'] },
@@ -165,10 +168,14 @@ export const ASPECT_RULES = [
     { id: 'duration',  words: ['持续多久','一次多久','每次多久','痛多久','疼多久','痛了多久','疼了多久','能持续','持续几天','疼几天','痛几天','持续多长时间','每次持续','一次持续','持续多长','痛多长时间','发作多久','持续多少'] },
     // '阵发' 不能单独作词：它是"一阵阵发热"这类句子的偶然子串，
     // 会把本来在问「发热」的话误判成在问「频率」，从而压掉它真正的意图。
-    { id: 'frequency', words: ['多久一次','多长时间一次','经常吗','反复吗','会反复','多久发作','发作几次','频率','阵发性','阵作','间隔多久','每隔多久','几天一次','一天几次','一日几次','发作频率','多久犯','常不常','经常发作','几次'] },
+    // '经常痛' / '经常疼' 在语气上是"多久犯一次"，必须落在频率而不是 pain.presence。
+    { id: 'frequency', words: ['多久一次','多长时间一次','经常吗','反复吗','会反复','多久发作','发作几次','频率','阵发性','阵作','间隔多久','每隔多久','几天一次','一天几次','一日几次','发作频率','多久犯','常不常','经常发作','几次','经常痛','经常疼'] },
     { id: 'timing',    words: ['什么时候','何时','什么时间','一般什么时候','通常什么时候','什么时候发作','何时发作','什么时候出现','发作时间','什么时候容易','什么时候疼','什么时候痛','发作规律','什么时候开始','一般几点','发作时间点'] },
-    // 说明："诱因 / 怎么引起 / 什么引起" 属 onset（起病因由），不放在 trigger
-    { id: 'trigger',   words: ['什么情况下','什么情况','什么诱发','怎么诱发','加重','什么会加重','遇到什么','因为什么','吃了什么','碰了什么','饭后','餐后','吃完','进食后','纳后','活动后','运动后','劳累后','生气后','受凉'] },
+    // 说明："诱因 / 怎么引起 / 什么引起" 属 onset（起病因由），不放在 trigger。
+    // trigger 只保留**疑问式**说法（什么情况下 / 什么诱发 / 加重…）。
+    // '活动后 / 饭后 / 劳累后 / 受凉' 这类只是条件状语，本身不构成"在问诱因"，
+    // 留在表里会让「活动后喘吗」被误判成在问诱因，压掉真正的 breath.shortness。
+    { id: 'trigger',   words: ['什么情况下','什么情况','什么诱发','怎么诱发','加重','什么会加重','遇到什么','因为什么','吃了什么','碰了什么'] },
     { id: 'relief',    words: ['怎么缓解','如何缓解','什么能缓解','怎么才缓解','怎样缓解','休息后','按揉','按压','热敷','好些','减轻','能好吗','会不会好'] },
     { id: 'amount',    words: ['量多','量少','多少','量大','量小','经量','用量','血量','出血量','量怎么样'] },
     // color 只收「在问颜色」的说法。'深色' / '色暗' 是**答案词**不是问法，
@@ -243,11 +250,40 @@ export function matchQuestion(questions, rawText) {
     const intentsOf = questions.map(questionIntents);
 
     // 收集：list = 参与打分的候选意图；withDimFallback = 是否允许"维度兜底"
+    //
+    // 候选竞争规则（防串题）。语义域 = intent 的前缀，如 pain. / head. / breath.：
+    //   ① 域内的**非 general** 候选只保留得分最高的那个。否则会出现「用户问的是
+    //      pain.frequency，本病例没有，却被同域里更泛的 pain.presence 顶上来」。
+    //   ② 但域内 general 候选如果**比所有非 general 都高分**，说明用户问的就是这个大类别本身，
+    //      此时同域的非 general 一律不作数（病例没有这个大类就中性）。
+    //   ③ 域与域之间互不压制：「舌头发胀吗」同时命中 head.distension 与 tongue.general，
+    //      后者有对应题时仍应正常命中。
+    const isGen = id => /\.general$/.test(id);
+    const domainOf = id => String(id).split('.')[0];
+    const pruneByDomain = list => {
+        const stat = new Map();
+        for (const c of list) {
+            const d = domainOf(c.id);
+            if (!stat.has(d)) stat.set(d, { nonGen: 0, gen: 0 });
+            const e = stat.get(d);
+            if (isGen(c.id)) { if (c.score > e.gen) e.gen = c.score; }
+            else if (c.score > e.nonGen) e.nonGen = c.score;
+        }
+        return list.filter(c => {
+            const e = stat.get(domainOf(c.id));
+            if (isGen(c.id)) return c.score === e.gen;
+            if (e.gen > e.nonGen) return false;
+            return c.score === e.nonGen;
+        });
+    };
+
     const collect = (list, withDimFallback) => {
+        // 一句话同时问了 ≥2 件事（多 aspect）时不压缩候选，避免砍掉并列的问题。
+        const effective = info.aspects.length >= 2 ? list : pruneByDomain(list);
         const out = [];
         for (let i = 0; i < questions.length; i++) {
             let best = 0, why = null;
-            for (const c of list) {
+            for (const c of effective) {
                 if (!intentsOf[i].includes(c.id)) continue;
                 const v = c.score * 1000;
                 if (v > best) { best = v; why = c.id; }
