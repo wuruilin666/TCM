@@ -198,6 +198,22 @@ D1
 - 保存学习记录
 - 修改 localStorage
 
+### 问诊数据契约（inquiry question 字段）
+
+每道 inquiry question 当前正式字段至少包括：
+
+```text
+q
+a
+keywords
+dimension
+intent
+```
+
+其中 `intent` 是问诊语义匹配的数据契约字段，不是可有可无的展示字段。
+
+`intent` 的值允许是单个非空字符串（如 `thirst.general`），也允许是多个意图的非空字符串数组（如 `["sweat.general", "chillHeat.general"]`）。`data.js` 的病例校验会强制要求每题 `intent` 存在且非空。
+
 ---
 
 ## 5.3 答案判定
@@ -672,46 +688,196 @@ placeholder token
 
 ---
 
-# 22. 目录结构维护原则
+# 22. 当前目录结构与模块归属
 
-目录结构反映真实职责。
+目录结构反映真实职责。下面以当前仓库真实存在的文件为准。
 
-建议长期向以下方向演进：
+## 22.1 当前真实存在的目录
+
+```text
+js/
+├── app.js
+├── case-bank.js
+├── data.js
+├── game.js
+├── html-utils.js
+├── inquiry.js
+├── inquiry-matcher.js
+├── inspection.js
+├── core/
+│   ├── answer-evaluator.js
+│   └── tongue-judge.js
+└── storage/
+    ├── progress-storage.js
+    ├── backup-code.js
+    └── backup-service.js
+```
+
+`core/` 是当前**已经存在**的纯逻辑 Domain 模块目录，不是「未来准备创建」。
+
+`storage/` 是当前**已经存在**的 Infrastructure 模块目录，不是「未来准备创建」。
+
+其余散落在 `js/` 根目录下的文件是 Application / 装配层模块（具体分层见下方「当前实际模块分层」）。
+
+## 22.2 目录结构维护原则
+
+目录结构反映真实职责，不为「结构好看」机械迁移。
+
+长期演进方向（不作为一次性迁移目标）：
 
 ```text
 js/
 ├── app/
-│   └── app.js
-│
 ├── core/
-│   ├── inquiry-matcher.js
-│   ├── answer-evaluator.js
-│   └── ...
-│
 ├── game/
-│   ├── game-session.js
-│   └── ...
-│
 ├── case-bank/
-│   └── ...
-│
 ├── data/
-│   ├── case-loader.js
-│   └── ...
-│
 ├── storage/
-│   ├── progress-storage.js
-│   ├── backup-service.js
-│   └── ...
-│
-├── auth/
-│   └── （未来正式接入账号后再创建）
-│
+├── auth/（未来正式接入账号后再创建）
 └── ui/
-    └── ...
 ```
 
-以上结构是目标方向，不要求一次性机械迁移。
+以上只是方向，不要求一次性机械迁移。当前真实结构以 22.1 为准。
+
+## 22.3 当前实际模块分层（L0–L5）
+
+`tools/arch-check.mjs` 的 `LAYER` 已经为每个模块声明了真实层级。
+
+层级语义：**layer 数字越大越底层（越靠近纯逻辑 Domain / 基础设施），数字越小越靠近入口与装配（`app.js` = L0 是应用入口）**。依赖方向只允许「数字小的模块依赖数字大的模块」（即应用 / 装配层依赖 Domain / 基础设施层，上层依赖下层），禁止「数字大的模块反向依赖数字小的模块」（即 Domain 反过来依赖入口 / 装配层）。
+
+当前真实分层如下：
+
+```text
+L0  Application Entry
+    js/app.js
+
+L1  Application / Case Bank
+    js/case-bank.js
+
+L2  Application / Game Interaction
+    js/game.js
+    js/inquiry.js
+    js/inspection.js
+
+L3  Backup Application Service
+    js/storage/backup-service.js
+
+L4  Infrastructure / Data Access
+    js/data.js
+    js/storage/progress-storage.js
+    js/storage/backup-code.js
+
+L5  Pure Domain
+    js/core/answer-evaluator.js
+    js/core/tongue-judge.js
+    js/inquiry-matcher.js
+    js/html-utils.js
+```
+
+说明：
+
+- L0–L3 是 Application 侧（入口、题库、游戏交互、备份服务）。
+- L4 是 Infrastructure / 数据访问层。
+- L5 是纯 Domain 层（保持纯净，禁止 DOM / window / localStorage / fetch / alert）。
+- 同级（同一 layer 数字）之间允许横向协作，但大数字层（Domain / 基础设施）不得反向依赖小数字层（入口 / 装配）。
+- 以上分层与 `tools/arch-check.mjs` 的 `LAYER` 完全一致，是当前代码检查器实际执行的判断方向。
+
+## 22.4 架构检查工具
+
+`tools/arch-check.mjs` 是项目架构治理工具。
+
+它的定位：
+
+- 不属于业务模块；
+- 不属于 `js/` 运行时模块；
+- 不应加入业务模块 `LAYER`；
+- 用于检查当前代码是否违反架构约束。
+
+它当前实际检查的内容：
+
+```text
+1. import 断链
+2. 循环依赖
+3. 模块架构层级声明
+4. 未声明模块
+5. 依赖方向
+6. 禁止 API 越界
+7. 未使用 import
+```
+
+> 所有属于 `js/**` 的业务模块必须在 `tools/arch-check.mjs` 的 `LAYER` 中显式声明；新增业务模块不得绕过架构检查。
+
+## 22.5 当前有意保留的架构边界
+
+以下边界是当前静态项目的实际设计，不代表理论最优，本次不为此强行重构。
+
+### 22.5.1 app.js
+
+允许：
+
+- 页面结构生成
+- 全局导航
+- 模块装配
+- 全局事件入口
+- 必要的 `window` 暴露
+
+但不得继续吸收：
+
+- 问诊算法
+- 答案判断
+- Storage 底层实现
+- Backup 编解码
+- Auth 逻辑
+
+### 22.5.2 inline onclick / window
+
+当前原生 HTML 仍使用部分 inline `onclick`，因此 `app.js` 会统一向 `window` 暴露必要函数。
+
+这是**当前技术边界 / 遗留边界**。
+
+规定：
+
+```text
+只能由 app.js 统一暴露
+新模块不得随意制造新的 window 全局变量
+```
+
+本次不把全部 onclick 改成 addEventListener。
+
+### 22.5.3 backup-service.js
+
+当前 `backup-service.js` 同时包含：
+
+```text
+备份数据构建
+备份校验
+恢复流程
+备份相关 UI
+```
+
+这是当前静态项目的实际设计，它属于 Backup Service。
+
+允许它处理自己的备份恢复界面，但：
+
+```text
+不得绕过 progress-storage 直接访问学习数据
+不得进入 game 核心状态
+不得实现 inquiry / answer / case 业务规则
+```
+
+本次不拆文件。
+
+### 22.5.4 Case Bank
+
+当前实现：
+
+```text
+case-bank.js
+    ↓
+progress-storage.js
+```
+
+> 未来如果引入 D1 / Progress Sync，可以将 Case Bank 对具体存储实现的依赖逐步收敛到统一 Progress API；但当前没有必要提前创建不存在的 Repository / Sync 层。
 
 ---
 
