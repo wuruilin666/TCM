@@ -6,8 +6,11 @@
  * 设计原则：
  *   1. 关键词只表达"这个问题本身"，不表达"这个问题所属的大类"。
  *   2. 一旦识别出具体 intent，绝不允许同维度其它 intent 的题目顶上来（禁止串题）。
- *   3. 没有病例证据时统一中性回答，绝不暗示"正常"。
- *   4. 禁止按 case.id 写特判；新增病例只要标注 intent 即自动继承本机制。
+ *   3. "本病例没有这个问诊问题" ≠ "找一个相近的问题回答"。
+ *      用户问的意图在本病例没有对应题目时，一律中性回答；只有**完全没识别到**
+ *      任何具体意图的泛问（「胃怎么样」「大便怎么样」）才允许同维度兜底。
+ *   4. 没有病例证据时统一中性回答，绝不暗示"正常"。
+ *   5. 禁止按 case.id 写特判；新增病例只要标注 intent 即自动继承本机制。
  * ================================================================================== */
 
 /* ---------------- 文本归一化 ---------------- */
@@ -112,6 +115,8 @@ export const INTENT_RULES = [
     /* ---- chest / abdomen / palpitation：部位 + 性质 ---- */
     { id: 'chest.pain',       dim: 'chest', words: ['胸痛','心痛','胸口痛','心前区痛','胸部疼痛','胸疼'] },
     { id: 'chest.oppression', dim: 'chest', words: ['胸闷','胸口闷','憋闷','胸部憋闷','闷不闷','胸口'] },
+    // 胸胁胀是独立意图，不能与胸痛 / 胸闷互相顶替（病例里已有 chest.distension 标注）。
+    { id: 'chest.distension', dim: 'chest', words: ['胸胁胀','胁肋胀','两胁胀','胁胀','胁下胀','胸胁满','胸胁胀痛','胁肋胀痛','两胁胀痛'] },
     { id: 'abdomen.pain',       dim: 'abdomen', words: ['胃痛','胃脘痛','腹痛','肚子痛','上腹痛','腹部疼痛','胃部疼痛','胃疼','肚子疼'] },
     { id: 'abdomen.distension', dim: 'abdomen', words: ['腹胀','胃胀','脘腹胀','肚子胀','胀满','上腹胀','腹部胀'] },
     { id: 'abdomen.reflux',     dim: 'abdomen', words: ['反酸','烧心','灼热','泛酸','吐酸','胃酸'] },
@@ -158,13 +163,17 @@ export const ASPECT_RULES = [
     { id: 'radiation', words: ['放射','放散','牵扯','牵涉','放射状','串到','往别处','扩散','牵连'] },
     { id: 'quality',   words: ['怎么痛','怎么个痛','怎么疼','怎样的痛','什么样的痛','什么性质','疼痛性质','性质','什么感觉','怎么个痛法','属于什么痛','什么痛','是刺痛','是胀痛','是隐痛','是绞痛','是灼痛','是酸痛','是跳痛','是钝痛','是抽痛','是闷痛','刺痛吗','胀痛吗','隐痛吗','绞痛吗','灼痛吗','酸痛吗','跳痛吗','钝痛吗','抽痛吗','闷痛吗','牵扯样'] },
     { id: 'duration',  words: ['持续多久','一次多久','每次多久','痛多久','疼多久','痛了多久','疼了多久','能持续','持续几天','疼几天','痛几天','持续多长时间','每次持续','一次持续','持续多长','痛多长时间','发作多久','持续多少'] },
-    { id: 'frequency', words: ['多久一次','多长时间一次','经常吗','反复吗','会反复','多久发作','发作几次','频率','阵发','间隔多久','每隔多久','几天一次','一天几次','一日几次','发作频率','多久犯','常不常','经常发作','几次'] },
+    // '阵发' 不能单独作词：它是"一阵阵发热"这类句子的偶然子串，
+    // 会把本来在问「发热」的话误判成在问「频率」，从而压掉它真正的意图。
+    { id: 'frequency', words: ['多久一次','多长时间一次','经常吗','反复吗','会反复','多久发作','发作几次','频率','阵发性','阵作','间隔多久','每隔多久','几天一次','一天几次','一日几次','发作频率','多久犯','常不常','经常发作','几次'] },
     { id: 'timing',    words: ['什么时候','何时','什么时间','一般什么时候','通常什么时候','什么时候发作','何时发作','什么时候出现','发作时间','什么时候容易','什么时候疼','什么时候痛','发作规律','什么时候开始','一般几点','发作时间点'] },
     // 说明："诱因 / 怎么引起 / 什么引起" 属 onset（起病因由），不放在 trigger
     { id: 'trigger',   words: ['什么情况下','什么情况','什么诱发','怎么诱发','加重','什么会加重','遇到什么','因为什么','吃了什么','碰了什么','饭后','餐后','吃完','进食后','纳后','活动后','运动后','劳累后','生气后','受凉'] },
     { id: 'relief',    words: ['怎么缓解','如何缓解','什么能缓解','怎么才缓解','怎样缓解','休息后','按揉','按压','热敷','好些','减轻','能好吗','会不会好'] },
     { id: 'amount',    words: ['量多','量少','多少','量大','量小','经量','用量','血量','出血量','量怎么样'] },
-    { id: 'color',     words: ['什么颜色','颜色','血色','经色','深色','色暗'] }
+    // color 只收「在问颜色」的说法。'深色' / '色暗' 是**答案词**不是问法，
+    // 放进来会把「深色饮料饮食」这类题目误判成在问颜色，从而压掉它真正的意图。
+    { id: 'color',     words: ['什么颜色','颜色','血色','经色'] }
 ];
 // 某些 aspect 在特定维度下有专属 intent 名
 const ASPECT_ALIAS = {
@@ -224,9 +233,6 @@ export function questionIntents(q) {
 }
 
 /* ===================== 核心匹配 ===================== */
-// "xxx.general" 只是"大类问题"，不构成强意图（"大便怎么样"这类泛问允许在该维度内兜底）
-const isGeneral = id => /\.general$/.test(id);
-
 // 返回 { index, indices, intent, aspects, score }
 // index = -1 表示病例无对应证据（交给中性回答）。
 export function matchQuestion(questions, rawText) {
@@ -255,12 +261,21 @@ export function matchQuestion(questions, rawText) {
         return out.sort((a, b) => b.score - a.score);
     };
 
-    const strong = cands.filter(c => !isGeneral(c.id));
-    // ① 识别出具体意图（部位/性质/时间/食欲…）时，只在该意图内匹配，绝不退让给同维度其它意图
+    // 防串题的关键：先确定「用户问的是哪个意图」，再看「本病例有没有承载这个意图的题」。
+    //   strong = 具体意图 —— INTENT_RULES 短语命中（「肚子胀」「脊背」「尿量」「心慌」…）
+    //            + 元问题 aspect 组合出的子意图（「什么性质」→ pain.quality）
+    //   其余（src === 'dim'）只由维度兜底产生，属于"泛问兜底"，
+    //   只有完全没有识别到任何具体意图时才允许用。
+    // 只要 strong 非空，就说明用户问的是什么已经定了；此时病例若没有对应题目，
+    // 必须回答「未留意」，绝不能往下退去挑一个"看起来最接近"的题。
+    const strong = cands.filter(c => c.src !== 'dim');
+
     let scored = strong.length ? collect(strong, false) : [];
-    let isStrong = scored.length > 0;
-    // ② 只识别出大类别（"大便怎么样""胃怎么样"）时，才允许维度内兜底
-    if (!scored.length && !strong.length) scored = collect(cands, true);
+    const isStrong = scored.length > 0;
+    if (!scored.length && !strong.length) {
+        // 一句话里完全没识别到任何具体意图（「胃怎么样」这类泛问）：才允许同维度兜底。
+        scored = collect(cands, true);
+    }
 
     // 一句话里明确问了两件事（≥2 个元问题）时才同时回答，避免主动扩展泄露
     const multiAspect = isStrong && info.aspects.length >= 2;
@@ -287,11 +302,26 @@ export function matchQuestion(questions, rawText) {
             aspects: info.aspects.map(a => a.id),
             dims: info.dims,
             score: scored[0].score,
-            debug: { text: t, strong: strong.map(c => c.id), candidates: cands.slice(0, 6), scored: scored.slice(0, 6) }
+            debug: { text: t, matchedTier: isStrong ? 'phrase/aspect' : 'generic', candidates: cands.slice(0, 6), scored: scored.slice(0, 6) }
         };
     }
 
-    // 完全没有识别到任何意图：退回题目关键词匹配（兼容未覆盖问法）
+    // ④ 用户问的是明确的症状/意图，但当前病例没有任何承载它的题目
+    //    → 明确返回「未留意」，由 resolveInquiry 转成中性回答。
+    //    这里**不能**退回下面的关键词匹配：那正是「问腹胀、答腹痛；问疼痛性质、答诱发因素」的来源。
+    if (strong.length) {
+        return {
+            index: -1,
+            indices: [],
+            intent: null,
+            aspects: info.aspects.map(a => a.id),
+            dims: info.dims,
+            score: 0,
+            debug: { text: t, unmatchedIntent: strong.map(c => c.id) }
+        };
+    }
+
+    // ⑤ 完全没有识别到任何意图：退回题目关键词匹配（兼容未覆盖问法）
     let bk = -1, bs = 0;
     for (let i = 0; i < questions.length; i++) if (kw[i] > bs) { bs = kw[i]; bk = i; }
     return {

@@ -339,13 +339,11 @@ const SKIP = new Set([
     'sleep.general :: 最近睡得好吗',
     'stool.general :: 几天排一次便',
     'chillHeat.general :: 平时手脚凉吗',
-    'chillHeat.general :: 身上一阵阵发热吗',
     'head.headache :: 头有没有痛过',
     'head.distension :: 头有没有发胀',
-    'urine.general :: 尿量多不多',
     'breath.phlegm :: 痰好不好咳出',
-    'breath.shortness :: 活动后喘吗',
     'pain.frequency :: 经常痛吗',
+    'breath.shortness :: 活动后喘吗',
     'pain.general :: 浑身酸痛吗',
 ]);
 const skipKey = (intent, input) => intent + ' :: ' + input;
@@ -506,17 +504,10 @@ const negReport = { total: 0, bad: [], landed: 0, miss: 0 };
  * 与 SKIP 同理：它们不是测试基础设施问题，而是 inquiry-matcher.js / 病例标注的真实缺陷。
  * 修好之后删掉对应条目，它立刻变回必须通过的正式负例。 */
 const SKIP_NEGATIVE = new Set([
-    // matcher：具体意图候选在病例里找不到对应题目时，不退回中性，而是掉到「关键词兜底」，
-    // 于是同维度的别的题顶上来（问腹胀答腹痛、问疼痛性质答疼痛情况）。
-    'abdomen.pain :: abdomen.distension :: 肚子胀不胀',
-    'pain.presence :: pain.quality :: 疼痛性质是什么',
-    // matcher：「胁肋胀」没被识别成具体意图，走了维度兜底，答了同维度的胸痛 / 胸闷
-    'pain.location :: pain.quality :: 疼痛性质是什么',
-    'chest.pain :: chest.distension :: 胁肋胀不胀',
-    'chest.pain :: chest.distension :: 两胁胀吗',
-    // 病例标注：adv-002#5「咳嗽咳痰」只标了 breath.cough，漏标 breath.phlegm
-    'breath.cough :: breath.phlegm :: 有痰吗',
-    'breath.cough :: breath.phlegm :: 痰多吗',
+    // 病例标注问题（见任务书 §十，本轮不处理）：
+    // adv-002#5「咳嗽咳痰」只标了 breath.cough，没标 breath.phlegm。
+    // 于是「咳痰吗」同时命中 breath.phlegm(40) 与 breath.cough(10)，
+    // 前者在 adv-002 没有对应题、后者有 → 拿了咳嗽题顶上。
     'breath.cough :: breath.phlegm :: 咳痰吗',
 ]);
 
@@ -588,19 +579,30 @@ console.log('\n--- 已知负例缺口登记（待修，不计分） ---\n');
             if (!xIdx.length || hasY) continue;
             const r = resolveInquiry(qs, input);
             const hit = r.index >= 0 ? qs[r.index] : null;
-            if (!grouped.has(key)) grouped.set(key, { ex: [], got: new Set() });
+            // 负例通过 = 既没命中 X 的题，也没把 X 的答案端上来
+            const failed = !!hit && (questionIntents(hit).includes(X)
+                || xIdx.some(([q]) => q.a === r.answer)
+                || xIdx.some(([q]) => q.a && q.a.length >= 6 && r.answer.includes(q.a)));
+            if (!grouped.has(key)) grouped.set(key, { ex: [], got: new Set(), failed: false });
             const g = grouped.get(key);
             g.ex.push(`${c.id}（问 ${Y}，本病例只有 ${X}：${xIdx.map(([, i]) => qs[i].q).join(' / ')}）`);
             g.got.add(hit ? `${hit.q} → ${r.answer}` : '未命中（中性回答）');
+            if (failed) g.failed = true;
         }
     }
+    let negativeOpen = 0;
     for (const [key, g] of grouped) {
         const [X, Y, input] = key.split(' :: ');
+        if (!g.failed) {
+            console.log(`  🎉 已修复：问「${Y}」→「${input}」 —— 请把它从 SKIP_NEGATIVE（8.0 节）删除，转为正式负例`);
+            continue;
+        }
+        negativeOpen++;
         console.log(`  ⚠️ 问「${Y}」→「${input}」，不得答 ${X}`);
         console.log(`       病例：${g.ex.join('；')}`);
         console.log(`       当前实际：${[...g.got].join(' / ')}`);
     }
-    console.log(`\n  共登记 ${SKIP_NEGATIVE.size} 条负例缺口，均未修改业务代码。`);
+    console.log(`\n  共登记 ${SKIP_NEGATIVE.size} 条负例缺口，仍待修 ${negativeOpen} 条，均未修改业务代码。`);
 }
 
 /* ============================================================
