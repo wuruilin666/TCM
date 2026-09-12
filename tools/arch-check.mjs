@@ -20,7 +20,7 @@ function walk(dir) {
 
 const files = walk(JS_DIR);
 const graph = new Map();
-const importRe = /from\s+['"](\.?[^'"]+)['"]/g;
+const importRe = /from\s+['"](\.[^'"]+)['"]/g;
 
 for (const f of files) {
     const src = readFileSync(f, 'utf-8');
