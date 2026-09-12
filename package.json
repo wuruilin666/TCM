@@ -1,0 +1,11 @@
+{
+  "name": "tcm",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/domain.test.mjs && node tests/inquiry.test.mjs && node tests/inspection-images.test.mjs && node tests/regression.test.mjs && node tests/tongue-clue-fold.test.mjs && node tests/tongue-data.test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}

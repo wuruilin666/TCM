@@ -1,5 +1,5 @@
 /* ===================== 舌象线索展开/收起状态回归测试 =====================
- * 运行： node tests/tongue-clue-fold.test.mjs
+ * 运行： npm test   （或 node tests/tongue-clue-fold.test.mjs）
  *
  * 要守住的行为：
  *   - 提交舌象判断后，舌象线索默认折叠，但「正确舌象」直接可见
@@ -14,10 +14,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+// jsdom 走项目依赖解析（package.json 的 devDependencies），不依赖开发机的绝对路径
+import { JSDOM } from 'jsdom';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const JSDOM_HOME = process.env.JSDOM_HOME || 'C:/Users/吴睿琳/.workbuddy/binaries/node/workspace/node_modules';
-const { JSDOM } = await import(pathToFileURL(join(JSDOM_HOME, 'jsdom/lib/api.js')).href);
 
 let pass = 0;
 const failures = [];

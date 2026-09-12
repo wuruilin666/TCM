@@ -1,5 +1,5 @@
 /* ===================== 望诊图片路径解析 / 渲染测试 =====================
- * 运行： node tests/inspection-images.test.mjs
+ * 运行： npm test   （或 node tests/inspection-images.test.mjs）
  *
  * 覆盖：
  *   - 显式 inspectionImages 优先
@@ -10,17 +10,16 @@
  *   - 全量病例解析出的图片路径在仓库中真实存在
  *   - Session 装载接线（进入病例 / 下一例 / 题库进入都能拿到图片）
  *   - 「暂无舌象图片」与「图片加载失败」是两种状态
+ *   - 图片事件监听器在设置 src 之前就已绑定
  * ==================================================================== */
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+// jsdom 走项目依赖解析（package.json 的 devDependencies），不依赖开发机的绝对路径
+import { JSDOM } from 'jsdom';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-
-// jsdom 从受管 Node 工作区按绝对路径加载（与 regression.test.mjs 同一来源）
-const JSDOM_HOME = process.env.JSDOM_HOME || 'C:/Users/吴睿琳/.workbuddy/binaries/node/workspace/node_modules';
-const { JSDOM } = await import(pathToFileURL(join(JSDOM_HOME, 'jsdom/lib/api.js')).href);
 
 let pass = 0;
 const failures = [];

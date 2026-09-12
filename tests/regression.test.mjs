@@ -1,5 +1,5 @@
 /* ===================== 端到端回归测试（jsdom） =====================
- * 运行： NODE_PATH=<node workspace>/node_modules node tests/regression.test.mjs
+ * 运行： npm test   （或 node tests/regression.test.mjs）
  *
  * 用真实 index.html + 真实 ES Module 依赖图跑通全链路，
  * 覆盖：首页 / 闯关 / 三阶段 / 四诊 / 问诊匹配 / 舌象 / 答题 / 错题 / 题库 / 进度 / 备份 / 恢复。
@@ -7,10 +7,8 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-
-// jsdom 从受管 Node 工作区按绝对路径加载（ESM 不走 NODE_PATH）
-const JSDOM_HOME = process.env.JSDOM_HOME || 'C:/Users/吴睿琳/.workbuddy/binaries/node/workspace/node_modules';
-const { JSDOM } = await import(pathToFileURL(join(JSDOM_HOME, 'jsdom/lib/api.js')).href);
+// jsdom 走项目依赖解析（package.json 的 devDependencies），不依赖开发机的绝对路径
+import { JSDOM } from 'jsdom';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
