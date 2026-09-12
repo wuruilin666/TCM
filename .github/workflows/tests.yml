@@ -25,5 +25,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Run architecture check
+        run: node tools/arch-check.mjs
+
       - name: Run tests
         run: npm test

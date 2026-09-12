@@ -82,6 +82,13 @@ export const VALID_INQUIRY_DIMENSIONS = new Set([
     'limb', 'eye', 'tongue', 'oral', 'general'
 ]);
 
+// intent 是问诊语义匹配的数据契约字段：允许单个非空字符串，
+// 也允许多个意图的非空字符串数组（与 inquiry-matcher 的 questionIntents 一致）。
+export function isValidIntent(value) {
+    if (isNonEmptyString(value)) return true;
+    return Array.isArray(value) && value.length > 0 && value.every(isNonEmptyString);
+}
+
 export function isValidInquiryQuestion(q) {
     return !!q
         && isNonEmptyString(q.q)
@@ -90,7 +97,8 @@ export function isValidInquiryQuestion(q) {
         && q.keywords.length > 0
         && q.keywords.every(isNonEmptyString)
         && isNonEmptyString(q.dimension)
-        && VALID_INQUIRY_DIMENSIONS.has(q.dimension.trim());
+        && VALID_INQUIRY_DIMENSIONS.has(q.dimension.trim())
+        && isValidIntent(q.intent);
 }
 
 // 校验单个病例。返回病例本身；不合法时抛出带病例 ID 的明确错误。
@@ -104,7 +112,7 @@ export function validateCase(c) {
         throw new Error(`病例 ${c.id} 的四诊字段无效`);
     }
     if (!clues.inquiry || !Array.isArray(clues.inquiry.questions) || clues.inquiry.questions.length === 0 || !clues.inquiry.questions.every(isValidInquiryQuestion)) {
-        throw new Error(`病例 ${c.id} 的问诊字段无效（每题必须含 q / a / keywords / 合法 dimension）`);
+        throw new Error(`病例 ${c.id} 的问诊字段无效（每题必须含 q / a / keywords / 合法 dimension / 非空 intent）`);
     }
     const answer = c.correctAnswer, analysis = c.fullAnalysis;
     if (!answer || !['disease', 'syndrome', 'westernDiagnosis'].every(key => isNonEmptyString(answer[key]))) {
