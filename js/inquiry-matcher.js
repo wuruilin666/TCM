@@ -261,30 +261,126 @@ export function matchQuestion(questions, rawText) {
     const isGen = id => /\.general$/.test(id);
     const domainOf = id => String(id).split('.')[0];
     const pruneByDomain = list => {
-        const stat = new Map();
-        for (const c of list) {
-            const d = domainOf(c.id);
-            if (!stat.has(d)) stat.set(d, { nonGen: 0, gen: 0 });
-            const e = stat.get(d);
-            if (isGen(c.id)) { if (c.score > e.gen) e.gen = c.score; }
-            else if (c.score > e.nonGen) e.nonGen = c.score;
-        }
-        return list.filter(c => {
-            const e = stat.get(domainOf(c.id));
-            if (isGen(c.id)) return c.score === e.gen;
-            if (e.gen > e.nonGen) return false;
-            return c.score === e.nonGen;
-        });
+        // 第三阶段：把 src='intent' 与 src∈{aspect, aspect+dim, dim} 切成两组各自做域内压缩。
+        // 这样 src=intent 的具体意图（如「头痛吗」里的 head.headache、「胸痛放射」里的 chest.pain、
+        // 「胸胁胀痛吗」里的 chest.distension）不会被同 dim 的 aspect+dim 候选（chest.radiation /
+        // chest.quality）按分高砍掉 —— 后两者其实是另一种语义组合，不是它的"更具体版本"。
+        // 这两个压缩动作互不影响，保留旧版痛多久 vs 痛.presence bug 修复（仍由 collect 内的 mask 实现）。
+        const intentCands = list.filter(c => c.src === 'intent');
+        const otherCands  = list.filter(c => c.src !== 'intent');
+        const compress = subset => {
+            const stat = new Map();
+            for (const c of subset) {
+                const d = domainOf(c.id);
+                if (!stat.has(d)) stat.set(d, { nonGen: 0, gen: 0 });
+                const e = stat.get(d);
+                if (isGen(c.id)) { if (c.score > e.gen) e.gen = c.score; }
+                else if (c.score > e.nonGen) e.nonGen = c.score;
+            }
+            return subset.filter(c => {
+                const e = stat.get(domainOf(c.id));
+                if (isGen(c.id)) return c.score === e.gen;
+                if (e.gen > e.nonGen) return false;
+                return c.score === e.nonGen;
+            });
+        };
+        return [...compress(intentCands), ...compress(otherCands)];
     };
+
+    // 第三阶段常量集合
+    const BODY_DOMAINS = new Set([
+        'head', 'chest', 'abdomen', 'back', 'limb', 'eye', 'ear',
+        'nose', 'throat', 'neck', 'skin'
+    ]);
+    const PAIN_GENERIC_INTENTS = new Set(['pain.presence', 'pain.general']);
 
     const collect = (list, withDimFallback) => {
         // 一句话同时问了 ≥2 件事（多 aspect）时不压缩候选，避免砍掉并列的问题。
         const effective = info.aspects.length >= 2 ? list : pruneByDomain(list);
+
+        // ===== 第三阶段：明确身体部位 → 屏蔽"无主题泛痛" =====
+        //
+        // 用户说「头痛吗」时，detectIntents 同时识别到
+        //   head.headache  （hit=`头痛`） → head 域 src='intent'
+        //   pain.presence  （hit=`痛吗`） → pain 域 src='intent'
+        // 两个 src='intent' 候选评分并列，由于"不同域不互压"，原本会把
+        // 任何承载 pain.presence 的题目推上来——典型即「碰水后疼痛明显」。
+        // 这是第三阶段要堵的口子：用户既然已经明确指出了身体部位，
+        // 「无主题泛痛」(pain.presence / pain.general) 与「无主题泛痛+元问题」
+        // (pain.location / pain.quality / pain.frequency …) 都不得跨主题顶替。
+        //
+        // 屏蔽规则（在 collect 内、逐题侧判断）：
+        //   (A) BODY 域具体意图在场（src=intent / src=aspect+dim / src=aspect），
+        //       对 src='intent' 的 pain.presence / pain.general 在该题侧 skip。
+        //   (B) BODY 域的 aspect+dim 候选在场（head.quality / chest.radiation …），
+        //       对 src='aspect' 的 pain.<同 aspect> 在该题侧 skip。
+        //       例：「头痛的性质是什么」里 head.quality 与 pain.quality 共存，
+        //            后者不能顶替前者；adv-003#4「胸痛放射」题目也承载
+        //            chest.pain（不会被这条规则影响，仍可正常匹配）。
+        //
+        // 痛多久 vs 痛.presence（旧 bug）修复的延续：
+        //   当 effective 中存在任一带 aspect 的候选（说明用户问得更具体），
+        //   对那些题目 intent 中没有任何 aspect 类候选的题（典型「痛.presence
+        //   题」只承载 pain.presence 一个 intent），把"无 aspect 的 src=intent"
+        //   在该题侧 skip——避免被更泛的 pain.presence 题顶替。
+        //   若 effective 本身没有 aspect 候选（如纯问「痛吗」），保留旧行为。
+        const haveBodyIntent = effective.some(c => c.src !== 'dim' && BODY_DOMAINS.has(domainOf(c.id)));
+        const aspectsWithBodyVariant = haveBodyIntent
+            ? new Set(
+                effective.filter(c => c.src === 'aspect+dim' && BODY_DOMAINS.has(domainOf(c.id)))
+                        .map(c => c.aspect)
+            )
+            : new Set();
+
         const out = [];
         for (let i = 0; i < questions.length; i++) {
+            const onThisQuestion = effective.filter(c => intentsOf[i].includes(c.id));
+            const hasAspectCandidateForQuestion = onThisQuestion.some(c => c.aspect && c.src !== 'dim');
+            // effective 中与本道题 intent 同 dim 的 aspect 候选 —— 用于痛多久 vs 痛.presence
+            // 这种"用户用更具体的同 dim 候选在问"才考虑压制；pain.quality / pain.lastTime 之类
+            // 跨域 aspect 不能误伤 menstruation 域的正例（用户问月经量 vs 答月经一般情况）。
+            const sameDomainAspectCandidates = effective.filter(c2 => c2.aspect && c2.src !== 'dim'
+                && onThisQuestion.some(o => domainOf(o.id) === domainOf(c2.id)));
+            const sameDomainAspectMaxScore = sameDomainAspectCandidates.reduce((m, c) => Math.max(m, c.score), 0);
+            // "用户主要意图"是不是 src=intent（而非被 aspect 组合盖过）。
+            // 旧痛多久 vs 痛.presence bug：pain.frequency(aspect, 90) > pain.presence(intent, 80)，
+            //   user 具体意图由 aspect 主导，pain.presence 应被压制。
+            // 而 basic-003#2「胸胁胀痛吗」：chest.distension(intent, 290) > chest.quality(asp+dim, 96)，
+            //   user 具体意图由 INTENT_RULES 短语命中，chest.distension 应被保留。
+            const intentMaxScore = onThisQuestion
+                .filter(c => c.src === 'intent')
+                .reduce((m, c) => Math.max(m, c.score), 0);
+            const intentDominant = intentMaxScore >= sameDomainAspectMaxScore;
+            // 题目本身就同时承载 src=intent 与 src=aspect 候选时，src=intent 也是用户具体意图的一部分；
+            // 例如「胸痛放射」#4 题目承载 chest.pain(intnt) + pain.radiation(asp)，此时 src=intent
+            // 不应被压（与"题目只有 pain.presence 那种"对比）。
+            const onThisQuestionHasAspectCandidate = onThisQuestion.some(c => c.aspect && c.src !== 'dim');
+
             let best = 0, why = null;
-            for (const c of effective) {
-                if (!intentsOf[i].includes(c.id)) continue;
+            for (const c of onThisQuestion) {
+                // 第三阶段 (A): BODY 域具体意图在场 → 屏蔽 src='intent' 的无主题泛痛。
+                if (haveBodyIntent && c.src === 'intent' && PAIN_GENERIC_INTENTS.has(c.id)) continue;
+                // 第三阶段 (B): BODY.aspect 在场 → 屏蔽 src='aspect' 的同 aspect pain.X。
+                if (haveBodyIntent && c.src === 'aspect' && c.id.startsWith('pain.')
+                    && aspectsWithBodyVariant.has(c.aspect)) continue;
+                // 痛多久 vs 痛.presence（旧 bug）修复：effective 中存在与本道题 intent **同 dim**
+                // 的 aspect 候选，且该 aspect 候选 score **高于**本道题承载的 src=intent
+                // 候选时（即用户的具体意图由 aspect 主导），该题承载的"具体的"无 aspect
+                // src='intent' 不能顶替 —— 避免被题目里"是否痛"那种无 aspect 信息量小的题顶上。
+                // 同时跳过条件仅在"题目未同时承载 aspect 候选"时启用：
+                //   - 「尿量多不多」让 urine.general 题答，不算跨主题兜底
+                //     （isGen 单独放行）。
+                //   - 「痛多久一次 + 只有痛.presence 题」题目未承载 aspect 候选，
+                //     启用压制，pain.presence 被正确挡回中性。
+                //   - 「胸痛放射」#4 题目同时承载 chest.pain(intnt) + pain.radiation(asp)，
+                //     不启用压制，chest.pain 保留并命中。
+                //   - 「胸胁胀痛」#2 用户主要意图由 INTENT_RULES 直接命中 chest.distension，
+                //     intentDominant=true，不启用压制。
+                if (sameDomainAspectMaxScore > 0 && intentDominant === false
+                    && !onThisQuestionHasAspectCandidate
+                    && !c.aspect && c.src === 'intent'
+                    && !isGen(c.id)) continue;
+
                 const v = c.score * 1000;
                 if (v > best) { best = v; why = c.id; }
             }
@@ -304,6 +400,8 @@ export function matchQuestion(questions, rawText) {
     //   只有完全没有识别到任何具体意图时才允许用。
     // 只要 strong 非空，就说明用户问的是什么已经定了；此时病例若没有对应题目，
     // 必须回答「未留意」，绝不能往下退去挑一个"看起来最接近"的题。
+    //   第三阶段：第三阶段 mask 已迁入 collect 内部（按题侧判断），
+    //   这里的 strong 与等价于原始 strong，不再做预 mask。
     const strong = cands.filter(c => c.src !== 'dim');
 
     let scored = strong.length ? collect(strong, false) : [];
@@ -345,6 +443,8 @@ export function matchQuestion(questions, rawText) {
     // ④ 用户问的是明确的症状/意图，但当前病例没有任何承载它的题目
     //    → 明确返回「未留意」，由 resolveInquiry 转成中性回答。
     //    这里**不能**退回下面的关键词匹配：那正是「问腹胀、答腹痛；问疼痛性质、答诱发因素」的来源。
+    //    第三阶段补：第三阶段的 mask 已迁入 collect 内部（按题侧判断），
+    //    这里的 strong 反映了"用户已经锁定了哪些具体意图"，用它判定是否走中性回答。
     if (strong.length) {
         return {
             index: -1,

@@ -542,11 +542,66 @@ console.log('\n--- 经典定点负例 ---\n');
         ['basic-003', '小便怎么样', '便秘', 'basic-003 没有小便题，不得给小便宜答大便'],
         ['adv-002', '气短吗', '头晕', '跨维度：问气短不得答头晕'],
         ['adv-006', '小便怎么样', '大便', 'adv-006 没有小便题，不得答大便'],
+        // ---- 第三阶段新增：「明确身体部位 → 不得被无主题泛痛顶替」----
+        ['inter-006', '头痛吗', '疼痛', 'inter-006 没有 head.* 题，不能被「碰水后疼痛明显」之类 pain.presence/pain.trigger 题顶上来'],
+        ['inter-008', '头痛吗', '疼痛', 'inter-008 没有 head.* 题，不能被「周身疼痛」之类 pain.presence/pain.general 题顶上来'],
+        ['basic-002', '头晕吗', '头痛', 'basic-002 没有 head.dizziness 题，不得命中「头痛情况」'],
+        ['adv-002', '头痛吗', '胸痛|胸闷|头晕', 'adv-002 没有 head.headache 题，问头不得被胸部/头晕相关题顶替'],
+        ['adv-002', '胁肋胀吗', '胸痛|胸闷', 'adv-002 没有 chest.distension 题，问胁肋不得被胸痛/胸闷题顶上来'],
     ];
     for (const [cid, input, forbidden, why] of spot) {
         const { answer, intent } = ask(cid, input);
         check(`「${input}」(${cid}) 不含「${forbidden}」 —— ${why}`,
             !answer.includes(forbidden), `intent=${intent} answer=${answer}`);
+    }
+}
+
+/* ---- 8.4 跨主题主题约束负例（第三阶段：明确主题 → 屏蔽无主题泛痛） ----
+ *
+ * 系统化测试「明确指出身体部位时，泛痛题目不得跨主题顶替」：
+ *   病例只承载痛.presence / pain.general 等「无主题泛痛」题，
+ *   不承载 head.* / chest.* 等具体 BODY 域题目，
+ *   用户明确询问具体 BODY 域意图，必须中性、index=-1、intent=null。
+ *
+ * 反向：同一意图在没有泛痛题的情况下应正常命中，证 mock 不被无端误伤。
+ */
+console.log('\n--- 跨主题主题约束负例 ---\n');
+{
+    // 结构：[caseId, 用户输入, 期望中性? true 表示期望 -1 中性, false 表示应命中有效答案]
+    const crossTopic = [
+        // —— 反向：用户在 BODY 题下的正常路径不应被破坏 ——
+        ['basic-002', '头痛吗',      false, '基本-002 有 head.headache 题，问头痛应正常命中'],
+        ['basic-002', '头痛怎么样',   false, '基本-002 问头怎么样应正常命中'],
+        ['basic-002', '头痛的性质是什么', true, '基本-002 没有 head.quality 题，问「头痛的性质」应中性（不能退化到任何 pain 题）'],
+        ['adv-002',   '胸闷吗',       false, 'adv-002 有胸痛胸闷题，问胸闷应正常命中'],
+        ['basic-003', '胁肋胀吗',     false, '基本-003#2 承载 chest.distension，问胁胀应正常命中'],
+        ['inter-006', '痛吗',         false, 'inter-006 有 pain.presence 题，问"痛吗"应正常命中'],
+        ['inter-006', '碰水会痛吗',   false, 'inter-006#2 是 pain.presence + pain.trigger 题，问碰水痛应正常命中'],
+        ['inter-008', '怎么痛',       false, 'inter-008 有痛题，问怎么痛应正常命中'],
+        ['inter-008', '浑身疼痛',     false, 'inter-008 有痛题（周身疼痛），问浑身疼痛应正常命中'],
+        // —— 正向：第三阶段真正要堵的「明确主题 → 泛痛顶替」 ——
+        ['inter-006', '头痛吗',       true,  'inter-006 没有 head.* 题，问头痛不得被「碰水后疼痛明显」之类泛痛题顶替'],
+        ['inter-008', '头痛吗',       true,  'inter-008 没有 head.* 题，问头痛不得被「周身疼痛」之类泛痛题顶替'],
+        ['inter-008', '头胀吗',       true,  'inter-008 没有 head.distension 题'],
+        ['inter-008', '头晕吗',       true,  'inter-008 没有 head.dizziness 题'],
+        ['inter-006', '头胀吗',       true,  'inter-006 没有 head.* 题，问头胀不得被泛痛题顶替'],
+        ['inter-006', '头晕吗',       true,  'inter-006 没有 head.* 题，问头晕不得被泛痛题顶替'],
+        ['adv-002',   '头痛吗',       true,  'adv-002 只有 head.dizziness 题，问头痛不得被头.dizziness 顶替'],
+        ['adv-002',   '胁肋胀吗',     true,  'adv-002 没有 chest.distension 题，问胁胀不得被胸痛/胸闷题顶上来'],
+        ['inter-006', '胁肋胀吗',     true,  'inter-006 没有 chest 题，问胁胀不得被泛痛题顶替'],
+        ['inter-008', '胁肋胀吗',     true,  'inter-008 没有 chest 题，问胁胀不得被泛痛题顶替'],
+    ];
+    for (const [cid, input, expectNeutral, why] of crossTopic) {
+        const { res } = ask(cid, input);
+        if (expectNeutral) {
+            check(`「${input}」(${cid}) 跨主题压制 → ${why}`,
+                res.index === -1 && res.intent === null && res.type === 'neutral',
+                `intent=${res.intent} type=${res.type} index=${res.index} answer=${res.answer}`);
+        } else {
+            check(`「${input}」(${cid}) 反向验证（不误伤） → ${why}`,
+                res.index !== -1 && res.type === 'match',
+                `intent=${res.intent} type=${res.type} index=${res.index} answer=${res.answer}`);
+        }
     }
 }
 
