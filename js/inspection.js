@@ -39,9 +39,8 @@ export function openInspectionModal() {
         nonTongueEl.style.display = 'none';
     }
 
-    renderInspection();
-    document.getElementById('inspectionModal').style.display = 'flex';
-
+    // 事件监听器必须在 renderInspection() 设置 img.src **之前**挂上：
+    // 否则图片命中缓存时可能先完成解码，onload 错过时就永远停在「图片加载中...」。
     img.onload = function () {
         this.style.display = 'block';
         const { images, index } = getSession().inspection;
@@ -56,6 +55,9 @@ export function openInspectionModal() {
         this.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="260" height="347" viewBox="0 0 260 347"%3E%3Crect width="260" height="347" fill="%23fdfaf5"/%3E%3Ctext x="130" y="170" font-size="14" fill="%23b5a595" text-anchor="middle"%3E图片加载失败%3C/text%3E%3C/svg%3E';
         document.getElementById('inspectionCounter').textContent = '图片加载失败';
     };
+
+    renderInspection();
+    document.getElementById('inspectionModal').style.display = 'flex';
 }
 
 export function renderInspection() {

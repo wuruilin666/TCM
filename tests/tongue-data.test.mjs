@@ -9,7 +9,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const { matchTerm } = await import(pathToFileURL(join(ROOT, 'js/core/tongue-judge.js')).href);
+const { matchTerm, judgeTongue, describeTongueReference } =
+    await import(pathToFileURL(join(ROOT, 'js/core/tongue-judge.js')).href);
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -27,12 +28,13 @@ const DIM_BASIS = {
 // tongueDesc 中不允许出现的非舌象观察词（照片视角外）
 const NON_TONGUE_RE = /面色|脸色|面容|形体|神志|精神|舌下脉络|舌下络脉|舌下静脉|舌底|咽部|唇/;
 
-// 值有依据：与 tongueDesc 整体/两字窗口命中，或值的每个字都出现在原文（「淡黯」←「舌淡略黯」）
+// 值有依据：必须与 tongueDesc 命中（整体包含，或连续两字窗口）。
+// 这里刻意复用运行时同一支 matchTerm，让「测试通过」与「学习者照抄参考答案能被判对」
+// 严格等价；不允许退化成「值的每个字都出现过」——那会让「淡黯」在「舌淡略黯」这类
+// 只有单字重合的病例上蒙混过关（运行时仍会把照抄参考答案判成错）。
 function valueBasedOn(desc, value) {
     const v = String(value).trim();
-    if (!v) return false;
-    if (matchTerm(desc, v)) return true;
-    return [...v].every(ch => desc.includes(ch));
+    return !!v && matchTerm(desc, v);
 }
 
 const files = ['basic', 'intermediate', 'advanced'];
@@ -94,13 +96,31 @@ for (const c of allCases) {
 }
 check('nonTongue 与 tongueDesc 无重复', nonTongueOk);
 
-console.log('\n=== 5. 已知修正病例的定点回归 ===\n');
+console.log('\n=== 5. 照抄参考答案必须判全对（tongueDesc 与考点值互不矛盾） ===\n');
+console.log(`（共 ${allCases.length} 例）`);
+let selfScoreOk = true;
+for (const c of allCases) {
+    const ins = c.clues.inspection;
+    const reference = describeTongueReference(ins);
+    const v = judgeTongue(ins.tongueJudgment, reference, ins.tongueDesc || '');
+    if (v.total > 0 && v.status !== 'correct') {
+        selfScoreOk = false;
+        console.log(`     ✗ ${c.id} 照抄参考答案「${reference}」被判 ${v.status}：${JSON.stringify(v.dimensions)}`);
+    }
+}
+check('每例照抄参考答案都能拿满分', selfScoreOk);
+
+console.log('\n=== 6. 已知修正病例的定点回归 ===\n');
 const byId = id => allCases.find(c => c.id === id);
 
 const i4 = byId('inter-004');
-check('inter-004：不再有 color 淡白 考点', !('color' in (i4.clues.inspection.tongueJudgment || {})));
+check('inter-004：tongueJudgment.color 必须不存在', i4.clues.inspection.tongueJudgment.color === undefined);
+check('inter-004：shape = 胖大有齿痕、coating = 白腻',
+    i4.clues.inspection.tongueJudgment.shape === '胖大有齿痕'
+    && i4.clues.inspection.tongueJudgment.coating === '白腻');
+check('inter-004：tongueDesc 为「舌苔白腻，舌体胖大有齿痕。」',
+    i4.clues.inspection.tongueDesc === '舌苔白腻，舌体胖大有齿痕。');
 {
-    const { judgeTongue } = await import(pathToFileURL(join(ROOT, 'js/core/tongue-judge.js')).href);
     const ins = i4.clues.inspection;
     const v = judgeTongue(ins.tongueJudgment, '舌红，苔白腻', ins.tongueDesc || '');
     check('inter-004：用户「舌红，苔白腻」→ color not_tested / shape missing / coating correct / 1/2 partial',
@@ -124,6 +144,12 @@ const a6 = byId('adv-006');
 check('adv-006：tongueDesc 不含面色晦暗，nonTongue 为面色晦暗',
     !/面色/.test(a6.clues.inspection.tongueDesc)
     && /面色晦暗/.test(a6.clues.inspection.nonTongue));
+check('adv-006：coating 与 tongueDesc 措辞一致（「苔黄且较厚」），照抄参考答案可判对',
+    matchTerm(a6.clues.inspection.tongueDesc, a6.clues.inspection.tongueJudgment.coating));
+
+const a7 = byId('adv-007');
+check('adv-007：color 与 tongueDesc 措辞一致（「舌淡略黯」），照抄参考答案可判对',
+    matchTerm(a7.clues.inspection.tongueDesc, a7.clues.inspection.tongueJudgment.color));
 
 console.log('\n=== 结果 ===');
 console.log(`通过 ${pass}，失败 ${fail}`);

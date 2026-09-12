@@ -207,6 +207,44 @@ check('有路径但加载失败：显示「图片加载失败」占位图，且�
     assert.equal(img.onerror, null, 'onerror 应被摘掉，避免死循环');
 });
 
+/* ---------------- 4. 图片事件绑定顺序 ---------------- */
+console.log('\n=== 4. 望诊图片事件绑定顺序 ===\n');
+
+// 探针：包一层 src setter，记录「设置 src 的那一刻 onload / onerror 是否已经挂上」。
+// 顺序错了（先设 src 再绑事件）时，图片命中缓存会先解码完成，onload 就永远收不到。
+const srcDesc = Object.getOwnPropertyDescriptor(window.HTMLImageElement.prototype, 'src');
+let boundAtFirstSrcSet = null;
+Object.defineProperty(window.HTMLImageElement.prototype, 'src', {
+    configurable: srcDesc.configurable,
+    enumerable: srcDesc.enumerable,
+    get: srcDesc.get,
+    set(v) {
+        if (this.id === 'inspectionImg' && boundAtFirstSrcSet === null) {
+            boundAtFirstSrcSet = {
+                onload: typeof this.onload === 'function',
+                onerror: typeof this.onerror === 'function'
+            };
+        }
+        srcDesc.set.call(this, v);
+    }
+});
+
+check('设置 img.src 之前，onload / onerror 必须已经绑定', () => {
+    boundAtFirstSrcSet = null;
+    game.startCasePractice('basic-001');
+    inspection.openInspectionModal();
+    assert.ok(boundAtFirstSrcSet, 'openInspectionModal 应当设置过 img.src');
+    assert.equal(boundAtFirstSrcSet.onload, true, '设置 src 时 onload 尚未绑定');
+    assert.equal(boundAtFirstSrcSet.onerror, true, '设置 src 时 onerror 尚未绑定');
+});
+
+check('图片解码完成后 onload 能把计数器从「图片加载中...」更新为正常文案', () => {
+    assert.equal(counter.textContent, '图片加载中...', '前置：等待加载中');
+    img.dispatchEvent(new window.Event('load'));
+    assert.equal(img.style.display, 'block', 'onload 应让图片显示出来');
+    assert.equal(counter.textContent, '', '单图病例加载完成后不显示计数');
+});
+
 /* ---------------- 结果 ---------------- */
 console.log('\n=== 结果 ===');
 console.log(`通过 ${pass}，失败 ${failures.length}`);

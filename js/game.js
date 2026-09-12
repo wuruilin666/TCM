@@ -201,6 +201,9 @@ function rebuildSessionForCurrentCase() {
     const { images, index: inspectionIndex } = state.inspection;
     const current = unfinishedCases[index];
 
+    // 换病例 / 重新探查都把舌象线索的展开态复位为默认折叠，
+    // 不让上一例的展开状态带到下一例。
+    tongueClueExpanded = false;
     state = createSession();
     state.case = { current, difficulty, index };
     state.progress.unfinishedCases = unfinishedCases;
@@ -327,24 +330,38 @@ export function showHistory() {
 // 折叠/展开只是临时 UI 状态（CSS class），不进入会话状态与学习进度。
 export const TONGUE_CLUE_MARK = '――――――――';
 
-// 线索区折叠开关：事件委托绑定一次。折叠/展开只切 .clue-item 的 expanded class。
+// 舌象线索的展开/折叠是**当前页面的 UI 状态**，不是游戏状态、不是学习进度：
+// 它不属于 Game Session，也不落任何持久化存储（本地存储、备份都不参与）。
+// 放在这里只是为了在 renderClues() 重建 DOM 后能恢复用户刚才的选择。
+// 装载新病例时由 rebuildSessionForCurrentCase() 复位为默认折叠。
+let tongueClueExpanded = false;
+
+// 线索区折叠开关：事件委托绑定一次（innerHTML 重建不丢监听器）。
+// 点击只翻转上面这一个 UI 状态位，并把该状态应用到**全部**舌象线索上，
+// 保证同一个病例里的舌象线索不会出现彼此不同的展开态。
 function bindClueToggle(area) {
     if (area.dataset.clueToggleBound) return;
     area.dataset.clueToggleBound = '1';
     area.addEventListener('click', e => {
         const btn = e.target && e.target.closest ? e.target.closest('.clue-toggle') : null;
-        if (btn) btn.closest('.clue-item')?.classList.toggle('expanded');
+        if (!btn) return;
+        tongueClueExpanded = !tongueClueExpanded;
+        area.querySelectorAll('.clue-item.clue-tongue')
+            .forEach(item => item.classList.toggle('expanded', tongueClueExpanded));
     });
 }
 
 export function renderClues() {
     const area = document.getElementById('clueArea');
     bindClueToggle(area);
+    // 折叠态由 tongueClueExpanded 决定：重新渲染多少次都不会丢掉用户刚才的展开/收起选择。
+    // 默认（未展开）时 class 与改动前完全一致，视觉不变。
+    const tongueExpandedClass = tongueClueExpanded ? ' expanded' : '';
     area.innerHTML = state.diagnosis.collectedClues
         .map(c => {
             if (c.tag === '望诊·舌象' && c.content.includes('\n' + TONGUE_CLUE_MARK + '\n')) {
                 const [summary, detail] = c.content.split('\n' + TONGUE_CLUE_MARK + '\n');
-                return `<div class="clue-item clue-tongue" data-clue-type="tongue">`
+                return `<div class="clue-item clue-tongue${tongueExpandedClass}" data-clue-type="tongue">`
                     + `<span class="clue-tag ${escapeHtml(c.tagClass)}">${escapeHtml(c.tag)}</span>`
                     + `<div class="clue-tongue-body">`
                     + `<div class="clue-tongue-summary">${escapeHtmlWithBreaks(summary)}</div>`
