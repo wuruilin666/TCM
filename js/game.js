@@ -426,19 +426,25 @@ export function submitAnswer() {
     state.phase = PHASE.SUBMITTED;
 
     const progress = requireProgressService();
+    // 结果区必须说清两件事的边界：病名 + 证型决定最终判定，辨证依据只作提交留痕，
+    // 不与标准辨证链比对（系统不对它做正确性评分），因此不写「正确 / 错误」。
+    const basisStatus = `<p style="color:var(--text-muted);font-size:0.9em;">辨证依据：已提交，请与标准辨证链对照</p>`;
     let feedbackHtml;
     if (verdict.result === ANSWER_RESULT.CORRECT) {
-        feedbackHtml = `<div class="result-box success"><h4>辨证正确</h4><p>${escapeHtml(correct.disease)} · ${escapeHtml(correct.syndrome)}</p>`;
+        feedbackHtml = `<div class="result-box success"><h4>辨证正确</h4>`
+            + `<p>病名：${escapeHtml(correct.disease)}</p>`
+            + `<p>证型：${escapeHtml(correct.syndrome)}</p>`
+            + basisStatus;
         progress.removeWrong(currentCase.id);
     } else {
         if (verdict.result === ANSWER_RESULT.WRONG) {
-            feedbackHtml = `<div class="result-box fail"><h4>辨证偏差较大</h4><p>建议继续探查四诊信息。</p>`;
+            feedbackHtml = `<div class="result-box fail"><h4>辨证偏差较大</h4><p>建议继续探查四诊信息。</p>` + basisStatus;
         } else {
             const parts = [
                 verdict.diseaseOk ? '病名基本正确' : '病名需调整',
                 verdict.syndromeOk ? '证型判断准确' : '证型需斟酌'
             ];
-            feedbackHtml = `<div class="result-box fail"><h4>部分正确</h4><p>${parts.join('，')}</p>`;
+            feedbackHtml = `<div class="result-box fail"><h4>部分正确</h4><p>${parts.join('，')}</p>` + basisStatus;
         }
         progress.saveWrong({ syndrome, disease, basis }, currentCase, state.case.difficulty);
     }

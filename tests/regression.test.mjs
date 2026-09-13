@@ -167,19 +167,33 @@ try {
     /* ---------------- F. 答题判定 ---------------- */
     console.log('\n=== F. 答题判定 ===\n');
     const current = game.getCurrentCase();
+    const progressStore = await import(pathToFileURL(join(ROOT, 'js/storage/progress-storage.js')).href);
     document.getElementById('inputDisease').value = current.correctAnswer.disease;
     document.getElementById('inputSyndrome').value = current.correctAnswer.syndrome;
     document.getElementById('inputBasis').value = '测试辨证依据';
     window.submitAnswer();
     const fbText = document.getElementById('answerFeedback').textContent;
     check('完全正确 → 显示「辨证正确」', fbText.includes('辨证正确'), fbText.slice(0, 60));
+    check('结果区分项列出病名 / 证型',
+        fbText.includes('病名：' + current.correctAnswer.disease)
+        && fbText.includes('证型：' + current.correctAnswer.syndrome), fbText);
+    check('结果区明示辨证依据已提交但不作正确性判定',
+        fbText.includes('辨证依据：已提交，请与标准辨证链对照'), fbText);
+
+    // 辨证依据完全不参与判题：依据写得再离谱，只要病名 + 证型正确就仍判「辨证正确」，且不进错题
+    document.getElementById('inputBasis').value = '因为患者脾胃虚弱，所以判断为本证。';
+    window.submitAnswer();
+    const fbBadBasis = document.getElementById('answerFeedback').textContent;
+    check('依据完全跑偏 → 判定不变（仍「辨证正确」）', fbBadBasis.includes('辨证正确'), fbBadBasis.slice(0, 80));
+    check('依据完全跑偏 → 不进入错题',
+        !progressStore.getWrongCases().some(w => w.id === caseId),
+        JSON.stringify(progressStore.getWrongCases().map(w => w.id)));
 
     window.viewAnswer();
     check('显示答案后渲染完整医案解析',
         document.getElementById('fullAnalysisArea').textContent.includes('完整医案解析'));
     check('解析包含病机分析',
         document.getElementById('fullAnalysisArea').textContent.includes('病机分析'));
-    const progressStore = await import(pathToFileURL(join(ROOT, 'js/storage/progress-storage.js')).href);
     check('查看答案后病例标记为已完成', progressStore.getCompletedCases().includes(caseId),
         JSON.stringify(progressStore.getCompletedCases()));
 
@@ -207,6 +221,21 @@ try {
     const fbText3 = document.getElementById('answerFeedback').textContent;
     check('仅病名正确 → 显示「部分正确」', fbText3.includes('部分正确'), fbText3.slice(0, 60));
     check('部分正确提示病名基本正确', fbText3.includes('病名基本正确'));
+    check('答错时同样给出辨证依据状态说明',
+        fbText3.includes('辨证依据：已提交，请与标准辨证链对照'), fbText3);
+
+    // 仅证型正确：最终判定同样以「病名 + 证型」为准，不因依据或单项命中而变「辨证正确」
+    window.nextCase();
+    const fourthCase = game.getCurrentCase();
+    document.getElementById('inputDisease').value = '错误病名XYZ';
+    document.getElementById('inputSyndrome').value = fourthCase.correctAnswer.syndrome;
+    document.getElementById('inputBasis').value = '依据';
+    window.submitAnswer();
+    const fbText4 = document.getElementById('answerFeedback').textContent;
+    check('仅证型正确 → 不判「辨证正确」', !fbText4.includes('辨证正确'), fbText4.slice(0, 60));
+    check('仅证型正确 → 仍进入错题机制',
+        progressStore.getWrongCases().some(w => w.id === fourthCase.id),
+        JSON.stringify(progressStore.getWrongCases().map(w => w.id)));
 
     /* ---------------- G. 重新探查 ---------------- */
     console.log('\n=== G. 重新探查 ===\n');

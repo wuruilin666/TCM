@@ -163,9 +163,9 @@ export async function loadCasesByDifficulty(diff) {
 }
 
 // 加载全部难度病例，返回扁平数组（顺序：basic → intermediate → advanced）
+// 各难度并行请求；Promise.all 的返回顺序与 diffOrder 一致，因此合并顺序不变。
 export async function loadAllCases() {
-    const lists = [];
-    for (const diff of diffOrder) lists.push(await loadCasesByDifficulty(diff));
+    const lists = await Promise.all(diffOrder.map(diff => loadCasesByDifficulty(diff)));
     return lists.flat();
 }
 
