@@ -11,6 +11,11 @@
  *      任何具体意图的泛问（「胃怎么样」「大便怎么样」）才允许同维度兜底。
  *   4. 没有病例证据时统一中性回答，绝不暗示"正常"。
  *   5. 禁止按 case.id 写特判；新增病例只要标注 intent 即自动继承本机制。
+ *   6. **一题一事实**：一个 question 默认只表达一个独立问诊意图；答案里包含几个
+ *      独立事实（医生会分别问诊的）就该有几道题。只有多个 intent 本来就是
+ *      "同一事实的不同问法/同一次临床问询的不同侧面"（乏力三种问法、胸痛胸闷、
+ *      痛连两胁、发作特点…）时才允许一题多 intent —— 否则用户问 A 会连带拿到 B 的事实。
+ *      详见 auditQuestions 的 multiIntent / needReview 登记。
  * ================================================================================== */
 
 /* ---------------- 文本归一化 ---------------- */
@@ -97,10 +102,12 @@ export const INTENT_RULES = [
     { id: 'energy.general',  dim: 'energy', words: ['身体素质','体质怎么样','体质','体力怎么样','体力','身体怎么样','身体有力','有力气','有力吗','有没有力气','有劲','没劲','有没有劲','身体素质怎么样','素体','虚不虚','身体虚','身体状况','全身情况','全身感觉','全身怎么样'] },
     { id: 'energy.strength', dim: 'energy', words: ['有力','力气','有劲','劲','体力','身体素质','体质','身体素质怎么样'] },
     { id: 'energy.fatigue',  dim: 'energy', words: ['乏力','疲乏','疲倦','疲劳','没劲','容易累','会累','累吗','困倦','身困','神疲','没力气','没精神','疲倦吗','虚乏'] },
+    // 体重变化是独立的阳性事实，不能塞进「乏力」那题里一起答。
+    { id: 'energy.weight',   dim: 'energy', words: ['体重','体重下降','体重减轻','体重变化','消瘦','瘦了','变瘦','掉秤','轻了','瘦了多少'] },
 
     /* ---- diet：食欲 ≠ 饮食偏好 ---- */
-    { id: 'diet.appetite',    dim: 'diet', words: ['胃口','食欲','纳差','纳呆','纳食','食纳','纳谷','想吃东西','吃得下','不想吃','不思饮食','吃饭香','有胃口','没胃口','能吃得下','吃东西香','饮食情况','饮食怎么样','饮食如何'] },
-    { id: 'diet.preference',  dim: 'diet', words: ['喜欢吃什么','喜欢吃','偏好','口味','嗜食','喜食','爱吃','辛辣','肥甘','厚腻','生冷','喝咖啡','喝茶','饮食习惯','爱吃什么'] },
+    { id: 'diet.appetite',    dim: 'diet', words: ['胃口','食欲','纳差','纳呆','纳食','食纳','纳谷','想吃东西','吃得下','不想吃','不思饮食','吃饭香','有胃口','没胃口','能吃得下','能吃吗','想吃','吃东西香','饮食情况','饮食怎么样','饮食如何'] },
+    { id: 'diet.preference',  dim: 'diet', words: ['喜欢吃什么','喜欢吃','偏好','口味','嗜食','喜食','爱吃','辛辣','肥甘','厚腻','生冷','喝咖啡','喝茶','饮食习惯','爱吃什么','平时吃什么','平时饮食','饮食偏好','平常吃什么'] },
     { id: 'diet.amount',      dim: 'diet', words: ['饭量','吃多少','食量','进食量','吃得多','吃得少'] },
     { id: 'diet.afterEating', dim: 'diet', words: ['饭后','餐后','吃完','食后','纳后','进食后','饭后胀'] },
 
@@ -146,7 +153,8 @@ export const INTENT_RULES = [
     { id: 'sweat.general',     dim: 'sweat',     words: ['汗出','出汗','盗汗','自汗','汗多','汗'] },
     { id: 'emotion.general',   dim: 'emotion',   words: ['情绪','心情','情志','烦躁','焦虑','急躁','易怒','心烦','抑郁','生气','郁不郁'] },
     { id: 'chillHeat.general', dim: 'chillHeat', words: ['恶寒','畏寒','怕冷','怕风','发热','发烧','恶热','怕热','潮热','烘热','五心烦热','体温','寒热','手脚凉','手脚发凉','手脚冰冷','手足凉','手足发凉'] },
-    { id: 'vomiting.belching', dim: 'vomiting',  words: ['嗳气','打嗝','呃逆'] },
+    // 「打饱嗝」是口语；只收「打嗝」时，"打饱嗝吗" 会被 diet 的单字「饱」带到饮食那题去。
+    { id: 'vomiting.belching', dim: 'vomiting',  words: ['嗳气','打嗝','呃逆','打呃','饱嗝','打饱嗝','嗝'] },
     { id: 'vomiting.vomiting', dim: 'vomiting',  words: ['恶心','呕吐','干呕','反胃','想吐'] },
     { id: 'nose.general',      dim: 'nose',      words: ['鼻塞','流涕','鼻涕','喷嚏','鼻子'] },
     { id: 'throat.general',    dim: 'throat',    words: ['咽喉','嗓子','咽干','异物感','梗喉','咽部','喉咙','声音'] },
@@ -335,10 +343,16 @@ export function matchQuestion(questions, rawText) {
         //   在该题侧 skip——避免被更泛的 pain.presence 题顶替。
         //   若 effective 本身没有 aspect 候选（如纯问「痛吗」），保留旧行为。
         const haveBodyIntent = effective.some(c => c.src !== 'dim' && BODY_DOMAINS.has(domainOf(c.id)));
+        // 只有当**本病例确实有**「部位 + 元问题」的题目时，才用它压掉同 aspect 的无主题泛痛。
+        // 否则「胸闷什么时候发作」这类问法会被整条挡死：chest.timing 候选在场、
+        // 但病例里没有任何题目承载 chest.timing，pain.timing 又被压掉 → 明明有
+        // 「发作规律（pain.timing）」那道题也命不中。
         const aspectsWithBodyVariant = haveBodyIntent
             ? new Set(
                 effective.filter(c => c.src === 'aspect+dim' && BODY_DOMAINS.has(domainOf(c.id)))
                         .map(c => c.aspect)
+                        .filter(a => questions.some(q => questionIntents(q)
+                            .some(id => BODY_DOMAINS.has(domainOf(id)) && id.endsWith('.' + a))))
             )
             : new Set();
 
@@ -565,10 +579,63 @@ export function resolveInquiry(questions, rawText) {
 }
 
 /* ===================== 静态自检：病例标注体检 ===================== */
-// 返回 { total, missingIntent, riskyKeywords, dupIntents }
+// 返回 {
+//   total, missingIntent, emptyKeywords, riskyKeywords, dupIntents,
+//   multiIntent,   // 一个 question 标了多个 intent —— 需人工确认是否应拆题
+//   needReview,    // 同上（含原因），给开发者一眼看到"这题要复查"
+//   dimMismatch,   // dimension 与 intent 的逻辑域不一致
+//   missingEntry   // 四诊里明确存在的阳性事实，病例却没有对应的可追问入口
+// }
+const RISKY_KEYWORDS = ['头','痛','身','食','纳','便','尿','经','力','胃','口','色','面','背','耳','舌','牙','药','热','汗','睡','醒','水','气'];
+
+// dimension 与 intent 的逻辑一致性：
+//   intent 的域（"." 之前那段）要么就是本题的 dimension，
+//   要么是 pain.* —— 那是"有无/性质/部位/频率…"这类元问题，可以挂在任何具体主题的题上。
+export function isIntentDomainConsistent(intent, dimension) {
+    const domain = String(intent).split('.')[0];
+    return domain === dimension || domain === 'pain';
+}
+
+// 「病例事实 → 可追问入口」核对表：左侧是四诊里会出现的阳性症状词，
+// 右侧是它必须能通过问诊问到的那类 intent。只收高置信、无歧义的症状词——
+// 宁可漏报也不要误报，否则开发者会对审计输出失去信任。
+// 注意：只扫 chiefComplaint / 四诊 / otherCheck 这些"病例事实"，
+// 不扫 fullAnalysis（那是解析文本，含大量教科书式表述，会产生系统性假阳性）。
+const ENTRY_HINTS = [
+    { intent: 'vomiting.belching', words: ['嗳气', '呃逆', '打嗝', '饱嗝'] },
+    { intent: 'vomiting.vomiting', words: ['呕吐', '恶心', '干呕'] },
+    { intent: 'breath.cough',      words: ['咳嗽'] },
+    { intent: 'breath.phlegm',     words: ['咯痰', '咳痰', '黄痰', '白痰', '痰多'] },
+    { intent: 'breath.shortness',  words: ['气短', '呼吸急促', '气促', '喘息', '气喘'] },
+    { intent: 'head.headache',     words: ['头痛', '头疼'] },
+    { intent: 'head.dizziness',    words: ['头晕', '眩晕'] },
+    { intent: 'palpitation.general', words: ['心慌', '心悸'] },
+    { intent: 'chest.oppression',  words: ['胸闷'] },
+    { intent: 'chest.pain',        words: ['胸痛'] },
+    { intent: 'abdomen.reflux',    words: ['反酸', '烧心', '泛酸'] },
+    { intent: 'abdomen.distension', words: ['腹胀', '胃胀', '胀满'] },
+    { intent: 'energy.fatigue',    words: ['乏力', '疲倦', '困重', '神疲'] },
+    { intent: 'skin.itch',         words: ['瘙痒', '痒'] },
+    { intent: 'menstruation.cycle', words: ['月经'] },
+    { intent: 'stool.general',     words: ['便秘', '腹泻', '便溏'] },
+    { intent: 'urine.general',     words: ['尿频', '尿急', '夜尿'] }
+];
+
+function caseFactText(c) {
+    const cl = c.clues || {};
+    return [
+        c.chiefComplaint, c.otherCheck,
+        cl.inspection && (cl.inspection.displayContent + ' ' + (cl.inspection.nonTongue || '')),
+        cl.auscultation && (cl.auscultation.displayContent + ' ' + (cl.auscultation.textSummary || '')),
+        cl.pulse && cl.pulse.displayContent
+    ].filter(Boolean).join(' ');
+}
+
 export function auditQuestions(cases) {
-    const RISKY = ['头','痛','身','食','纳','便','尿','经','力','胃','口','色','面','背','耳','舌','牙','药','热','汗','睡','醒','水','气'];
-    const out = { total: 0, missingIntent: [], riskyKeywords: [], dupIntents: [], emptyKeywords: [] };
+    const out = {
+        total: 0, missingIntent: [], emptyKeywords: [], riskyKeywords: [], dupIntents: [],
+        multiIntent: [], needReview: [], dimMismatch: [], missingEntry: []
+    };
     for (const c of cases) {
         const qs = (c.clues && c.clues.inquiry && c.clues.inquiry.questions) || [];
         const seen = {};
@@ -578,12 +645,88 @@ export function auditQuestions(cases) {
             const intents = questionIntents(q);
             if (!intents.length) out.missingIntent.push(tag);
             if (!(q.keywords || []).length) out.emptyKeywords.push(tag);
-            for (const k of (q.keywords || [])) if (k.length === 1 && RISKY.includes(k)) out.riskyKeywords.push(`${tag} -> ${k}`);
+            for (const k of (q.keywords || [])) if (k.length === 1 && RISKY_KEYWORDS.includes(k)) out.riskyKeywords.push(`${tag} -> ${k}`);
             for (const it of intents) {
                 if (seen[it]) out.dupIntents.push(`${c.id}: ${it} 重复于 #${seen[it]} 与 #${i}`);
                 seen[it] = i;
             }
+            // ④⑤ 一个 question 标了多个 intent → 必须人工确认这些 intent 是不是"同一个事实的多种问法"。
+            //     如果是多个独立事实，说明该拆题（一题一事实），否则用户问 A 也会拿到 B 的事实。
+            if (intents.length > 1) {
+                const line = `${tag} 同时承载 ${intents.length} 个 intent：${intents.join(' + ')}`;
+                out.multiIntent.push(line);
+                out.needReview.push(`${line} —— 若这些 intent 对应多个独立事实，请拆题并各给答案`);
+            }
+            // ⑦ dimension 与 intent 逻辑一致。
+            // 多 intent 的题目本来就横跨几个逻辑域，已由 needReview 交给人工判断，
+            // 这里只查单 intent 的题——那种不一致一定是标错了（如 dim=onset 却标 palpitation.timing）。
+            if (intents.length === 1 && !isIntentDomainConsistent(intents[0], q.dimension)) {
+                out.dimMismatch.push(`${tag} dimension=${q.dimension} 与 intent=${intents[0]} 不一致`);
+            }
         });
+        // ⑥ 重要阳性事实缺少可追问入口
+        const fact = caseFactText(c);
+        for (const hint of ENTRY_HINTS) {
+            const word = hint.words.find(w => fact.includes(w));
+            if (!word) continue;
+            const covered = qs.some(q =>
+                questionIntents(q).includes(hint.intent)
+                || hint.words.some(w => String(q.q || '').includes(w))
+                || (q.keywords || []).some(k => hint.words.some(w => k.includes(w))));
+            if (!covered) out.missingEntry.push(`${c.id} 四诊出现「${word}」，但没有任何题承载 ${hint.intent}`);
+        }
     }
     return out;
 }
+
+/* ===================== 纯逻辑语义自检（可复现，无 DOM / 无状态） ===================== */
+// 用例格式：[病例 id, 用户输入, 期望 intent（null = 必须中性）, 期望答案片段（null = 不校验）]
+// 这份表钉死的是"问什么答什么"：每个 intent 只能拿到它自己那道题的事实，
+// 病例没承载的 intent 必须中性，绝不能拿相邻题目的答案顶上。
+export const SEMANTIC_CASES = [
+    /* adv-001：嗳气 / 食欲 / 饮食偏嗜 三个入口各答各的 */
+    ['adv-001', '会打饱嗝吗？', 'vomiting.belching', '偶有嗳气'],
+    ['adv-001', '打饱嗝吗', 'vomiting.belching', '偶有嗳气'],
+    ['adv-001', '有没有嗳气', 'vomiting.belching', '偶有嗳气'],
+    ['adv-001', '胃口怎么样？', 'diet.appetite', '纳差'],
+    ['adv-001', '食欲怎么样', 'diet.appetite', '纳差'],
+    ['adv-001', '平时的饮食习惯怎么样？', 'diet.preference', '饮食不节'],
+    ['adv-001', '平时喜欢吃什么', 'diet.preference', '生冷'],
+    ['adv-001', '胃脘胀痛吗', 'abdomen.pain', '隐痛'],
+    ['adv-001', '什么时候加重', 'pain.timing', '夜间'],
+    ['adv-001', '怎么缓解疼痛', 'pain.relief', '喜按'],
+    ['adv-001', '大便怎么样', 'stool.general', '便秘'],
+    /* basic-001：咳嗽 ≠ 咳痰，两个入口互不串题 */
+    ['basic-001', '咳嗽吗？', 'breath.cough', '咳嗽4天'],
+    ['basic-001', '有没有咳痰？', 'breath.phlegm', '咯黄稠痰'],
+    ['basic-001', '会打饱嗝吗', 'vomiting.belching', '嗳气'],
+    ['basic-001', '怕冷吗', 'chillHeat.general', '不恶寒'],
+    /* 病例没承载的 intent → 必须中性，不得被相邻题目顶替 */
+    ['adv-002', '有嗳气吗', null, null],
+    ['basic-002', '有嗳气吗', null, null],
+    ['basic-003', '有没有咳痰', null, null],
+    ['inter-003', '月经量多不多', null, null],
+    ['adv-002', '疼多久', null, null],
+    ['basic-002', '胸闷吗', null, null],
+    ['basic-004', '月经量多不多', null, null]
+];
+
+// 跑一遍 SEMANTIC_CASES。cases 为病例数组（结构同 data/cases/*.json 的 cases）。
+// 返回 { total, failed:[{ caseId, input, want, got, answer }] }。
+export function runSemanticCases(cases) {
+    const byId = new Map(cases.map(c => [c.id, c]));
+    const out = { total: 0, failed: [] };
+    for (const [id, input, wantIntent, wantText] of SEMANTIC_CASES) {
+        const c = byId.get(id);
+        if (!c) { out.failed.push({ caseId: id, input, want: wantIntent, got: '病例不存在', answer: '' }); continue; }
+        const qs = (c.clues && c.clues.inquiry && c.clues.inquiry.questions) || [];
+        const r = resolveInquiry(qs, input);
+        out.total++;
+        const ok = wantIntent === null
+            ? r.index === -1 && r.type === 'neutral'
+            : r.intent === wantIntent && (!wantText || String(r.answer || '').includes(wantText));
+        if (!ok) out.failed.push({ caseId: id, input, want: wantIntent === null ? '中性回答' : wantIntent, got: r.intent, answer: r.answer });
+    }
+    return out;
+}
+

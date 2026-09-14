@@ -4,9 +4,12 @@
  * 覆盖层级（从下往上，越往下越宽）：
  *   1. 用户点名的 12 个真实回归用例（原样保留，一行未动）
  *   2. 追加的口语 / 边界用例（原样保留）
- *   3. 全量静态自检 auditQuestions（原样保留）
+ *   3. 全量静态自检 auditQuestions：missingIntent / emptyKeywords / riskyKeywords /
+ *      dimMismatch / missingEntry，以及 multiIntent 的逐条人工登记（MULTI_INTENT_REVIEWED）
+ *   3.1 纯逻辑语义自检 runSemanticCases（用例表在 js/inquiry-matcher.js 的 SEMANTIC_CASES）：
+ *      "问什么答什么" —— 每个 intent 只拿承载它那道题的答案，缺入口必须中性
  *   4. 全量问诊数据结构契约（q / keywords / intent / dimension / answer）
- *   5. 全量原题面自问：177 道题、每道题都必须命中自己
+ *   5. 全量原题面自问：每道题都必须命中自己
  *   6. 全量自然语言变体正例：自动（病例题面）+ 人工确认（按 intent 组织的口语表）
  *   7. 防串题：命中的必须是「承载该 intent 的那一道题」，答案不得来自别的题
  *   8. 负例：问 A 不得答 B（相邻 / 易混淆 / 同字不同义）
@@ -18,13 +21,13 @@
  * 期望值的来源（重要）：
  *   预期 intent 一律取自**病例原始数据** question.intent，预期答案取自该题的 question.a；
  *   绝不从 js/inquiry-matcher.js 的关键词表反推，避免「实现和测试用同一张表自证」。
- *   人工确认变体表 INTENT_VARIANTS 是测试侧独立维护的语义资产。
+ *   人工确认变体表 INTENT_VARIANTS 与 SEMANTIC_CASES 都是测试侧独立维护的语义资产。
  * ============================================================== */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import {
-    resolveInquiry, questionIntents, auditQuestions, GENERIC_NEUTRAL
+    resolveInquiry, questionIntents, auditQuestions, runSemanticCases, GENERIC_NEUTRAL
 } from '../js/inquiry-matcher.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -212,10 +215,59 @@ const audit = auditQuestions(cases);
 check('所有 question 都有 intent', audit.missingIntent.length === 0, audit.missingIntent.join(' | '));
 check('无高危单字关键词残留', audit.riskyKeywords.length === 0, audit.riskyKeywords.join(' | '));
 check('无空关键词题目', audit.emptyKeywords.length === 0, audit.emptyKeywords.join(' | '));
+check('单 intent 题目的 dimension 与 intent 逻辑域一致', audit.dimMismatch.length === 0, audit.dimMismatch.join(' | '));
+check('四诊里的重要阳性事实都有可追问入口', audit.missingEntry.length === 0, audit.missingEntry.join(' | '));
 console.log(`  （共检查 ${audit.total} 条问诊题目）`);
 if (audit.dupIntents.length) {
     console.log('  ⚠️ 同病例重复 intent（需人工确认是否可区分）：');
     audit.dupIntents.forEach(d => console.log('     - ' + d));
+}
+
+/* 一个 question 承载多个 intent 时，必须逐个确认它们"是不是同一个事实的几种问法"。
+ * 确认过就登记在下面；新出现未登记的 intent 组合 → 测试失败，强制人工过一遍
+ * （要么承认它是同一事实，要么按「一题一事实」拆开）。 */
+const MULTI_INTENT_REVIEWED = new Map([
+    ['energy.fatigue + energy.general + energy.strength', '乏力这一事实的三种问法，答案只讲乏力'],
+    ['abdomen.distension + abdomen.pain + pain.quality', '胃脘/腹部 胀+痛 同一次问诊（胀痛是一个症状）'],
+    ['chest.oppression + chest.pain', '胸痛胸闷：同一次胸膺部问诊'],
+    ['chest.oppression + chest.pain + pain.location + pain.trigger', '胸痛胸闷+活动后加重：同一次发作描述'],
+    ['chest.pain + pain.radiation', '「无胸痛及放射痛」是一个否定式陈述'],
+    ['breath.cough + breath.phlegm', '「无咳嗽、咳痰」是一个否定式陈述'],
+    ['pain.location + pain.radiation', '痛连两胁/颞部牵扯：部位与牵涉同句不可分'],
+    ['pain.presence + pain.trigger', '碰水后疼痛明显：有无痛与其诱因同句'],
+    ['pain.general + pain.presence', '周身疼痛：有无痛与全身性酸痛同句'],
+    ['emotion.general + pain.trigger', '情绪波动时疼痛加剧：情绪与其诱因同句'],
+    ['diet.afterEating + pain.timing', '纳后加重：时间点就是进食后'],
+    ['diet.afterEating + pain.timing + pain.trigger', '进食后加重：进食后即时间点与诱因本身'],
+    ['pain.frequency + pain.timing', '间断/反复发作：频率与时间点同句'],
+    ['pain.duration + pain.frequency + pain.relief + pain.timing', '同一次发作的发作特点（频次/时长/缓解）'],
+    ['head.distension + head.headache', '头痛而胀：性质附着在同一个头痛上'],
+    ['pain.trigger + palpitation.general', '活动后发作心慌：症状与其诱因同句'],
+    ['palpitation.general + palpitation.timing', '心悸阵作、夜间明显：症状与其时间同句'],
+    ['chillHeat.general + chillHeat.timing', '潮热：寒热症状与其发作时间同句'],
+    ['menstruation.cycle + menstruation.frequency', '周期缩短/稀发：周期与频次同一事实'],
+    ['menstruation.clot + menstruation.color', '经色与血块同属一次月经描述（拆分会影响既有联合问诊用例）']
+]);
+const unregistered = audit.multiIntent
+    .map(line => line.split('：').pop().split(' + ').sort().join(' + '))
+    .filter(set => !MULTI_INTENT_REVIEWED.has(set));
+console.log(`  ⚠️ 多 intent 题目 ${audit.multiIntent.length} 道（已登记 ${MULTI_INTENT_REVIEWED.size} 种 intent 组合）：`);
+audit.multiIntent.forEach(d => console.log('     - ' + d));
+check('多 intent 题目已全部人工确认（无未审阅的 intent 组合）',
+    unregistered.length === 0,
+    '未登记：' + unregistered.join(' | '));
+
+/* ============================================================
+ * 3.1 纯逻辑语义自检（用例表在 js/inquiry-matcher.js 的 SEMANTIC_CASES）
+ * 钉死「问什么答什么」：每个 intent 只能拿到承载它的那道题的答案；
+ * 病例没有这个入口时必须中性，绝不能拿相邻/相似题目的答案顶上。
+ * ============================================================ */
+console.log('\n=== 纯逻辑语义自检（问什么答什么） ===\n');
+{
+    const sem = runSemanticCases(cases);
+    check(`语义用例 ${sem.total} 条：每个 intent 只拿自己那题的事实，缺入口必须中性`,
+        sem.failed.length === 0,
+        sem.failed.map(f => `${f.caseId}「${f.input}」期望 ${f.want}，实际 ${f.got} / ${f.answer}`).join(' | '));
 }
 
 /* ============================================================
@@ -296,6 +348,7 @@ const INTENT_VARIANTS = {
     'energy.fatigue': ['乏力吗', '有没有乏力', '容易累吗', '平时容易疲劳吗', '没精神吗'],
     'energy.strength': ['体力怎么样', '身体有力吗', '有没有力气', '有劲吗', '身体素质怎么样'],
     'energy.general': ['身体怎么样', '全身感觉怎么样', '身体虚不虚'],
+    'energy.weight': ['体重怎么样', '有没有消瘦', '体重下降了吗', '瘦了吗', '体重变化'],
     'head.headache': ['头痛吗', '头疼吗', '会不会头痛', '头有没有痛过'],
     'head.dizziness': ['头晕吗', '会不会头晕', '头晕不晕', '有没有眩晕', '头昏吗'],
     'head.distension': ['头胀吗', '头有没有发胀', '头重吗'],
