@@ -237,54 +237,68 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .difficulty-blurb { margin-top: 4px; font-size: 14px; line-height: 1.6; color: var(--ink-muted); }
 .difficulty-count { flex: none; padding-top: 2px; font-size: 12px; letter-spacing: 0.1em; color: var(--ink-faint); font-variant-numeric: tabular-nums; }
 
-/* ===================== 接诊工作台（复刻解压 clinic.tsx） ===================== */
+/* ===================== 接诊工作台 =====================
+   整页是「一张展开的医案工作纸」：主诉靠留白与极轻底边线划界，四诊是操作组，
+   线索是连续证据记录，提交辨证是作答任务组。卡片在这里是例外，不是默认。
+   ======================================================== */
 .case-topbar {
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    font-size: 14px; color: var(--ink-muted);
+    flex-wrap: wrap;
+    font-size: 13px; color: var(--ink-muted);
 }
+.case-topbar-meta { display: inline-flex; align-items: baseline; min-width: 0; }
 .case-topbar button { color: var(--ink-muted); }
 .case-topbar button:hover { color: var(--ink); }
-.case-topbar-diff { font-family: var(--font-heading); letter-spacing: 0.16em; }
-.case-topbar-counter { margin-left: 12px; font-family: var(--font-body); color: var(--ink); font-variant-numeric: tabular-nums; }
+.case-topbar-diff { font-family: var(--font-heading); letter-spacing: 0.16em; color: var(--ink-faint); }
+.case-topbar-counter { margin-left: 12px; font-family: var(--font-body); color: var(--ink-muted); font-variant-numeric: tabular-nums; }
 
-.chief-complaint-card {
-    background: var(--paper-raised); border-radius: 16px; box-shadow: var(--shadow-border);
-    padding: 24px 20px;
-}
+/* 主诉 · 谜面：进入病例后的第一视觉焦点，不做卡片外框 */
+.chief-complaint { padding: 6px 0 30px; border-bottom: 1px solid var(--hairline); }
 .cc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .cc-head .eyebrow { color: var(--cinnabar); }
-.chief-complaint-card > p {
-    margin-top: 16px; font-family: var(--font-serif-sys); font-size: 20px; line-height: 1.7;
+.chief-complaint > p {
+    margin-top: 20px; font-family: var(--font-serif-sys); font-size: 21px; line-height: 1.85;
     white-space: pre-wrap; color: var(--ink);
 }
 .cc-foot {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    margin-top: 24px; font-size: 14px; color: var(--ink-muted);
+    margin-top: 26px; font-size: 13px; color: var(--ink-faint);
 }
 .cc-foot button { color: var(--ink-muted); }
 .cc-foot button:disabled { opacity: 0.3; }
 #caseCounter { display: none; }
+@media (min-width: 640px) {
+    .chief-complaint { padding: 14px 0 40px; }
+    .chief-complaint > p { font-size: 25px; line-height: 1.8; }
+}
 
-.diag-section { }
-.diag-section-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 12px; }
+.diag-section { margin-top: 40px; }
+.diag-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .diag-section-head h2 { font-family: var(--font-heading); font-size: 18px; letter-spacing: 0.2em; }
-.diag-hint { margin-bottom: 12px; font-size: 14px; color: var(--ink-muted); }
+.diag-hint { margin-bottom: 4px; font-size: 14px; line-height: 1.7; color: var(--ink-muted); }
 
-.clue-section { }
-.clue-section h2 { font-family: var(--font-heading); font-size: 18px; letter-spacing: 0.2em; margin-bottom: 12px; }
+.clue-section { margin-top: 40px; }
+.clue-section h2 { font-family: var(--font-heading); font-size: 18px; letter-spacing: 0.2em; margin-bottom: 16px; }
 
-.answer-section { border-top: 1px solid var(--hairline); padding-top: 24px; }
+/* 提交辨证 = 推理的终点：一条分界线把它和探查阶段分开 */
+.answer-section { margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--hairline-strong); }
 .answer-toggle {
     display: flex; align-items: center; justify-content: space-between; width: 100%;
     background: none; border: none; padding: 0; cursor: pointer; text-align: left;
 }
 .answer-toggle h2 { font-family: var(--font-heading); font-size: 18px; letter-spacing: 0.2em; color: var(--ink); }
 .answer-toggle span { font-size: 12px; letter-spacing: 0.1em; color: var(--ink-muted); }
-.answer-body { margin-top: 16px; }
+.answer-body { margin-top: 20px; }
 .answer-closed-hint { margin-top: 8px; font-size: 14px; color: var(--ink-faint); }
+.answer-lead { font-size: 14px; line-height: 1.8; color: var(--ink-muted); }
 
-/* 辨证依据——核心书写区，视觉重量大于证型/病名 */
-.basis-area { margin-top: 18px; }
+/* 作答是一个任务组：组标题做索引层级，字段名做字段层级，靠留白分节，不套卡片 */
+.answer-group + .answer-group { margin-top: 28px; }
+.answer-group-title {
+    font-family: var(--font-heading); font-weight: 400;
+    font-size: 12px; letter-spacing: 0.3em; color: var(--cinnabar);
+    margin-bottom: 12px;
+}
 .basis-label {
     display: block;
     font-family: var(--font-heading);
@@ -319,53 +333,73 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
     #inputBasis { min-height: 160px; padding: 12px 14px !important; }
 }
 
-@media (min-width: 640px) {
-    .chief-complaint-card { padding: 32px; }
-    .chief-complaint-card > p { font-size: 24px; }
+/* ===================== 四诊：四个检查动作的操作组 =====================
+   四个入口共用一个组：统一的上/下细线成组，靠极轻背景悬停反馈，
+   不给每个入口单独的边框、圆角与阴影。
+   ==================================================================== */
+.four-diagnosis {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 0;
+    margin-top: 20px;
+    border-top: 1px solid var(--hairline);
 }
-
-/* ===================== 四诊印章（复刻解压 diag-seals） ===================== */
-.four-diagnosis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .btn--diag {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-    min-height: 108px; padding: 16px 12px;
-    border-radius: 8px; border: 1px solid rgba(58, 42, 34, 0.2);
-    background: var(--paper-raised); color: var(--ink);
-    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
-    font-family: var(--font-body);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    min-height: 104px; padding: 18px 10px;
+    background: transparent; border: none; border-radius: 0;
+    border-bottom: 1px solid var(--hairline);
+    color: var(--ink); font-family: var(--font-body);
+    transition: background-color 0.15s, color 0.15s;
 }
-.btn--diag:hover { border-color: var(--cinnabar); color: var(--cinnabar); }
-.btn--diag.explored { background: var(--cinnabar); border-color: rgba(156, 43, 27, 0.5); color: var(--paper-raised); }
+.btn--diag:nth-child(odd) { border-right: 1px solid var(--hairline); }
+.btn--diag:hover { background: rgba(156, 43, 27, 0.03); }
 .btn--diag .diag-char {
-    display: flex; align-items: center; justify-content: center;
-    width: 48px; height: 48px; border: 1px solid currentColor;
-    font-family: var(--font-heading); font-size: 24px; line-height: 1;
+    font-family: var(--font-heading); font-size: 28px; line-height: 1;
+    color: inherit; transition: color 0.15s;
 }
-.btn--diag.explored .diag-char { border-color: rgba(251, 247, 240, 0.5); }
-.btn--diag .diag-label { font-size: 11px; letter-spacing: 0.28em; }
-.btn--diag .diag-hint { font-size: 11px; color: var(--ink-faint); }
-.btn--diag.explored .diag-hint { color: rgba(251, 247, 240, 0.8); }
+.btn--diag .diag-label { font-size: 11px; letter-spacing: 0.28em; color: var(--ink-muted); }
+.btn--diag .diag-hint { margin: 0; font-size: 11px; letter-spacing: 0.04em; color: var(--ink-faint); }
+.btn--diag:hover .diag-char,
+.btn--diag:hover .diag-label { color: var(--cinnabar); }
+/* 已探查：只用一个克制的朱砂状态标识，不再整块反白 */
+.btn--diag.explored .diag-char { color: var(--cinnabar); }
+.btn--diag.explored .diag-label { color: var(--ink); }
 .btn--diag.explored .diag-hint { font-size: 0; }
-.btn--diag.explored .diag-hint::after { content: '已探查'; font-size: 11px; }
+.btn--diag.explored .diag-hint::after {
+    content: '已探查'; font-size: 11px; letter-spacing: 0.14em; color: var(--cinnabar);
+}
+@media (min-width: 640px) {
+    .btn--diag { border-bottom: none; }
+    .btn--diag:nth-child(odd) { border-right: none; }
+    .btn--diag + .btn--diag { border-left: 1px solid var(--hairline); }
+}
 
-/* ===================== 线索收集 ===================== */
-.clue-area {
-    background: transparent; border: none; padding: 0;
-    min-height: 0; max-height: none; overflow: visible;
-    display: flex; flex-direction: column; gap: 8px;
-}
+/* ===================== 线索：逐渐获得的证据，按四诊分组的连续记录 ===================== */
+.clue-area { display: block; }
 .clue-area:empty::before { content: '尚未收集。点上方四诊，患者不会主动开口。'; color: var(--ink-faint); font-size: 14px; display: block; padding: 4px 0; }
-.clue-item {
-    display: flex; gap: 12px; padding: 12px 16px;
-    background: var(--paper-raised); border-radius: 8px;
-    border: none; border-left: none; box-shadow: var(--shadow-border);
-    animation: popIn 0.3s ease; font-size: 14px; line-height: 1.7;
+.clue-group + .clue-group { margin-top: 28px; }
+.clue-group-title {
+    font-family: var(--font-heading); font-weight: 400;
+    font-size: 13px; letter-spacing: 0.3em; color: var(--ink);
+    padding-bottom: 6px; border-bottom: 1px solid var(--hairline-strong);
 }
+/* 单条证据：左侧小分类标记 + 正文 + 底部细线。无背景、无圆角、无阴影。 */
+.clue-item {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 11px 0; border-bottom: 1px solid var(--hairline);
+    font-size: 14px; line-height: 1.75;
+    animation: popIn 0.3s ease;
+}
+.clue-item:last-child { border-bottom: none; }
+.clue-item .clue-text { flex: 1; min-width: 0; }
 .clue-item .clue-tag {
-    flex: none; font-family: var(--font-heading); font-size: 12px; letter-spacing: 0.12em;
+    flex: none; font-family: var(--font-heading); font-size: 11px; letter-spacing: 0.08em;
     color: var(--cinnabar); padding: 0; background: none; border-radius: 0; font-weight: 400;
 }
 .tag-wang, .tag-wen, .tag-ask, .tag-pulse { background: none; color: var(--cinnabar); }
+@media (max-width: 639px) {
+    /* 移动端：标记独立一行，正文占满宽度，避免长问题把证据挤成窄条 */
+    .clue-item { flex-direction: column; align-items: stretch; gap: 4px; }
+}
 
 /* ===================== 舌象判断线索（默认折叠，折叠态直接显示正确舌象与正误） ===================== */
 .clue-tongue .clue-tongue-body { flex: 1; min-width: 0; }
@@ -382,7 +416,14 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .clue-tongue.expanded .clue-toggle .when-expanded { display: inline; }
 
 /* ===================== 提交辨证 / 表单控件 ===================== */
-.answer-area { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.answer-area { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.answer-field { display: flex; flex-direction: column; gap: 6px; }
+.answer-field > span { font-size: 13px; letter-spacing: 0.12em; color: var(--ink-muted); }
+/* 提交辨证：本区域最强的动作，像「完成一次推演」而不是普通保存 */
+.answer-submit {
+    margin-top: 26px; height: 48px;
+    font-family: var(--font-heading); font-size: 16px; letter-spacing: 0.2em;
+}
 .answer-area input,
 .answer-area textarea,
 .chat-input-area input,
@@ -403,10 +444,32 @@ textarea { height: auto !important; min-height: 112px; padding: 12px 14px !impor
 }
 
 /* ===================== 结果反馈 ===================== */
+/* .result-box 仍用于投稿 / 备份 / 题库等真正需要独立隔离的功能容器 */
 .result-box { padding: 16px; border-radius: 8px; margin: 12px 0; animation: popIn 0.4s; line-height: 1.7; }
 .result-box.success { background: var(--paper-sunken); border: none; color: var(--ink); }
 .result-box.fail { background: var(--cinnabar-soft); border: none; color: var(--ink); }
 .result-box h4 { font-family: var(--font-heading); letter-spacing: 0.1em; margin-bottom: 6px; }
+
+/* ===================== 复盘阅读（推演结果 + 完整医案解析） =====================
+   提交后的反馈是一段连续往下读的复盘：不用结果卡套解析卡，
+   靠分节标题与细线组织「结论 → 标准辨证 → 为什么 → 治法方药 → 知识点」。
+   ========================================================================== */
+.review { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--hairline-strong); font-size: 14px; line-height: 1.8; }
+.review-eyebrow { font-size: 12px; letter-spacing: 0.3em; color: var(--ink-faint); margin-bottom: 10px; }
+.review h4 {
+    font-family: var(--font-heading); font-weight: 400;
+    font-size: 17px; letter-spacing: 0.16em; color: var(--ink);
+    margin: 24px 0 10px; padding-top: 20px; border-top: 1px solid var(--hairline);
+}
+.review h4:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+.review--ok h4 { color: var(--cinnabar); }
+.review--off h4 { color: var(--ink); }
+.review p { margin: 6px 0; }
+.review ul { margin: 6px 0 0; padding-left: 20px; }
+.review li { margin: 2px 0; }
+.review-note { color: var(--ink-muted); font-size: 0.9em; }
+.review-actions { margin-top: 18px; }
+.case-workspace-foot { display: flex; justify-content: center; margin-top: 32px; }
 
 /* ===================== 模态框（复刻解压 Overlay） ===================== */
 .modal-overlay {
@@ -436,14 +499,23 @@ textarea { height: auto !important; min-height: 112px; padding: 12px 14px !impor
 .modal > h3 + p { margin-top: 8px; }
 
 /* ===================== 问诊对话 ===================== */
+/* 问诊记录是「你问什么、患者答什么」的连续对话流：只有引导线区分说话人，
+   每条一问一答都不是独立卡片。 */
 .chat-area {
     flex: 1; overflow-y: auto; min-height: 160px; max-height: 300px;
-    background: var(--paper-sunken); border-radius: 8px; padding: 12px; margin: 0 0 12px;
-    border: none; display: flex; flex-direction: column; gap: 8px;
+    background: transparent; border-radius: 0; padding: 4px 2px; margin: 0 0 12px;
+    border: none; border-top: 1px solid var(--hairline);
+    display: flex; flex-direction: column; gap: 10px;
 }
-.chat-bubble { max-width: 86%; padding: 8px 12px; border-radius: 8px; line-height: 1.5; font-size: 14px; animation: popIn 0.2s; }
-.chat-bubble.user { align-self: flex-end; background: rgba(156, 43, 27, 0.1); color: var(--ink); }
-.chat-bubble.patient { align-self: flex-start; background: var(--paper-raised); color: var(--ink); }
+.chat-bubble { max-width: 86%; padding: 6px 10px; border-radius: 0; line-height: 1.65; font-size: 14px; animation: popIn 0.2s; }
+.chat-bubble.user {
+    align-self: flex-end; background: transparent; color: var(--ink);
+    border-right: 2px solid var(--cinnabar); text-align: right;
+}
+.chat-bubble.patient {
+    align-self: flex-start; background: transparent; color: var(--ink);
+    border-left: 2px solid var(--hairline-strong);
+}
 .chat-input-area { display: flex; gap: 8px; }
 .chat-input-area input { flex: 1; }
 .chat-input-area button { padding: 0 20px; border-radius: 4px; background: var(--cinnabar); color: var(--paper-raised); border: none; cursor: pointer; font-family: var(--font-body); font-size: 14px; }

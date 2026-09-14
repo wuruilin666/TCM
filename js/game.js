@@ -34,6 +34,26 @@ const PHASE = {
     SUBMITTED: 'SUBMITTED'  // 已提交最终答案，进入正误判断 / 结果 / 解析
 };
 
+/* ===================== 四诊（望 / 闻 / 问 / 切） =====================
+ * 四诊的「名称 / 线索标签 class / 按钮 id / 展示顺序」只在这里定义一处：
+ * addClue（写线索）、setExplored（标记已探查）、renderClues（线索分组）都从它取值，
+ * 避免同一套四诊名称在多处硬编码后彼此漂移。
+ * DIAG_ORDER 同时是线索区的分组顺序（望 → 闻 → 问 → 切）。
+ */
+const DIAG_TYPES = {
+    inspection: { name: '望诊', tagClass: 'tag-wang', buttonId: 'btnWang' },
+    auscultation: { name: '闻诊', tagClass: 'tag-wen', buttonId: 'btnWen' },
+    inquiry: { name: '问诊', tagClass: 'tag-ask', buttonId: 'btnAsk' },
+    pulse: { name: '切脉', tagClass: 'tag-pulse', buttonId: 'btnPulse' }
+};
+const DIAG_ORDER = ['inspection', 'auscultation', 'inquiry', 'pulse'];
+
+function requireDiag(type) {
+    const diag = DIAG_TYPES[type];
+    if (!diag) throw new Error('未知的四诊类型：' + type);
+    return diag;
+}
+
 /* ===================== 唯一游戏状态 ===================== */
 // 只有本模块可写。结构固定为「一层语义分组」，不再往下嵌套。
 function createSession() {
@@ -134,13 +154,12 @@ export function getCurrentCase() { return state.case.current; }
 /* ===================== 会话写入接口 ===================== */
 // 记录一条线索（去重）。返回是否真正新增。
 export function addClue(type, content, tagText) {
-    const tagMap = { inspection: 'tag-wang', auscultation: 'tag-wen', inquiry: 'tag-ask', pulse: 'tag-pulse' };
-    const nameMap = { inspection: '望诊', auscultation: '闻诊', inquiry: '问诊', pulse: '切脉' };
-    const tag = tagText || nameMap[type];
+    const diag = requireDiag(type);
+    const tag = tagText || diag.name;
     const clues = state.diagnosis.collectedClues;
     if (clues.some(c => c.content === content && c.tag === tag)) return false;
     const wasEmpty = clues.length === 0;
-    clues.push({ tag, tagClass: tagMap[type], content });
+    clues.push({ tag, tagClass: diag.tagClass, content });
     renderClues();
     if (wasEmpty) { expandAnswerCard(); updateAnswerClosedHint(false); }
     return true;
@@ -148,9 +167,8 @@ export function addClue(type, content, tagText) {
 
 // 标记某诊法已探索：更新按钮态 + 状态位
 export function setExplored(type) {
-    const map = { inspection: 'btnWang', auscultation: 'btnWen', inquiry: 'btnAsk', pulse: 'btnPulse' };
     state.diagnosis.exploredDiags[type] = true;
-    document.getElementById(map[type])?.classList.add('explored');
+    document.getElementById(requireDiag(type).buttonId)?.classList.add('explored');
 }
 
 // 记录一次追问：写入问诊历史 + 标记题目已问。
@@ -351,28 +369,41 @@ function bindClueToggle(area) {
     });
 }
 
+// 单条线索。舌象线索默认折叠，折叠态直接给出正确舌象与判断正误。
+function renderClueItem(clue, tongueExpandedClass) {
+    if (clue.tag === '望诊·舌象' && clue.content.includes('\n' + TONGUE_CLUE_MARK + '\n')) {
+        const [summary, detail] = clue.content.split('\n' + TONGUE_CLUE_MARK + '\n');
+        return `<div class="clue-item clue-tongue${tongueExpandedClass}" data-clue-type="tongue">`
+            + `<span class="clue-tag ${escapeHtml(clue.tagClass)}">${escapeHtml(clue.tag)}</span>`
+            + `<div class="clue-tongue-body">`
+            + `<div class="clue-tongue-summary">${escapeHtmlWithBreaks(summary)}</div>`
+            + `<div class="clue-tongue-detail">${escapeHtmlWithBreaks(detail)}</div>`
+            + `<button type="button" class="clue-toggle">`
+            + `<span class="when-folded">展开 ⌄</span><span class="when-expanded">收起 ⌃</span>`
+            + `</button></div></div>`;
+    }
+    return `<div class="clue-item"><span class="clue-tag ${escapeHtml(clue.tagClass)}">${escapeHtml(clue.tag)}</span>`
+        + `<span class="clue-text">${escapeHtmlWithBreaks(clue.content)}</span></div>`;
+}
+
+// 线索区 = 本次推理逐渐获得的证据，按四诊分组连续排列：
+// 诊法标题（分组）→ 该诊法下的证据列表（连续追加、无独立卡片）。
+// 空分组不渲染，所以没有线索时 innerHTML 仍是 ''，.clue-area:empty 的提示语照常生效。
 export function renderClues() {
     const area = document.getElementById('clueArea');
     bindClueToggle(area);
     // 折叠态由 tongueClueExpanded 决定：重新渲染多少次都不会丢掉用户刚才的展开/收起选择。
     // 默认（未展开）时 class 与改动前完全一致，视觉不变。
     const tongueExpandedClass = tongueClueExpanded ? ' expanded' : '';
-    area.innerHTML = state.diagnosis.collectedClues
-        .map(c => {
-            if (c.tag === '望诊·舌象' && c.content.includes('\n' + TONGUE_CLUE_MARK + '\n')) {
-                const [summary, detail] = c.content.split('\n' + TONGUE_CLUE_MARK + '\n');
-                return `<div class="clue-item clue-tongue${tongueExpandedClass}" data-clue-type="tongue">`
-                    + `<span class="clue-tag ${escapeHtml(c.tagClass)}">${escapeHtml(c.tag)}</span>`
-                    + `<div class="clue-tongue-body">`
-                    + `<div class="clue-tongue-summary">${escapeHtmlWithBreaks(summary)}</div>`
-                    + `<div class="clue-tongue-detail">${escapeHtmlWithBreaks(detail)}</div>`
-                    + `<button type="button" class="clue-toggle">`
-                    + `<span class="when-folded">展开 ⌄</span><span class="when-expanded">收起 ⌃</span>`
-                    + `</button></div></div>`;
-            }
-            return `<div class="clue-item"><span class="clue-tag ${escapeHtml(c.tagClass)}">${escapeHtml(c.tag)}</span><span>${escapeHtmlWithBreaks(c.content)}</span></div>`;
-        })
-        .join('');
+    area.innerHTML = DIAG_ORDER.map(type => {
+        const diag = DIAG_TYPES[type];
+        const items = state.diagnosis.collectedClues.filter(c => c.tagClass === diag.tagClass);
+        if (!items.length) return '';
+        return `<section class="clue-group">`
+            + `<h3 class="clue-group-title">${escapeHtml(diag.name)}</h3>`
+            + items.map(c => renderClueItem(c, tongueExpandedClass)).join('')
+            + `</section>`;
+    }).join('');
     area.scrollTop = area.scrollHeight;
 }
 
@@ -428,27 +459,35 @@ export function submitAnswer() {
     const progress = requireProgressService();
     // 结果区必须说清两件事的边界：病名 + 证型决定最终判定，辨证依据只作提交留痕，
     // 不与标准辨证链比对（系统不对它做正确性评分），因此不写「正确 / 错误」。
-    const basisStatus = `<p style="color:var(--text-muted);font-size:0.9em;">辨证依据：已提交，请与标准辨证链对照</p>`;
+    const basisStatus = `<p class="review-note">辨证依据：已提交，请与标准辨证链对照</p>`;
+    // 结果区是复盘阅读的第一段（不是一张结果卡）：只给结论与判定边界，
+    // 标准答案仍由「显示答案」揭晓，避免绕过查看答案才计入完成的机制。
     let feedbackHtml;
     if (verdict.result === ANSWER_RESULT.CORRECT) {
-        feedbackHtml = `<div class="result-box success"><h4>辨证正确</h4>`
+        feedbackHtml = `<section class="review review--ok">`
+            + `<p class="review-eyebrow">你的推演结果</p>`
+            + `<h4>辨证正确</h4>`
             + `<p>病名：${escapeHtml(correct.disease)}</p>`
             + `<p>证型：${escapeHtml(correct.syndrome)}</p>`
             + basisStatus;
         progress.removeWrong(currentCase.id);
     } else {
         if (verdict.result === ANSWER_RESULT.WRONG) {
-            feedbackHtml = `<div class="result-box fail"><h4>辨证偏差较大</h4><p>建议继续探查四诊信息。</p>` + basisStatus;
+            feedbackHtml = `<section class="review review--off">`
+                + `<p class="review-eyebrow">你的推演结果</p>`
+                + `<h4>辨证偏差较大</h4><p>建议继续探查四诊信息。</p>` + basisStatus;
         } else {
             const parts = [
                 verdict.diseaseOk ? '病名基本正确' : '病名需调整',
                 verdict.syndromeOk ? '证型判断准确' : '证型需斟酌'
             ];
-            feedbackHtml = `<div class="result-box fail"><h4>部分正确</h4><p>${parts.join('，')}</p>` + basisStatus;
+            feedbackHtml = `<section class="review review--off">`
+                + `<p class="review-eyebrow">你的推演结果</p>`
+                + `<h4>部分正确</h4><p>${parts.join('，')}</p>` + basisStatus;
         }
         progress.saveWrong({ syndrome, disease, basis }, currentCase, state.case.difficulty);
     }
-    feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">显示答案</button></div>`;
+    feedbackHtml += `<div class="review-actions"><button class="btn btn--outline" onclick="viewAnswer()">显示答案</button></div></section>`;
 
     const fb = document.getElementById('answerFeedback');
     fb.innerHTML = feedbackHtml;
@@ -464,20 +503,28 @@ export function viewAnswer() {
     requireProgressService().markCompleted(state.case.current.id);
 }
 
+// 完整医案解析：接在结果区之后继续向下读的复盘正文，用分节标题与细线组织，
+// 不再套一层结果卡。
 export function showFullAnalysis(el) {
     const c = state.case.current;
     const fa = c.fullAnalysis;
     const sourceHtml = c.source
         ? `<p><strong>病例来源：</strong><span class="source-tag">${escapeHtml(c.source)}</span></p>`
         : '';
-    el.innerHTML = `<div class="result-box success"><h4>完整医案解析</h4>
+    el.innerHTML = `<section class="review review--analysis">
+        <p class="review-eyebrow">完整医案解析</p>
+        <h4>标准辨证</h4>
         <p><strong>中医病证：</strong>${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）</p>
         <p><strong>西医诊断：</strong>${escapeHtml(fa.westernDiagnosis)}</p>
         ${sourceHtml}
-        <hr><p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
-        <hr><p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
-        <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
-        <hr><p style="color:var(--text-muted);font-size:0.9em;">提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
+        <h4>为什么这样判断</h4>
+        <p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
+        <h4>治法与方药</h4>
+        <p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
+        <h4>知识点</h4>
+        <ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
+        <p class="review-note">提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p>
+    </section>`;
 }
 
 export function resetCurrentCase() {
