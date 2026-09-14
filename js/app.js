@@ -138,13 +138,15 @@ function initApp() {
             </section>
 
             <section id="caseWorkspace" style="display:none;">
+                <!-- 当前上下文：一行轻量文字 + 小按钮。它只是「我现在在哪」，视觉权重低于主诉与四诊 -->
                 <div class="case-topbar" id="caseTopbar">
                     <button class="btn btn--ghost btn--sm" onclick="resetGameUI()">重选关卡</button>
-                    <span><span class="case-topbar-diff" id="caseTopDiffName"></span><span class="case-topbar-counter" id="caseTopCounter"></span></span>
+                    <span class="case-topbar-meta"><span class="case-topbar-diff" id="caseTopDiffName"></span><span class="case-topbar-counter" id="caseTopCounter"></span></span>
                     <button class="btn btn--ghost btn--sm" onclick="resetCurrentCase()">重新探查</button>
                 </div>
 
-                <article class="chief-complaint-card" id="chiefComplaintCard">
+                <!-- 主诉 · 谜面：进入推理的第一核心信息，靠留白与极轻底边线划界，不做卡片 -->
+                <article class="chief-complaint" id="chiefComplaintCard">
                     <div class="cc-head">
                         <div class="eyebrow">主诉 · 谜面</div>
                         <button class="btn btn--ghost btn--sm" id="historyBtn" style="display:none;" onclick="showHistory()">病史</button>
@@ -157,6 +159,7 @@ function initApp() {
                     </div>
                 </article>
 
+                <!-- 四诊：四个可执行的检查动作，共用一个操作组（分割线成组，不做四张卡） -->
                 <div class="diag-section">
                     <div class="diag-section-head">
                         <h2>四诊</h2>
@@ -171,11 +174,13 @@ function initApp() {
                     </div>
                 </div>
 
+                <!-- 线索：四诊沉淀下来的证据。分组由 renderClues() 生成，这里只留一个连续区域 -->
                 <div class="clue-section" id="clueCollectionCard">
                     <h2>线索</h2>
                     <div class="clue-area" id="clueArea"></div>
                 </div>
 
+                <!-- 提交辨证：推理的终点。只保留「标题 → 字段 → 提交」三层，不复述用户已经知道的步骤 -->
                 <div class="answer-section" id="answerCard">
                     <button class="answer-toggle" onclick="toggleAnswerCard()">
                         <h2>提交辨证</h2>
@@ -184,20 +189,20 @@ function initApp() {
                     <p class="answer-closed-hint" id="answerClosedHint">先探查至少一诊，再来立证。</p>
                     <div class="answer-body" id="answerBody" style="display:none;">
                         <div class="answer-area">
-                            <input type="text" id="inputSyndrome" placeholder="证型，如肝郁脾虚">
-                            <input type="text" id="inputDisease" placeholder="病名，如胃脘痛">
+                            <label class="answer-field" for="inputSyndrome"><span>证型</span><input type="text" id="inputSyndrome" placeholder="如肝郁脾虚"></label>
+                            <label class="answer-field" for="inputDisease"><span>病名</span><input type="text" id="inputDisease" placeholder="如胃脘痛"></label>
                         </div>
                         <div class="basis-area">
                             <label class="basis-label" for="inputBasis">辨证依据</label>
                             <textarea id="inputBasis" placeholder="结合主诉与四诊线索，写出你的辨证思路与主要依据。"></textarea>
                         </div>
-                        <button class="btn btn--primary btn--block" style="margin-top:12px;" onclick="submitAnswer()">提交</button>
+                        <button class="btn btn--primary btn--block answer-submit" onclick="submitAnswer()">提交辨证</button>
                     </div>
                     <div id="answerFeedback"></div>
                     <div id="fullAnalysisArea"></div>
                 </div>
 
-                <div style="display:flex;justify-content:center;margin-top:24px;">
+                <div class="case-workspace-foot">
                     <button class="btn btn--ghost" onclick="goHome()">返回首页</button>
                 </div>
             </section>
