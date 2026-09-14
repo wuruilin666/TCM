@@ -290,15 +290,8 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .answer-toggle span { font-size: 12px; letter-spacing: 0.1em; color: var(--ink-muted); }
 .answer-body { margin-top: 20px; }
 .answer-closed-hint { margin-top: 8px; font-size: 14px; color: var(--ink-faint); }
-.answer-lead { font-size: 14px; line-height: 1.8; color: var(--ink-muted); }
 
-/* 作答是一个任务组：组标题做索引层级，字段名做字段层级，靠留白分节，不套卡片 */
-.answer-group + .answer-group { margin-top: 28px; }
-.answer-group-title {
-    font-family: var(--font-heading); font-weight: 400;
-    font-size: 12px; letter-spacing: 0.3em; color: var(--cinnabar);
-    margin-bottom: 12px;
-}
+/* 作答区只有三层：区块标题 / 字段名 / 输入框。字段名同时充当分组，不再另加解释性标题。 */
 .basis-label {
     display: block;
     font-family: var(--font-heading);
@@ -382,27 +375,16 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
     font-size: 13px; letter-spacing: 0.3em; color: var(--ink);
     padding-bottom: 6px; border-bottom: 1px solid var(--hairline-strong);
 }
-/* 单条证据：左侧小分类标记 + 正文 + 底部细线。无背景、无圆角、无阴影。 */
+/* 单条证据 = 正文本身。诊法由上面的分组标题表达，因此不再有来源小标签。
+   无背景、无圆角、无阴影，同组内连续排列，只用极细底线分隔。 */
 .clue-item {
-    display: flex; align-items: baseline; gap: 12px;
     padding: 11px 0; border-bottom: 1px solid var(--hairline);
     font-size: 14px; line-height: 1.75;
     animation: popIn 0.3s ease;
 }
 .clue-item:last-child { border-bottom: none; }
-.clue-item .clue-text { flex: 1; min-width: 0; }
-.clue-item .clue-tag {
-    flex: none; font-family: var(--font-heading); font-size: 11px; letter-spacing: 0.08em;
-    color: var(--cinnabar); padding: 0; background: none; border-radius: 0; font-weight: 400;
-}
-.tag-wang, .tag-wen, .tag-ask, .tag-pulse { background: none; color: var(--cinnabar); }
-@media (max-width: 639px) {
-    /* 移动端：标记独立一行，正文占满宽度，避免长问题把证据挤成窄条 */
-    .clue-item { flex-direction: column; align-items: stretch; gap: 4px; }
-}
 
 /* ===================== 舌象判断线索（默认折叠，折叠态直接显示正确舌象与正误） ===================== */
-.clue-tongue .clue-tongue-body { flex: 1; min-width: 0; }
 .clue-tongue .clue-tongue-summary { font-weight: 500; }
 .clue-tongue .clue-tongue-detail { display: none; margin-top: 6px; color: var(--ink-muted); }
 .clue-tongue.expanded .clue-tongue-detail { display: block; }
@@ -419,6 +401,7 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 .answer-area { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .answer-field { display: flex; flex-direction: column; gap: 6px; }
 .answer-field > span { font-size: 13px; letter-spacing: 0.12em; color: var(--ink-muted); }
+.basis-area { margin-top: 24px; }
 /* 提交辨证：本区域最强的动作，像「完成一次推演」而不是普通保存 */
 .answer-submit {
     margin-top: 26px; height: 48px;

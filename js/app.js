@@ -180,7 +180,7 @@ function initApp() {
                     <div class="clue-area" id="clueArea"></div>
                 </div>
 
-                <!-- 提交辨证：推理的终点，三个输入项同属一个作答任务组 -->
+                <!-- 提交辨证：推理的终点。只保留「标题 → 字段 → 提交」三层，不复述用户已经知道的步骤 -->
                 <div class="answer-section" id="answerCard">
                     <button class="answer-toggle" onclick="toggleAnswerCard()">
                         <h2>提交辨证</h2>
@@ -188,16 +188,11 @@ function initApp() {
                     </button>
                     <p class="answer-closed-hint" id="answerClosedHint">先探查至少一诊，再来立证。</p>
                     <div class="answer-body" id="answerBody" style="display:none;">
-                        <p class="answer-lead">把刚才收集到的线索收束起来，尝试给出你的判断。</p>
-                        <div class="answer-group">
-                            <h3 class="answer-group-title">最终判断</h3>
-                            <div class="answer-area">
-                                <label class="answer-field" for="inputSyndrome"><span>证型</span><input type="text" id="inputSyndrome" placeholder="如肝郁脾虚"></label>
-                                <label class="answer-field" for="inputDisease"><span>病名</span><input type="text" id="inputDisease" placeholder="如胃脘痛"></label>
-                            </div>
+                        <div class="answer-area">
+                            <label class="answer-field" for="inputSyndrome"><span>证型</span><input type="text" id="inputSyndrome" placeholder="如肝郁脾虚"></label>
+                            <label class="answer-field" for="inputDisease"><span>病名</span><input type="text" id="inputDisease" placeholder="如胃脘痛"></label>
                         </div>
-                        <div class="answer-group basis-area">
-                            <h3 class="answer-group-title">为什么这样判断</h3>
+                        <div class="basis-area">
                             <label class="basis-label" for="inputBasis">辨证依据</label>
                             <textarea id="inputBasis" placeholder="结合主诉与四诊线索，写出你的辨证思路与主要依据。"></textarea>
                         </div>

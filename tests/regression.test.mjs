@@ -160,8 +160,12 @@ try {
     check('患者气泡给出病例答案',
         bubbles[bubbles.length - 1].textContent.includes(questions[0].a.slice(0, 4)),
         bubbles[bubbles.length - 1].textContent);
-    const inquiryClue = [...document.querySelectorAll('#clueArea .clue-item')].find(el => el.textContent.includes('问诊·'));
-    check('问诊命中写入线索（含「问诊·」标签）', !!inquiryClue);
+    // 线索条目不再显示「问诊·xxx」来源标签（诊法已由分组标题表达），
+    // 因此断言改成用户真正能看到的证据：患者的回答本身出现在线索条目里。
+    const inquiryClue = [...document.querySelectorAll('#clueArea .clue-item')]
+        .find(el => el.textContent.includes(questions[0].a.slice(0, 4)));
+    check('问诊命中写入线索（患者回答成为线索条目）', !!inquiryClue,
+        inquiryClue ? inquiryClue.textContent : '线索区里找不到该回答');
     window.closeInquiryModal();
 
     /* ---------------- F. 答题判定 ---------------- */

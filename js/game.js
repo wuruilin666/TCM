@@ -369,12 +369,12 @@ function bindClueToggle(area) {
     });
 }
 
-// 单条线索。舌象线索默认折叠，折叠态直接给出正确舌象与判断正误。
+// 单条线索 = 证据本身。诊法已经由上面的分组标题表达，这里不再重复标注来源。
+// 舌象线索默认折叠，折叠态直接给出正确舌象与判断正误；展开/收起的 DOM 结构保持不变。
 function renderClueItem(clue, tongueExpandedClass) {
     if (clue.tag === '望诊·舌象' && clue.content.includes('\n' + TONGUE_CLUE_MARK + '\n')) {
         const [summary, detail] = clue.content.split('\n' + TONGUE_CLUE_MARK + '\n');
         return `<div class="clue-item clue-tongue${tongueExpandedClass}" data-clue-type="tongue">`
-            + `<span class="clue-tag ${escapeHtml(clue.tagClass)}">${escapeHtml(clue.tag)}</span>`
             + `<div class="clue-tongue-body">`
             + `<div class="clue-tongue-summary">${escapeHtmlWithBreaks(summary)}</div>`
             + `<div class="clue-tongue-detail">${escapeHtmlWithBreaks(detail)}</div>`
@@ -382,8 +382,7 @@ function renderClueItem(clue, tongueExpandedClass) {
             + `<span class="when-folded">展开 ⌄</span><span class="when-expanded">收起 ⌃</span>`
             + `</button></div></div>`;
     }
-    return `<div class="clue-item"><span class="clue-tag ${escapeHtml(clue.tagClass)}">${escapeHtml(clue.tag)}</span>`
-        + `<span class="clue-text">${escapeHtmlWithBreaks(clue.content)}</span></div>`;
+    return `<div class="clue-item">${escapeHtmlWithBreaks(clue.content)}</div>`;
 }
 
 // 线索区 = 本次推理逐渐获得的证据，按四诊分组连续排列：
