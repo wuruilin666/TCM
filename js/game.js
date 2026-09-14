@@ -460,35 +460,29 @@ export function submitAnswer() {
     const progress = requireProgressService();
     // 结果区必须说清两件事的边界：病名 + 证型决定最终判定，辨证依据只作提交留痕，
     // 不与标准辨证链比对（系统不对它做正确性评分），因此不写「正确 / 错误」。
-    const basisStatus = `<p class="review-note">辨证依据：已提交，请与标准辨证链对照</p>`;
-    // 结果区是复盘阅读的第一段（不是一张结果卡）：只给结论与判定边界，
-    // 标准答案仍由「显示答案」揭晓，避免绕过查看答案才计入完成的机制。
+    // 呈现上是一张独立的结果卡：判题结果 / 你的答案 / 辨证依据留痕 / 显示答案。
+    // 这里是「复盘阶段」，与接诊阶段（留白 + 分割线）刻意用不同的信息组织方式。
+    const basisStatus = `<p style="color:var(--text-muted);font-size:0.9em;">辨证依据：已提交，请与标准辨证链对照</p>`;
     let feedbackHtml;
     if (verdict.result === ANSWER_RESULT.CORRECT) {
-        feedbackHtml = `<section class="review review--ok">`
-            + `<p class="review-eyebrow">你的推演结果</p>`
-            + `<h4>辨证正确</h4>`
+        feedbackHtml = `<div class="result-box success"><h4>辨证正确</h4>`
             + `<p>病名：${escapeHtml(correct.disease)}</p>`
             + `<p>证型：${escapeHtml(correct.syndrome)}</p>`
             + basisStatus;
         progress.removeWrong(currentCase.id);
     } else {
         if (verdict.result === ANSWER_RESULT.WRONG) {
-            feedbackHtml = `<section class="review review--off">`
-                + `<p class="review-eyebrow">你的推演结果</p>`
-                + `<h4>辨证偏差较大</h4><p>建议继续探查四诊信息。</p>` + basisStatus;
+            feedbackHtml = `<div class="result-box fail"><h4>辨证偏差较大</h4><p>建议继续探查四诊信息。</p>` + basisStatus;
         } else {
             const parts = [
                 verdict.diseaseOk ? '病名基本正确' : '病名需调整',
                 verdict.syndromeOk ? '证型判断准确' : '证型需斟酌'
             ];
-            feedbackHtml = `<section class="review review--off">`
-                + `<p class="review-eyebrow">你的推演结果</p>`
-                + `<h4>部分正确</h4><p>${parts.join('，')}</p>` + basisStatus;
+            feedbackHtml = `<div class="result-box fail"><h4>部分正确</h4><p>${parts.join('，')}</p>` + basisStatus;
         }
         progress.saveWrong({ syndrome, disease, basis }, currentCase, state.case.difficulty);
     }
-    feedbackHtml += `<div class="review-actions"><button class="btn btn--outline" onclick="viewAnswer()">显示答案</button></div></section>`;
+    feedbackHtml += `<button class="btn btn--outline" style="margin-top:10px;" onclick="viewAnswer()">显示答案</button></div>`;
 
     const fb = document.getElementById('answerFeedback');
     fb.innerHTML = feedbackHtml;
@@ -504,28 +498,22 @@ export function viewAnswer() {
     requireProgressService().markCompleted(state.case.current.id);
 }
 
-// 完整医案解析：接在结果区之后继续向下读的复盘正文，用分节标题与细线组织，
-// 不再套一层结果卡。
+// 完整医案解析：与结果卡并列的第二张独立卡片。
+// 一张大卡片 + 卡内标题/分割线，不再给每个字段单独套卡。
 export function showFullAnalysis(el) {
     const c = state.case.current;
     const fa = c.fullAnalysis;
     const sourceHtml = c.source
         ? `<p><strong>病例来源：</strong><span class="source-tag">${escapeHtml(c.source)}</span></p>`
         : '';
-    el.innerHTML = `<section class="review review--analysis">
-        <p class="review-eyebrow">完整医案解析</p>
-        <h4>标准辨证</h4>
+    el.innerHTML = `<div class="result-box success"><h4>完整医案解析</h4>
         <p><strong>中医病证：</strong>${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）</p>
         <p><strong>西医诊断：</strong>${escapeHtml(fa.westernDiagnosis)}</p>
         ${sourceHtml}
-        <h4>为什么这样判断</h4>
-        <p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
-        <h4>治法与方药</h4>
-        <p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
-        <h4>知识点</h4>
-        <ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
-        <p class="review-note">提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p>
-    </section>`;
+        <hr><p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
+        <hr><p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
+        <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
+        <hr><p style="color:var(--text-muted);font-size:0.9em;">提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
 }
 
 export function resetCurrentCase() {

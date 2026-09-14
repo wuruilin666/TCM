@@ -183,6 +183,10 @@ try {
         && fbText.includes('证型：' + current.correctAnswer.syndrome), fbText);
     check('结果区明示辨证依据已提交但不作正确性判定',
         fbText.includes('辨证依据：已提交，请与标准辨证链对照'), fbText);
+    // 复盘阶段用独立结果卡（不是接诊阶段的留白/分割线结构）
+    check('提交后结果以独立卡片展示',
+        !!document.querySelector('#answerFeedback .result-box'),
+        document.getElementById('answerFeedback').innerHTML.slice(0, 60));
 
     // 辨证依据完全不参与判题：依据写得再离谱，只要病名 + 证型正确就仍判「辨证正确」，且不进错题
     document.getElementById('inputBasis').value = '因为患者脾胃虚弱，所以判断为本证。';
@@ -196,6 +200,14 @@ try {
     window.viewAnswer();
     check('显示答案后渲染完整医案解析',
         document.getElementById('fullAnalysisArea').textContent.includes('完整医案解析'));
+    // 完整解析是一张独立大卡片（卡内用标题/分割线分组，而不是每个字段一张卡）
+    check('完整解析渲染为一张独立卡片',
+        !!document.querySelector('#fullAnalysisArea .result-box')
+        && document.querySelectorAll('#fullAnalysisArea .result-box').length === 1,
+        document.getElementById('fullAnalysisArea').innerHTML.slice(0, 60));
+    check('解析卡内保留 中医病证 / 西医诊断 / 病机分析 / 推荐方药 / 知识点',
+        ['中医病证', '西医诊断', '病机分析', '推荐方药', '知识点'].every(k =>
+            document.getElementById('fullAnalysisArea').textContent.includes(k)));
     check('解析包含病机分析',
         document.getElementById('fullAnalysisArea').textContent.includes('病机分析'));
     check('查看答案后病例标记为已完成', progressStore.getCompletedCases().includes(caseId),
@@ -256,7 +268,14 @@ try {
     check('错题本弹窗打开', document.getElementById('recordsModal').style.display === 'flex');
     check('错题卡片渲染', document.querySelectorAll('#recordsContent .wrong-card').length >= 1);
     check('错题卡含「重新挑战」', document.getElementById('recordsContent').textContent.includes('重新挑战'));
+    // 「查看解析」必须先关掉错题本：两个业务 modal 不允许叠加，
+    // 否则错题多时底层弹窗的关闭按钮会滚出可视区域。
+    check('点击查看解析前，错题弹窗处于打开状态',
+        document.getElementById('recordsModal').style.display === 'flex');
     window.viewWrongCaseAnalysis(secondCase.id);
+    check('查看解析后错题弹窗已关闭',
+        document.getElementById('recordsModal').style.display === 'none',
+        document.getElementById('recordsModal').style.display);
     check('查看错题解析打开详情弹窗', document.getElementById('caseDetailModal').style.display === 'flex');
     check('详情弹窗渲染完整医案',
         document.getElementById('caseDetailContent').textContent.includes('病机分析'));
