@@ -18,8 +18,8 @@
         },
         "auscultation": {
           "displayTitle": "闻诊结果",
-          "displayContent": "咳嗽声重浊有力，咯痰声明显，痰音黄稠。",
-          "textSummary": "咳嗽声重浊，咯脓黄痰"
+          "displayContent": "咳嗽声重浊有力，咯痰声明显。",
+          "textSummary": "咳嗽声重浊，咯痰声明显"
         },
         "inquiry": {
           "questions": [
@@ -52,23 +52,18 @@
             },
             {
               "q": "汗出情况",
-              "a": "无汗出，不恶寒",
+              "a": "无汗出。",
               "keywords": [
                 "汗出",
                 "出汗",
                 "无汗",
-                "汗多",
-                "恶寒",
-                "怕冷"
+                "汗多"
               ],
               "dimension": "sweat",
-              "intent": [
-                "sweat.general",
-                "chillHeat.general"
-              ]
+              "intent": "sweat.general"
             },
             {
-              "q": "饮食与嗳气",
+              "q": "嗳气情况",
               "a": "时常嗳气，饭后明显",
               "keywords": [
                 "嗳气",
@@ -89,6 +84,49 @@
               ],
               "dimension": "nose",
               "intent": "nose.general"
+            },
+            {
+              "q": "咳痰情况",
+              "a": "咯黄稠痰。",
+              "keywords": [
+                "咳痰",
+                "咯痰",
+                "吐痰",
+                "有痰",
+                "黄痰",
+                "黄稠痰",
+                "痰多",
+                "痰"
+              ],
+              "dimension": "breath",
+              "intent": "breath.phlegm"
+            },
+            {
+              "q": "寒热情况",
+              "a": "不恶寒。",
+              "keywords": [
+                "恶寒",
+                "怕冷",
+                "畏寒",
+                "怕风",
+                "寒热"
+              ],
+              "dimension": "chillHeat",
+              "intent": "chillHeat.general"
+            },
+            {
+              "q": "咳嗽情况",
+              "a": "咳嗽4天。",
+              "keywords": [
+                "咳嗽",
+                "咳嗽吗",
+                "咳不咳",
+                "干咳",
+                "咳声",
+                "咳嗽情况"
+              ],
+              "dimension": "breath",
+              "intent": "breath.cough"
             }
           ]
         },
@@ -159,22 +197,18 @@
               "intent": "abdomen.reflux"
             },
             {
-              "q": "胃痛胃胀情况",
-              "a": "胃胀，偶有胃痛。",
+              "q": "胃痛情况",
+              "a": "偶有胃痛。",
               "keywords": [
                 "胃痛",
-                "胃胀",
-                "胃脘",
                 "胃脘痛",
-                "胀痛",
-                "上腹疼痛",
-                "胃部疼痛"
+                "胃部疼痛",
+                "胃痛吗",
+                "上腹痛",
+                "腹痛"
               ],
               "dimension": "abdomen",
-              "intent": [
-                "abdomen.pain",
-                "abdomen.distension"
-              ]
+              "intent": "abdomen.pain"
             },
             {
               "q": "饮食情况",
@@ -197,8 +231,7 @@
               "keywords": [
                 "口干",
                 "口苦",
-                "口渴",
-                "咽干"
+                "口渴"
               ],
               "dimension": "thirst",
               "intent": "thirst.general"
@@ -227,6 +260,20 @@
               ],
               "dimension": "emotion",
               "intent": "emotion.general"
+            },
+            {
+              "q": "胃胀情况",
+              "a": "胃胀。",
+              "keywords": [
+                "胃胀",
+                "腹胀",
+                "脘腹胀",
+                "胀满",
+                "胃胀吗",
+                "肚子胀"
+              ],
+              "dimension": "abdomen",
+              "intent": "abdomen.distension"
             }
           ]
         },
@@ -295,10 +342,7 @@
                 "月经推迟"
               ],
               "dimension": "menstruation",
-              "intent": [
-                "menstruation.cycle",
-                "menstruation.general"
-              ]
+              "intent": "menstruation.cycle"
             },
             {
               "q": "情绪情况",
@@ -324,12 +368,7 @@
                 "胸胁胀痛"
               ],
               "dimension": "chest",
-              "intent": [
-                "chest.pain",
-                "chest.distension",
-                "chest.oppression",
-                "pain.location"
-              ]
+              "intent": "chest.distension"
             },
             {
               "q": "脊背情况",

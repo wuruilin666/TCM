@@ -196,9 +196,13 @@ function openCaseDetail(c) {
 
 function closeCaseDetail() { document.getElementById('caseDetailModal').style.display = 'none'; }
 
+// 「查看解析」：先关掉错题本再开病例解析。
+// 两个都是业务 modal，必须互斥——否则叠加后底层错题本的关闭按钮会滚出可视区域，
+// 用户得先把解析滚动回去才能关掉错题本（与 rechallengeCase 的处理保持一致）。
 function viewWrongCaseAnalysis(caseId) {
     const c = findCaseById(caseId);
     if (!c) { alert('病例不存在。'); return; }
+    closeRecords();
     openCaseDetail(c);
 }
 

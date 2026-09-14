@@ -1,5 +1,17 @@
 # -*- coding: utf-8 -*-
-"""为 data/cases/*.json 的 inquiry.questions 标注 intent，并清理高风险宽关键词。
+"""【已归档的一次性迁移脚本 —— 不要重跑】
+
+⚠️ 这份映射表对应的是 2026-09-14 之前的数据结构：里面还有"一题多 intent"的写
+（如 basic-001#2 同时挂 sweat.general + chillHeat.general、basic-003#2 挂四个 chest/pain intent），
+那正是后来按「一题一事实」契约拆掉的东西。**重跑它会把这些拆分整体回退。**
+
+当前的 intent 与 keywords 以 data/cases/*.json 为唯一真源；新增病例请直接改数据，
+或先看 ARCHITECTURE.md 的「问诊数据契约 → 一题一事实」，再用 node tests/inquiry.test.mjs 体检。
+保留文件只为留档：它记录了当初把 intent 引入这套数据时的判定依据。
+
+---以下是原始说明---
+
+为 data/cases/*.json 的 inquiry.questions 标注 intent，并清理高风险宽关键词。
 
 只做两件事：
   1) 写入/覆盖 question.intent（字符串或数组）

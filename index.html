@@ -52,12 +52,12 @@
         <div class="modal-head">问诊</div>
         <button class="modal-close" onclick="closeInquiryModal()" aria-label="关闭">✕</button>
         <div class="modal-body">
-            <p class="inquiry-hint">患者只答你问到的。可从寒热、汗出、饮食、睡眠、二便、情志、口渴、疼痛问起。</p>
             <div class="chat-area" id="inquiryChatArea"></div>
             <div class="chat-input-area">
                 <input type="text" id="inquiryInput" placeholder="例如：有没有怕冷、出汗？" onkeydown="if(event.key==='Enter')sendInquiry()">
                 <button onclick="sendInquiry()">询问</button>
             </div>
+            <p class="inquiry-hint">可从寒热、汗出、饮食、睡眠、二便、情志、口渴、疼痛问起。</p>
         </div>
     </div>
 </div>

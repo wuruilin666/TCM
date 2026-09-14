@@ -427,31 +427,33 @@ textarea { height: auto !important; min-height: 112px; padding: 12px 14px !impor
 }
 
 /* ===================== 结果反馈 ===================== */
-/* .result-box 仍用于投稿 / 备份 / 题库等真正需要独立隔离的功能容器 */
+/* .result-box 也用于投稿 / 备份等反馈容器，是真正的独立信息容器 */
 .result-box { padding: 16px; border-radius: 8px; margin: 12px 0; animation: popIn 0.4s; line-height: 1.7; }
 .result-box.success { background: var(--paper-sunken); border: none; color: var(--ink); }
 .result-box.fail { background: var(--cinnabar-soft); border: none; color: var(--ink); }
 .result-box h4 { font-family: var(--font-heading); letter-spacing: 0.1em; margin-bottom: 6px; }
 
-/* ===================== 复盘阅读（推演结果 + 完整医案解析） =====================
-   提交后的反馈是一段连续往下读的复盘：不用结果卡套解析卡，
-   靠分节标题与细线组织「结论 → 标准辨证 → 为什么 → 治法方药 → 知识点」。
-   ========================================================================== */
-.review { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--hairline-strong); font-size: 14px; line-height: 1.8; }
-.review-eyebrow { font-size: 12px; letter-spacing: 0.3em; color: var(--ink-faint); margin-bottom: 10px; }
-.review h4 {
-    font-family: var(--font-heading); font-weight: 400;
-    font-size: 17px; letter-spacing: 0.16em; color: var(--ink);
-    margin: 24px 0 10px; padding-top: 20px; border-top: 1px solid var(--hairline);
+/* ===================== 复盘阶段的结果卡 / 完整医案卡 =====================
+   接诊阶段用留白 + 分割线 + 连续列表；提交之后是「你的答案 vs 标准答案」的对照复盘，
+   内容关系不同，所以这里回到两张互不嵌套的独立卡片。
+   只作用于复盘区，其他页面共用 .result-box 的观感不受影响。
+   ==================================================================== */
+#answerFeedback .result-box,
+#fullAnalysisArea .result-box {
+    padding: 20px;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
 }
-.review h4:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
-.review--ok h4 { color: var(--cinnabar); }
-.review--off h4 { color: var(--ink); }
-.review p { margin: 6px 0; }
-.review ul { margin: 6px 0 0; padding-left: 20px; }
-.review li { margin: 2px 0; }
-.review-note { color: var(--ink-muted); font-size: 0.9em; }
-.review-actions { margin-top: 18px; }
+/* 空容器不占位：没提交 / 没点「显示答案」时结果区与解析区都不存在 */
+#answerFeedback:not(:empty) { margin-top: 20px; }
+#fullAnalysisArea:not(:empty) { margin-top: 24px; }
+#answerFeedback .result-box + p,
+#fullAnalysisArea .result-box p { margin: 6px 0; }
+#fullAnalysisArea .result-box hr {
+    border: none; border-top: 1px solid var(--hairline); margin: 14px 0;
+}
+#fullAnalysisArea .result-box ul { margin: 6px 0 0; padding-left: 20px; }
+#fullAnalysisArea .result-box li { margin: 2px 0; }
 .case-workspace-foot { display: flex; justify-content: center; margin-top: 32px; }
 
 /* ===================== 模态框（复刻解压 Overlay） ===================== */

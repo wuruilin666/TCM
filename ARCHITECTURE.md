@@ -214,6 +214,39 @@ intent
 
 `intent` 的值允许是单个非空字符串（如 `thirst.general`），也允许是多个意图的非空字符串数组（如 `["sweat.general", "chillHeat.general"]`）。`data.js` 的病例校验会强制要求每题 `intent` 存在且非空。
 
+#### 一题一事实（问诊数据硬约束）
+
+一个 inquiry question 默认只表达**一个独立问诊意图**，链路是：
+
+```text
+用户问题 → 识别 intent → 病例里承载该 intent 的那道题 → 那道题的 answer
+```
+
+- 答案里包含几个**独立事实**（医生会分别问诊的），就该拆成几道题，各给各的答案。
+  反例：`饮食情况 / 饮食不节，嗜食生冷；纳差。` 同时挂 `diet.appetite + diet.preference`，
+  于是问「胃口怎么样」会连带拿到饮食偏嗜，问「饮食习惯」又会拿到纳差。
+- 只有多个 intent 本来就是**同一事实的不同问法**或**同一次临床问询的不同侧面**
+  （乏力 / 体力 / 全身感觉；胸痛胸闷；痛连两胁；同一次发作的频次 + 时长 + 缓解）时，
+  才允许一题多 intent。
+- 用户明确问到的 intent，若本病例没有承载它的题目，**一律中性回答**，
+  绝不退让给同维度或关键词相近的题目。反过来，"病例里真实存在的重要症状"
+  必须有可追问入口——否则玩家在四诊里看得到、却怎么问都问不出来。
+
+`auditQuestions()` 提供对应的静态体检项：
+
+```text
+missingIntent   缺 intent
+emptyKeywords   缺 keywords
+riskyKeywords   高危单字关键词
+dupIntents      同病例同 intent 重复
+multiIntent     一题多 intent —— 需人工确认是不是同一事实的几种问法（该拆就拆）
+dimMismatch     单 intent 题的 dimension 与 intent 逻辑域不一致
+missingEntry    四诊里的阳性事实缺可追问入口
+```
+
+新增/修改病例后跑 `node tests/inquiry.test.mjs`（或 `npm test`）：`multiIntent` 必须
+逐条登记到测试里的 `MULTI_INTENT_REVIEWED`，未登记的 intent 组合会让测试失败。
+
 ---
 
 ## 5.3 答案判定
