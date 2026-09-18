@@ -304,6 +304,13 @@ console.log('\n=== 全量问诊数据结构契约 ===\n');
 }
 {
     // 同病例同 intent 但答案不同 → 只登记 warning（多道题可以关心同一意图的不同侧面）。
+    // 这些组合需人工确认"语义上可区分"后才可登记；新增未登记组合会让下方断言变红。
+    const INTENT_DUP_ANSWER_REVIEWED = new Set([
+        'inter-001：chillHeat.general',
+        'inter-004：pain.trigger',
+        'inter-004：diet.appetite',
+        'adv-004：palpitation.timing'
+    ]);
     const notes = [];
     for (const c of cases) {
         const byIntent = new Map();
@@ -324,7 +331,11 @@ console.log('\n=== 全量问诊数据结构契约 ===\n');
         console.log('  ⚠️ 同病例内同 intent 但答案不同的题目（已人工确认可区分，仅登记）：');
         notes.forEach(w => console.log('     - ' + w));
     }
-    check('同病例同 intent 的重复情况已全部登记（无未审阅项）', true);
+    const unreviewed = notes.filter(n => !INTENT_DUP_ANSWER_REVIEWED.has(n.split(' × ')[0]));
+    check('同病例同 intent 的重复情况已全部登记（无未审阅项）',
+        unreviewed.length === 0,
+        // 原第二参数写死 true，恒真。改为「未登记组合为空」才通过，新增未审阅项会变红
+        '未登记：' + unreviewed.join(' | '));
 }
 
 /* ============================================================
@@ -627,7 +638,9 @@ console.log('\n--- 经典定点负例 ---\n');
     for (const [cid, input, forbidden, why] of spot) {
         const { answer, intent } = ask(cid, input);
         check(`「${input}」(${cid}) 不含「${forbidden}」 —— ${why}`,
-            !answer.includes(forbidden), `intent=${intent} answer=${answer}`);
+            !forbidden.split('|').some(term => answer.includes(term)),
+            // 原 !answer.includes(forbidden) 是把 '|' 当作字面字符，恒真。改为按 '|' 拆开逐项子串包含
+            `intent=${intent} answer=${answer}`);
     }
 }
 

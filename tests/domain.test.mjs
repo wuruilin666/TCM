@@ -241,6 +241,7 @@ for (const c of cases) {
     // 用参考答案自身作为输入，应判定为正确
     const verdict = judgeTongue(ins.tongueJudgment, ref, ins.tongueDesc || '');
     if (verdict.correct !== true) {
+        tongueOk = false; // 原只 console.log 不置位，导致该不一致仍被当作套件成功，恒真
         console.log(`     ⚠️  ${c.id} 参考答案自判未通过（数据描述与字段措辞不同所致）：${ref} → ${JSON.stringify(verdict.dimensions)}`);
     }
 }

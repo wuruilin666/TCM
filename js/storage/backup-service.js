@@ -204,7 +204,7 @@ function showImportConfirm(data) {
         '<div style="background:#fdfaf5;border:1px dashed var(--border);border-radius:10px;padding:12px 14px;font-size:0.92em;line-height:1.8;">' +
         '已完成：<strong>' + data.completedCases.length + '</strong> 例<br>' +
         '错题：<strong>' + data.wrongCases.length + '</strong> 条<br>' +
-        '备份时间：' + (dateStr || '未知') + '</div>' +
+        '备份时间：' + escapeHtml(dateStr || '未知') + '</div>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">' +
         '<button class="btn btn--primary btn--sm" style="animation:none;" onclick="applyImportMode(\'merge\')">合并到当前进度</button>' +
         '<button class="btn btn--outline btn--sm" onclick="applyImportMode(\'cover\')">覆盖当前进度</button>' +
