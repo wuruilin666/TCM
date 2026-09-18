@@ -623,11 +623,12 @@ const ENTRY_HINTS = [
 
 function caseFactText(c) {
     const cl = c.clues || {};
+    // displayContent 可能为 null/undefined，逐项用 `|| ''` 兜底，避免把 'null' 拼进事实文本污染匹配
     return [
         c.chiefComplaint, c.otherCheck,
-        cl.inspection && (cl.inspection.displayContent + ' ' + (cl.inspection.nonTongue || '')),
-        cl.auscultation && (cl.auscultation.displayContent + ' ' + (cl.auscultation.textSummary || '')),
-        cl.pulse && cl.pulse.displayContent
+        cl.inspection && ((cl.inspection.displayContent || '') + ' ' + (cl.inspection.nonTongue || '')),
+        cl.auscultation && ((cl.auscultation.displayContent || '') + ' ' + (cl.auscultation.textSummary || '')),
+        cl.pulse && (cl.pulse.displayContent || '')
     ].filter(Boolean).join(' ');
 }
 

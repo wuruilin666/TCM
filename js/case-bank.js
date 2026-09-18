@@ -166,19 +166,19 @@ function rechallengeCase(caseId) {
 
 /* ===================== 病例详情 / 完整医案渲染 ===================== */
 function renderFullCase(c) {
-    const fa = c.fullAnalysis; const cl = c.clues;
+    const fa = c.fullAnalysis || {}; const cl = c.clues || {};
     let html = `<div style="margin:6px 0 10px 0;"><strong>主诉 / 基本情况：</strong><br>${escapeHtmlWithBreaks(c.chiefComplaint)}</div>`;
     if (c.history) html += `<div style="margin:6px 0 10px 0;"><strong>既往史：</strong><br>${escapeHtmlWithBreaks(c.history)}</div>`;
     html += `<div style="margin:6px 0 10px 0;"><strong>四诊情况：</strong><br>`;
-    html += `【望诊】${escapeHtml(cl.inspection.displayContent)}<br>【闻诊】${escapeHtml(cl.auscultation.displayContent)}<br>`;
-    html += `【问诊】<br>` + cl.inquiry.questions.map(q => `· ${escapeHtml(q.q)}：${escapeHtml(q.a)}`).join('<br>') + `<br>`;
-    html += `【切诊】${escapeHtml(cl.pulse.displayContent)}</div>`;
+    html += `【望诊】${escapeHtml(cl.inspection?.displayContent || '')}<br>【闻诊】${escapeHtml(cl.auscultation?.displayContent || '')}<br>`;
+    html += `【问诊】<br>` + (cl.inquiry?.questions || []).map(q => `· ${escapeHtml(q.q)}：${escapeHtml(q.a)}`).join('<br>') + `<br>`;
+    html += `【切诊】${escapeHtml(cl.pulse?.displayContent || '')}</div>`;
     if (c.otherCheck) html += `<div style="margin:6px 0 10px 0;"><strong>其他检查：</strong><br>${escapeHtmlWithBreaks(c.otherCheck)}</div>`;
-    html += `<div style="margin:6px 0 4px 0;"><strong>辨证分析过程：</strong><br>中医病证：${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）<br>`;
-    html += `西医诊断：${escapeHtml(fa.westernDiagnosis)}<br>`;
+    html += `<div style="margin:6px 0 4px 0;"><strong>辨证分析过程：</strong><br>中医病证：${escapeHtml(fa.disease || '')}（${escapeHtml(fa.syndrome || '')}）<br>`;
+    html += `西医诊断：${escapeHtml(fa.westernDiagnosis || '')}<br>`;
     if (c.source) html += `<span class="source-tag">病例来源：${escapeHtml(c.source)}</span><br>`;
-    html += `病机分析：${escapeHtml(fa.pathogenesis)}<br>推荐方药：${escapeHtml(fa.prescription)}<br>`;
-    html += `知识点：${fa.knowledgePoints.map(escapeHtml).join('；')}`;
+    html += `病机分析：${escapeHtml(fa.pathogenesis || '')}<br>推荐方药：${escapeHtml(fa.prescription || '')}<br>`;
+    html += `知识点：${(fa.knowledgePoints || []).map(escapeHtml).join('；')}`;
     html += `</div>`;
     html += `<div style="margin-top:6px;color:var(--text-muted);font-size:0.88em;">提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</div>`;
     return html;

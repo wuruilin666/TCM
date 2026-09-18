@@ -189,7 +189,7 @@ export function appendInquiryMessage(role, text) { state.inquiry.history.push({ 
 
 export function getInquiryProgress() {
     const current = state.case.current;
-    const total = current ? current.clues.inquiry.questions.length : 0;
+    const total = current?.clues?.inquiry?.questions?.length ?? 0;
     const askedCount = state.inquiry.askedQuestions.length;
     return { asked: askedCount, total, allAsked: total > 0 && askedCount >= total };
 }
@@ -516,17 +516,17 @@ function dequeueFinishedCase(id) {
 // 一张大卡片 + 卡内标题/分割线，不再给每个字段单独套卡。
 export function showFullAnalysis(el) {
     const c = state.case.current;
-    const fa = c.fullAnalysis;
+    const fa = c.fullAnalysis || {};
     const sourceHtml = c.source
         ? `<p><strong>病例来源：</strong><span class="source-tag">${escapeHtml(c.source)}</span></p>`
         : '';
     el.innerHTML = `<div class="result-box success"><h4>完整医案解析</h4>
-        <p><strong>中医病证：</strong>${escapeHtml(fa.disease)}（${escapeHtml(fa.syndrome)}）</p>
-        <p><strong>西医诊断：</strong>${escapeHtml(fa.westernDiagnosis)}</p>
+        <p><strong>中医病证：</strong>${escapeHtml(fa.disease || '')}（${escapeHtml(fa.syndrome || '')}）</p>
+        <p><strong>西医诊断：</strong>${escapeHtml(fa.westernDiagnosis || '')}</p>
         ${sourceHtml}
-        <hr><p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis)}</p>
-        <hr><p><strong>推荐方药：</strong>${escapeHtml(fa.prescription)}</p>
-        <hr><p><strong>知识点：</strong></p><ul>${fa.knowledgePoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
+        <hr><p><strong>病机分析：</strong>${escapeHtml(fa.pathogenesis || '')}</p>
+        <hr><p><strong>推荐方药：</strong>${escapeHtml(fa.prescription || '')}</p>
+        <hr><p><strong>知识点：</strong></p><ul>${(fa.knowledgePoints || []).map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul>
         <hr><p style="color:var(--text-muted);font-size:0.9em;">提示：可自行查找该病例的二诊、三诊等后续诊疗情况。</p></div>`;
 }
 

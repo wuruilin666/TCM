@@ -26,7 +26,7 @@ export function openInspectionModal() {
     document.getElementById('tongueImageBadge').textContent = tongueImageTypeMap[currentCase.id] || '原始病例图片';
     document.getElementById('tongueJudgmentInput').value = '';
 
-    const nonTongue = currentCase.clues.inspection.nonTongue || '';
+    const nonTongue = currentCase.clues?.inspection?.nonTongue || '';
     const nonTongueEl = document.getElementById('inspectionNonTongue');
     if (nonTongue) {
         nonTongueEl.style.display = 'block';
@@ -149,7 +149,7 @@ export function submitTongueJudgment() {
     const userText = document.getElementById('tongueJudgmentInput').value.trim();
     if (!userText) { alert('请填写你的舌象判断。'); return; }
 
-    const inspection = currentCase.clues.inspection;
+    const inspection = currentCase.clues?.inspection || {};
     // 第三个参数是病例原文舌象描述：用于判断病例里的「正常」有没有原文依据
     const verdict = judgeTongue(inspection.tongueJudgment, userText, inspection.tongueDesc || '');
     const correctText = describeTongueReference(inspection);
