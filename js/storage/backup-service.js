@@ -63,17 +63,10 @@ export function canonizePayload(obj) {
 }
 
 /* ===================== checksum ===================== */
-// 完整性校验：优先 SHA-256（crypto.subtle），非安全上下文回退 FNV-1a 32 位（仅用于本地完整性检测，非加密）。
-// 两个分支都不可用时明确失败，不静默返回空值。
+// 生成端：永远返回标准 SHA-256 的 64 位小写 hex，跨环境一致（https / http / file://）。
+// sha256Hex 优先 crypto.subtle，不可用或调用失败时由纯 JS 实现兜底，不再回退 FNV-1a。
 export async function computeChecksum(canonicalJson) {
-    const data = new TextEncoder().encode(canonicalJson);
-    if (globalThis.crypto && globalThis.crypto.subtle && globalThis.crypto.subtle.digest) {
-        const buf = await globalThis.crypto.subtle.digest('SHA-256', data);
-        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-    let h = 0x811c9dc5;
-    for (let i = 0; i < data.length; i++) { h ^= data[i]; h = Math.imul(h, 0x01000193); }
-    return ('00000000' + (h >>> 0).toString(16)).slice(-8);
+    return sha256Hex(canonicalJson);
 }
 
 // 备份码编解码器需要的配置（注入而非 import，避免 backup-code → backup-service 的循环依赖）
@@ -295,7 +288,26 @@ export function renderBackupChoice() {
 export async function showBackupCode() {
     const body = document.getElementById('backupModalBody');
     if (!body) return;
-    const { code, parts } = await createProgressBackupParts();
+    let code;
+    let parts;
+    try {
+        const result = await createProgressBackupParts();
+        code = result.code;
+        parts = result.parts;
+    } catch (error) {
+        // 任一环节（localStorage / Compress / 编码 / SHA-256 / 数据构建）异常时：
+        // 不产生未处理 rejection、不关闭弹窗，在弹窗内给出明确提示，并保留「保存备份文件」作为可选恢复路径。
+        console.error('[TCM Backup] 生成备份码失败:', error);
+        body.innerHTML =
+            '<div class="result-box fail" style="margin:6px 0;">备份码生成失败</div>' +
+            '<p style="color:var(--text-light);line-height:1.7;margin:8px 0 2px;">暂时无法生成备份码，可能是当前浏览器不支持相关功能，或本地学习数据无法读取。</p>' +
+            '<p style="color:var(--text-light);line-height:1.7;margin:2px 0 12px;">建议尝试「保存备份文件」，或刷新页面后重试。</p>' +
+            '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+            '<button type="button" class="btn btn--primary btn--sm" onclick="saveBackupFile()">保存备份文件</button>' +
+            '<button type="button" class="btn btn--ghost btn--sm" onclick="renderBackupChoice()">返回</button>' +
+            '</div>';
+        return;
+    }
     currentBackup = { code, parts, isSegmented: parts.length > 1 };
     // 单码模式（未超长）：与原有行为一致
     if (!currentBackup.isSegmented) {
@@ -454,19 +466,36 @@ export function startCodeRestore() {
 }
 
 export async function checkBackupCode() {
-    const ta = document.getElementById('progressCodeInput');
-    if (!ta) return;
-    const pasted = ta.value || '';
-    // 同设备诊断：若本会话复制过备份码（电脑 / 手机通常是不同浏览器，故跨设备一般无此值），
-    // 比较原始码与粘贴码的“第一处差异”，帮助判断传输是否改动了字符。跨设备场景依赖 Console 诊断。
-    const lastCode = getLastGeneratedBackupCode();
-    if (lastCode) {
-        console.log('[TCM Backup Debug]', JSON.stringify({ stage: 'same-device-diff', ...diagnoseFirstDiff(lastCode, pasted) }));
+    try {
+        const ta = document.getElementById('progressCodeInput');
+        if (!ta) return;
+        const pasted = ta.value || '';
+        // 同设备诊断：若本会话复制过备份码（电脑 / 手机通常是不同浏览器，故跨设备一般无此值），
+        // 比较原始码与粘贴码的“第一处差异”，帮助判断传输是否改动了字符。跨设备场景依赖 Console 诊断。
+        const lastCode = getLastGeneratedBackupCode();
+        if (lastCode) {
+            console.log('[TCM Backup Debug]', JSON.stringify({ stage: 'same-device-diff', ...diagnoseFirstDiff(lastCode, pasted) }));
+        }
+        const res = await parseProgressBackupCode(pasted);
+        if (!res.ok) { showImportError(res.error); return; }
+        pendingImport = res.data;
+        showImportConfirm(res.data);
+    } catch (error) {
+        // 仅在解析发生“未预期异常”时进入此处；正常的解析错误仍走 showImportError 分类流程。
+        // 不产生未处理 rejection、不崩页面，在恢复弹窗内给出可理解提示。
+        console.error('[TCM Backup] 备份码检查失败:', error);
+        const body = document.getElementById('importModalBody');
+        if (body) {
+            body.innerHTML =
+                '<div class="result-box fail" style="margin:6px 0;">备份码检查失败</div>' +
+                '<p style="color:var(--text-light);line-height:1.7;margin:8px 0 12px;">网站无法完成这次备份码解析。<br>请确认备份码完整无缺，或者改用「从备份文件恢复」。</p>' +
+                '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+                '<button type="button" class="btn btn--primary btn--sm" onclick="openRestoreChoice()">返回恢复方式</button>' +
+                '<button type="button" class="btn btn--ghost btn--sm" onclick="closeImportModal()">关闭</button>' +
+                '</div>';
+            openImportModal();
+        }
     }
-    const res = await parseProgressBackupCode(pasted);
-    if (!res.ok) { showImportError(res.error); return; }
-    pendingImport = res.data;
-    showImportConfirm(res.data);
 }
 
 export function triggerFileRestore() {

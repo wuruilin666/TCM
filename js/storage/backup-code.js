@@ -138,16 +138,96 @@ let lastRestoreDiag = null;              // 最近一次恢复诊断（安全，
 export function getLastGeneratedBackupCode() { return lastGeneratedBackupCode; }
 export function getLastRestoreDiag() { return lastRestoreDiag; }
 
-// 对字符串做 SHA-256（仅用于诊断摘要，不可逆，不含学习内容）
+/* ===================== SHA-256 / 历史 FNV checksum =====================
+ * 说明：
+ *   - sha256Hex 永远返回标准 SHA-256 的 64 位小写十六进制；
+ *   - 优先使用 crypto.subtle（原生、快），不可用或调用失败时回退到纯 JS 实现，
+ *     确保 https / http / file:// 等所有环境生成与校验一致；
+ *   - 不再把 FNV-1a 作为新备份码的生成算法。
+ * 输入统一经 TextEncoder() 得到 UTF-8 字节；产出不含学习内容，可安全用于诊断摘要。
+ * ====================================================================== */
+const SHA256_K = [
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+];
+function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+
+// 纯 JS SHA-256：输入为 UTF-8 字节数组，返回 64 位小写十六进制（与标准实现完全一致）
+function sha256BytesToHex(bytes) {
+    const H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    const ml = bytes.length;
+    const bitLen = ml * 8;
+    // 填充：1 字节 0x80 + 8 字节长度（64 位大端），总长对齐到 64 字节块
+    const paddedLen = (Math.ceil((ml + 1 + 8) / 64)) * 64;
+    const msg = new Uint8Array(paddedLen);
+    msg.set(bytes, 0);
+    msg[ml] = 0x80;
+    const dv = new DataView(msg.buffer);
+    dv.setUint32(paddedLen - 8, Math.floor(bitLen / 4294967296));
+    dv.setUint32(paddedLen - 4, bitLen >>> 0);
+
+    const w = new Uint32Array(64);
+    let [a, b, c, d, e, f, g, h] = H;
+    for (let i = 0; i < paddedLen; i += 64) {
+        for (let j = 0; j < 16; j++) {
+            w[j] = (msg[i + j * 4] << 24) | (msg[i + j * 4 + 1] << 16) | (msg[i + j * 4 + 2] << 8) | (msg[i + j * 4 + 3]);
+        }
+        for (let j = 16; j < 64; j++) {
+            const s0 = rotr(w[j - 15], 7) ^ rotr(w[j - 15], 18) ^ (w[j - 15] >>> 3);
+            const s1 = rotr(w[j - 2], 17) ^ rotr(w[j - 2], 19) ^ (w[j - 2] >>> 10);
+            w[j] = (w[j - 16] + s0 + w[j - 7] + s1) >>> 0;
+        }
+        let A = a, B = b, C = c, D = d, E = e, F = f, G = g, T = h;
+        for (let j = 0; j < 64; j++) {
+            const S1 = rotr(E, 6) ^ rotr(E, 11) ^ rotr(E, 25);
+            const ch = (E & F) ^ (~E & G);
+            const t1 = (T + S1 + ch + SHA256_K[j] + w[j]) >>> 0;
+            const S0 = rotr(A, 2) ^ rotr(A, 13) ^ rotr(A, 22);
+            const maj = (A & B) ^ (A & C) ^ (B & C);
+            const t2 = (S0 + maj) >>> 0;
+            T = G; G = F; F = E; E = (D + t1) >>> 0; D = C; C = B; B = A;
+            A = (t1 + t2) >>> 0;
+        }
+        a = (a + A) >>> 0; b = (b + B) >>> 0; c = (c + C) >>> 0; d = (d + D) >>> 0;
+        e = (e + E) >>> 0; f = (f + F) >>> 0; g = (g + G) >>> 0; h = (h + T) >>> 0;
+    }
+    return [a, b, c, d, e, f, g, h].map(v => v.toString(16).padStart(8, '0')).join('');
+}
+
+// 对字符串做 SHA-256（64 位小写 hex）：优先 crypto.subtle，失败/不可用则纯 JS 兜底
 export async function sha256Hex(str) {
+    const bytes = new TextEncoder().encode(String(str));
     try {
-        const data = new TextEncoder().encode(String(str));
         if (globalThis.crypto && globalThis.crypto.subtle && globalThis.crypto.subtle.digest) {
-            const buf = await globalThis.crypto.subtle.digest('SHA-256', data);
+            const buf = await globalThis.crypto.subtle.digest('SHA-256', bytes);
             return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
         }
-    } catch (e) {}
-    return '';
+    } catch (e) { /* 回退纯 JS */ }
+    return sha256BytesToHex(bytes);
+}
+
+// 历史兼容：旧版 8 位 FNV-1a 32 位 checksum（仅供旧备份码恢复校验，不再用于生成新码）
+export function fnv1aHex(str) {
+    const bytes = new TextEncoder().encode(String(str));
+    let h = 0x811c9dc5;
+    for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 0x01000193); }
+    return ('00000000' + (h >>> 0).toString(16)).slice(-8);
+}
+
+// 统一校验：生成端永远产出 64 位 SHA-256，恢复端按期望长度选择算法，跨环境一致。
+// 64 位十六进制 → SHA-256；8 位十六进制 → 历史 FNV-1a；其他长度/格式 → 失败。
+export async function verifyChecksum(expected, canonicalJson) {
+    const exp = String(expected || '');
+    if (!/^[0-9a-fA-F]+$/.test(exp)) return false;
+    if (exp.length === 8) return fnv1aHex(canonicalJson) === exp.toLowerCase();
+    if (exp.length === 64) return (await sha256Hex(canonicalJson)).toLowerCase() === exp.toLowerCase();
+    return false;
 }
 
 // 字符类别（不输出字符本身，只输出类别，避免泄露备份码）
@@ -385,8 +465,23 @@ async function decodeAndVerify(cleanBody, raw, stripped, bodyForDiag, diag, fail
     // checksum 完整性校验（旧备份无 checksum 时跳过，仅做结构校验，保持兼容）。
     // checksum 是判断“微信等传输是否真正改变了有效载荷”的最终保险，绝不跳过、绝不猜测。
     if (typeof parsed.checksum === 'string') {
-        const actual = await computeChecksum(canonize(parsed));
-        if (parsed.checksum.toLowerCase() !== actual.toLowerCase()) {
+        let verified = false;
+        let checksumError = false;
+        let actual = '';
+        try {
+            // 统一校验：SHA-256（64 位）/ 历史 FNV-1a（8 位）由 verifyChecksum 按长度选择，
+            // 不再依赖当前环境是否支持 crypto.subtle，跨环境结果一致。
+            actual = await sha256Hex(canonize(parsed));
+            verified = await verifyChecksum(parsed.checksum, canonize(parsed));
+        } catch (e) {
+            checksumError = true;
+        }
+        if (checksumError) {
+            diag.kind = 'modified'; diag.checksumOk = false; fail('checksum-error');
+            debugBackup('checksum-error', raw, stripped, { body: bodyForDiag, cleanBody, expect: parsed.checksum, note: 'checksum 计算失败' });
+            return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
+        }
+        if (!verified) {
             diag.kind = 'modified'; diag.checksumOk = false; fail('checksum-mismatch');
             debugBackup('checksum-mismatch', raw, stripped, { body: bodyForDiag, cleanBody, expect: parsed.checksum, actual, note: 'Base64URL 可以解码，但有效载荷已经发生改变' });
             return { ok: false, error: MSG_MODIFIED, kind: 'modified' };
