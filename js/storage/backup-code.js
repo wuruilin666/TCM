@@ -19,6 +19,17 @@ const BACKUP_PARTS_PREFIX = 'TCM1P:'; // 分段备份前缀（TCM1 Parts），�
 const BACKUP_SEGMENT_SIZE = 1500; // 每段 Base64URL 正文长度，明显低于聊天软件常见文本上限，留足余量
 const MAX_BACKUP_CODE_LEN = 6000000;
 
+// 解压后端允许的最大数据大小（字节）。
+// 防止「很小的 gzip 输入被解压成异常大的数据」（压缩炸弹）：
+// 生成端为压缩 JSON，当前备份数据规模远小于此值，5MB 足以覆盖正常使用。
+const MAX_DECOMPRESSED_BYTES = 5 * 1024 * 1024;
+
+// 分段备份（TCM1P）允许的最大段数上限。
+// 由「最大备份码总长度」与「单段正文长度」推导得出，而不是一个与当前数据量硬绑定的神奇数字——
+// 其含义：即便整条备份码达到 MAX_BACKUP_CODE_LEN 上限，按 BACKUP_SEGMENT_SIZE 切分也最多产生这么多段。
+// 用来在解析时拦住异常的 total（如 TCM1P:999999999:1:...），避免触发超大循环。
+const MAX_BACKUP_PARTS = Math.ceil(MAX_BACKUP_CODE_LEN / BACKUP_SEGMENT_SIZE); // 6000000 / 1500 = 4000
+
 // 备份码长度分级（按字符数，用于提示聊天软件截断风险，不阻止复制）
 const LEN_OK = 1800;     // <= 1800：直接复制，无额外提示
 const LEN_WARN = 2048;   // 1800~2048：提示聊天长度限制；> 2048：重点提示
@@ -26,6 +37,7 @@ const PARTS_FILE_RECOMMEND = 5;          // >=5 段：主动推荐“保存备�
 const PARTS_FILE_STRONGLY_RECOMMEND = 10; // >=10 段：明显推荐“保存备份文件”
 
 export { LEN_OK, LEN_WARN, PARTS_FILE_RECOMMEND, PARTS_FILE_STRONGLY_RECOMMEND, BACKUP_PREFIX };
+export { MAX_DECOMPRESSED_BYTES, MAX_BACKUP_PARTS };
 
 /* ===================== 错误文案 ===================== */
 const MSG_FORMAT = '这不是有效的学习进度备份码。\n请检查是否复制了完整的备份码。';
@@ -87,16 +99,36 @@ async function gunzipBytes(bytes) {
     const writer = ds.writable.getWriter();
     // 显式接住写端 promise，避免可读流报错导致的未处理 rejection
     const writeChain = writer.write(bytes).then(() => writer.close()).catch(() => {});
-    let ab;
+    const reader = ds.readable.getReader();
+    const chunks = [];
+    let total = 0;
+    let tooLarge = false;
     try {
-        ab = await new Response(ds.readable).arrayBuffer();
-    } catch (e) {
+        // 逐 chunk 累计「已解压字节数」，一旦超过上限立即终止，
+        // 绝不能等全部解压完（如 Response(...).arrayBuffer()）才检查——那正是压缩炸弹的窗口。
+        while (true) {
+            const res = await reader.read();
+            if (res.done) break;
+            if (res.value) {
+                total += res.value.byteLength;
+                if (total > MAX_DECOMPRESSED_BYTES) { tooLarge = true; break; }
+                chunks.push(res.value);
+            }
+        }
+    } finally {
+        // 无论成功 / 超限 / 流异常，都尝试终止底层流并接住两端错误，
+        // 避免未处理 rejection 与流资源泄漏。
+        await reader.cancel().catch(() => {});
         await writeChain.catch(() => {});
-        throw new Error('gunzip failed');
     }
-    await writeChain.catch(() => {});
-    return new Uint8Array(ab);
+    if (tooLarge) throw new Error('gunzip size limit exceeded');
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const c of chunks) { out.set(c, offset); offset += c.byteLength; }
+    return out;
 }
+// 仅导出给自动化测试使用，生产调用方仍走 decodeProgressCode。
+export { gunzipBytes };
 
 /* ===================== 输入规范化 ===================== */
 // 清理聊天软件可能附带的无害格式字符（BOM / 零宽 / 换行 / 制表 / 空格）；不修改任何有效载荷字符
@@ -507,6 +539,14 @@ async function parseParts(cands, raw, stripped, diag, fail, validatePayload, con
         const m = /^(\d+):(\d+):(.+)$/.exec(content);
         if (!m) { inconsistent = true; break; }
         const t = parseInt(m[1], 10), no = parseInt(m[2], 10);
+        // 资源边界：total 必须是非负安全范围内的正整数（且受 MAX_BACKUP_PARTS 约束）。
+        // 异常 total（如 999999999）必须在进入任何循环前快速拒绝，返回结构化错误，
+        // 不能携带它去跑后面的按段循环（压缩炸弹 / 超大循环）。
+        if (!Number.isInteger(t) || t < 1 || t > MAX_BACKUP_PARTS) {
+            diag.kind = 'format'; fail('parts-total-invalid');
+            debugBackup('parts-total-invalid', raw, stripped, { body: c.content });
+            return { ok: false, error: MSG_FORMAT, kind: 'format' };
+        }
         const frag = m[3].replace(/[^A-Za-z0-9_-]/g, '');
         if (total === null) total = t; else if (total !== t) inconsistent = true;
         if (!Number.isInteger(no) || no < 1 || no > t) inconsistent = true;

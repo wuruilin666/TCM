@@ -496,6 +496,20 @@ export function viewAnswer() {
     // 无论对错，做过的病例都标记为已完成，从闯关队列移除；
     // 只有从「我的错题」点击「重新挑战」才能再次进入闯关练习。
     requireProgressService().markCompleted(state.case.current.id);
+    dequeueFinishedCase(state.case.current.id);
+}
+
+// 把刚完成（查看答案）的病例从「未完成闯关队列」中移除，
+// 并修正导航游标，使上一例 / 下一例不再把它们当作未完成病例、也不会再次进入本例。
+// 只改队列与游标；不清空 state.case.current —— 当前解析页必须继续显示。
+// 游标指向原位置之前的槽位：这样「下一例」能紧随其后（最常见的前进流程），
+// 首例时为 -1（视为无前一例），由 nextCase/prevCase 的边界判断兜底，不会越界。
+function dequeueFinishedCase(id) {
+    const unfinished = state.progress.unfinishedCases;
+    const at = unfinished.findIndex(c => c.id === id);
+    if (at < 0) return; // 该病例本就不在队列里（例如由题库单独挑战进入），无需处理
+    unfinished.splice(at, 1);
+    state.case.index = at - 1;
 }
 
 // 完整医案解析：与结果卡并列的第二张独立卡片。

@@ -19,6 +19,10 @@ import { isSafeCaseId, diffMap, MAX_STORED_TEXT_LENGTH } from '../data.js';
 export const COMPLETED_CASES_KEY = 'tcm_completed_cases';
 export const WRONG_CASES_KEY = 'tcm_wrong_cases';
 
+// 已完成病例记录保留的上限。达到上限时保留「最新的」上限条，
+// 而不是最前面的条数——否则新完成记录会被永久截掉而丢失（见 getCompletedCases）。
+const MAX_COMPLETED_CASES = 1000;
+
 /* ===================== 底层读写 ===================== */
 // 读取 JSON。只有「key 不存在」与「内容不是合法 JSON」两种已定义情况返回 fallback，
 // 其余异常（如 localStorage 被禁用导致 SecurityError）向上抛出，不隐藏。
@@ -45,7 +49,7 @@ export function sanitizeStoredText(value, maxLength = MAX_STORED_TEXT_LENGTH) {
 export function getCompletedCases() {
     const value = readJson(COMPLETED_CASES_KEY, []);
     if (!Array.isArray(value)) return [];
-    return [...new Set(value.filter(isSafeCaseId))].slice(0, 1000);
+    return [...new Set(value.filter(isSafeCaseId))].slice(-MAX_COMPLETED_CASES);
 }
 
 export function markCaseCompleted(caseId) {
@@ -107,7 +111,7 @@ export function replaceProgress({ completedCases, wrongCases }) {
 }
 
 export function mergeProgress({ completedCases, wrongCases }) {
-    const mergedCompleted = [...new Set(getCompletedCases().concat(completedCases))].slice(0, 1000);
+    const mergedCompleted = [...new Set(getCompletedCases().concat(completedCases))].slice(-MAX_COMPLETED_CASES);
     writeJson(COMPLETED_CASES_KEY, mergedCompleted);
     writeJson(WRONG_CASES_KEY, mergeWrongCases(getWrongCases(), wrongCases));
 }
