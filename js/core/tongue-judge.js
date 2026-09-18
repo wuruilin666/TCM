@@ -52,6 +52,21 @@ function isNormalStatement(text) {
     return NORMAL_RE.test(s) && !NEGATED_NORMAL_RE.test(s);
 }
 
+// 收敛「正常」判定到当前维度：只有“提到该维度”或“未提任何维度”的分段才算数，
+// 否则「舌色正常」会把另一个正常考点维度误判成对。
+function dimensionNormalStatement(userText, dimension) {
+    const markers = dimension === 'coating' ? COATING_MARKER
+        : dimension === 'shape' ? SHAPE_MARKER
+        : dimension === 'color' ? COLOR_MARKER : null;
+    for (const seg of String(userText || '').split(/[，,。；;：:、\s]+/)) {
+        if (!seg) continue;
+        const mentionsAny = COATING_MARKER.test(seg) || SHAPE_MARKER.test(seg) || COLOR_MARKER.test(seg);
+        const mentionsDim = markers ? markers.test(seg) : true;
+        if ((!mentionsAny || mentionsDim) && isNormalStatement(seg)) return true;
+    }
+    return false;
+}
+
 // 去掉舌象术语的前缀，便于用「包含」判断（舌质淡红 / 苔薄白 → 淡红 / 薄白）
 function stripPrefix(s) {
     return String(s).replace(/^舌(质|体|色|形|苔)?/, '').replace(/^苔/, '');
@@ -100,7 +115,7 @@ function judgeDimension(dimension, expected, userText, mentioned, referenceText)
     if (isNormalStatement(value)) {
         // 病例原文没写「正常」→ 这个「正常」是推断值，不作为考点
         if (referenceText && !isNormalStatement(referenceText)) return { status: TONGUE_DIM_STATUS.NOT_TESTED };
-        if (isNormalStatement(userText)) return { status: TONGUE_DIM_STATUS.CORRECT, expected: value };
+        if (dimensionNormalStatement(userText, dimension)) return { status: TONGUE_DIM_STATUS.CORRECT, expected: value };
         return {
             status: mentioned.has(dimension) ? TONGUE_DIM_STATUS.WRONG : TONGUE_DIM_STATUS.MISSING,
             expected: value
@@ -138,12 +153,11 @@ export function judgeTongue(tongueJudgment, userText, referenceText = '') {
     }
 
     const matched = tested.filter(d => dimensions[d].status === TONGUE_DIM_STATUS.CORRECT).length;
-    const wrong = tested.filter(d => dimensions[d].status === TONGUE_DIM_STATUS.WRONG).length;
 
     let status;
     if (matched === total) status = TONGUE_RESULT.CORRECT;              // 全部命中
-    else if (matched === 0 && wrong > 0) status = TONGUE_RESULT.WRONG;  // 写了但一个都没对
-    else status = TONGUE_RESULT.PARTIAL;                               // 有命中但不全，或只遗漏
+    else if (matched > 0) status = TONGUE_RESULT.PARTIAL;              // 有命中但不全
+    else status = TONGUE_RESULT.WRONG;                                 // 一个都没对（含空/无关提交）
 
     return { correct: status === TONGUE_RESULT.CORRECT, matched, total, status, dimensions };
 }

@@ -48,14 +48,18 @@ const MORPHEME_RULES = [
 /* 证型判定：先尝试词素规则，再退回通用包含判定。 */
 export function isSyndromeCorrect(correctAnswer, userSyndrome) {
     if (!userSyndrome) return false;
-    const std = String(correctAnswer?.syndrome || '');
-    const u = String(userSyndrome);
+    // 与病名判定对齐：先规范化（去内部空白、去结尾「证」），否则带空格或「证」后缀的输入会漏判
+    const std = normalizeDisease(String(correctAnswer?.syndrome || ''));
+    const u = normalizeDisease(String(userSyndrome));
 
     for (const rule of MORPHEME_RULES) {
         if (rule.when.every(k => std.includes(k)) && rule.all.every(k => u.includes(k))) return true;
     }
-    // 通用回退：完全相等 / 标准包含用户 / 用户包含标准
-    return u === std || std.includes(u) || u.includes(std);
+    // 通用回退：完全相等 / 标准包含用户 / 用户包含标准；短于两字仅允许完全相等，
+    // 防止单字片段（如「热」）靠 substring 蒙对——与 isDiseaseCorrect 行为对齐。
+    if (u === std) return true;
+    if (u.length < 2) return false;
+    return std.includes(u) || u.includes(std);
 }
 
 /* 综合判定 */
