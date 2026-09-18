@@ -114,12 +114,12 @@ console.log('\n=== 5. 禁用 API 越界检查 ===');
 //   { file: '...' } → 只对该文件生效（用于个别模块的额外收紧）
 // 规则指向不存在的模块同样按错误处理，避免模块改名后规则静默失效。
 const FORBIDDEN = [
-    { layer: 5, re: /document\.|window\.|localStorage|fetch\(|alert\(|confirm\(/, why: 'Domain 必须纯净' },
-    { file: 'js/storage/progress-storage.js', re: /document\.|window\.|alert\(|confirm\(/, why: 'Progress Storage 不负责 UI' },
-    { file: 'js/storage/backup-code.js', re: /document\.|localStorage|alert\(|confirm\(/, why: 'Backup Code 不负责 UI / Storage' },
-    { file: 'js/game.js', re: /localStorage|fetch\(/, why: 'Game 不得直接访问存储 / 网络' },
-    { file: 'js/case-bank.js', re: /localStorage/, why: 'Case Bank 不得绕过 Progress Storage' },
-    { file: 'js/data.js', re: /document\.|localStorage|alert\(/, why: '病例数据模块不负责 DOM / 存储' }
+    { layer: 5, re: /\bdocument\.|\bwindow\.|\blocalStorage\b|\bfetch\(|\balert\(|\bconfirm\(/, why: 'Domain 必须纯净' },
+    { file: 'js/storage/progress-storage.js', re: /\bdocument\.|\bwindow\.|\balert\(|\bconfirm\(/, why: 'Progress Storage 不负责 UI' },
+    { file: 'js/storage/backup-code.js', re: /\bdocument\.|\blocalStorage\b|\balert\(|\bconfirm\(/, why: 'Backup Code 不负责 UI / Storage' },
+    { file: 'js/game.js', re: /\blocalStorage\b|\bfetch\(/, why: 'Game 不得直接访问存储 / 网络' },
+    { file: 'js/case-bank.js', re: /\blocalStorage\b/, why: 'Case Bank 不得绕过 Progress Storage' },
+    { file: 'js/data.js', re: /\bdocument\.|\blocalStorage\b|\balert\(/, why: '病例数据模块不负责 DOM / 存储' }
 ];
 // 逐行扫描，跳过注释行（行注释、块注释、JSDoc 续行）
 function codeLines(src) {

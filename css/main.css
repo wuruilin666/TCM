@@ -68,7 +68,7 @@ body {
     background-image:
         radial-gradient(ellipse at 16% 8%, rgba(156, 43, 27, 0.05), transparent 46%),
         radial-gradient(ellipse at 92% 88%, rgba(58, 42, 34, 0.04), transparent 48%);
-    background-attachment: fixed;
+    /* 移除 background-attachment: fixed：移动端每个滚动帧会整屏重绘导致卡顿 */
     min-height: 100dvh;
     line-height: 1.6;
     display: flex;
@@ -139,7 +139,9 @@ button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
-    .page, .rise-in, .rise-in * { animation: none !important; transition: none !important; }
+    .page, .rise-in, .rise-in *, .clue-item, .chat-bubble, .result-box, .modal-overlay, .modal {
+        animation: none !important; transition: none !important;
+    }
 }
 
 /* 页眉标签 / 标题体系（对齐解压 eyebrow + 大标题） */

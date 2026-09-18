@@ -151,22 +151,40 @@ export function validateCaseFile(data, diff) {
 const casesByDiff = new Map();
 
 // 按难度加载并缓存病例；文件不存在或数据非法时抛错，由调用方决定如何呈现失败。
+// 缓存的是 in-flight 的 Promise（成功后原地替换为已解析数组），并发调用共享同一次请求，避免重复 fetch。
 export async function loadCasesByDifficulty(diff) {
-    if (casesByDiff.has(diff)) return casesByDiff.get(diff);
+    const cached = casesByDiff.get(diff);
+    if (cached) return cached; // 命中已解析数组或进行中的 Promise
     const file = caseDiffFiles[diff];
     if (!file) throw new Error('未知的训练阶段：' + diff);
-    const r = await fetch(file);
-    if (!r.ok) throw new Error(`病例数据加载失败：${diff}（HTTP ${r.status}）`);
-    const cases = validateCaseFile(await r.json(), diff);
-    casesByDiff.set(diff, cases);
-    return cases;
+    const inFlight = (async () => {
+        const r = await fetch(file);
+        if (!r.ok) throw new Error(`病例数据加载失败：${diff}（HTTP ${r.status}）`);
+        return validateCaseFile(await r.json(), diff);
+    })();
+    casesByDiff.set(diff, inFlight);
+    try {
+        const cases = await inFlight;
+        casesByDiff.set(diff, cases); // 成功后替换为已解析数组，供同步 getAllCases 读取
+        return cases;
+    } catch (e) {
+        casesByDiff.delete(diff); // 失败即移除，否则重试会一直拿到 rejected 的 Promise
+        throw e;
+    }
 }
 
 // 加载全部难度病例，返回扁平数组（顺序：basic → intermediate → advanced）
 // 各难度并行请求；Promise.all 的返回顺序与 diffOrder 一致，因此合并顺序不变。
 export async function loadAllCases() {
-    const lists = await Promise.all(diffOrder.map(diff => loadCasesByDifficulty(diff)));
-    return lists.flat();
+    const diffs = diffOrder.slice();
+    try {
+        const lists = await Promise.all(diffs.map(diff => loadCasesByDifficulty(diff)));
+        return lists.flat();
+    } catch (e) {
+        // 任一档失败：清空本次所有档位的缓存，避免 getAllCases() 静默返回「缺档的半套数据」
+        for (const diff of diffs) casesByDiff.delete(diff);
+        throw e;
+    }
 }
 
 // 已加载病例的读取入口（同步）。未加载完成时返回空数组，由启动流程保证先加载后使用。
@@ -174,7 +192,7 @@ export function getAllCases() {
     const lists = [];
     for (const diff of diffOrder) {
         const cached = casesByDiff.get(diff);
-        if (cached) lists.push(...cached);
+        if (Array.isArray(cached)) lists.push(...cached); // 进行中的 Promise 视为未加载，不当作完整数据
     }
     return lists;
 }

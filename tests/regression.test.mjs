@@ -652,6 +652,9 @@ try {
         if (askedOf().includes(i)) continue;
         inquiryInput.value = q.q;
         window.sendInquiry();
+        // 患者回复经 300ms 延迟渲染；sendInquiry 带防抖门闩，需等回复后再发下一条
+        //（同步紧连发会被防抖按设计丢弃，这里按真实用户的逐题节奏驱动）
+        await new Promise(r => setTimeout(r, 320));
     }
     await new Promise(r => setTimeout(r, 500));
     const finalProgress = game.getInquiryProgress();

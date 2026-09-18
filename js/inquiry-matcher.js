@@ -512,7 +512,9 @@ const CATCH_ALL_PHRASES = [
 export function isCatchAll(rawText) {
     const t = normalize(rawText);
     for (const p of CATCH_ALL_PHRASES) if (t.includes(p)) return true;
-    if (t.includes('所有') || t.includes('全部')) return true;
+    // 收紧：不凭「所有/全部」二字一刀切判 catchall（否则「所有关节都痛」「全部手指发麻」会被误判为概括索题）。
+    // 仅在「所有/全部」与索取更多症状的语境词同现时才视为概括索题。
+    if (/所有|全部/.test(t) && /还有|告诉|说|什么|不舒服|症状/.test(t)) return true;
     if (t.includes('还有') && (t.includes('什么') || t.includes('哪些') || t.includes('不舒服') || t.includes('症状'))) return true;
     return false;
 }

@@ -37,6 +37,9 @@ export function resolveInquiry(questions, text) {
 }
 
 /* ===================== 问诊弹窗 ===================== */
+// 防抖门闩：患者回复经 300ms 延迟渲染，连发时只处理第一条，保证回复有序不交错
+let inquirySending = false;
+
 export function openInquiryModal() {
     if (!getCurrentCase()) return;
     document.getElementById('inquiryChatArea').innerHTML = '';
@@ -56,10 +59,12 @@ function appendChat(role, text) {
 }
 
 export function sendInquiry() {
+    if (inquirySending) return; // 连发期间丢弃后续输入（不排队），保证回复有序
     const input = document.getElementById('inquiryInput');
     const q = input.value.trim();
     const currentCase = getCurrentCase();
     if (!q || !currentCase) return;
+    inquirySending = true;
 
     appendInquiryMessage('user', q);
     appendChat('user', q);
@@ -88,6 +93,7 @@ export function sendInquiry() {
         appendChat('patient', answer);
         const progress = getInquiryProgress();
         if (progress.allAsked) setExplored('inquiry');
+        inquirySending = false; // 渲染与记账全部完成后才放行下一条发送
     }, 300);
 }
 
