@@ -219,8 +219,8 @@
 /* PWA Service Worker 注册 —— 纯增强能力，与应用启动（boot/loadAllCases）完全独立：
    - 不支持 Service Worker 的浏览器（含微信内置浏览器多数版本）直接跳过，网站按普通网页运行；
    - 注册失败只在 ?debug=1 时输出告警，不影响任何现有功能；
-   - 新版本只在后台安装，绝不刷新当前页面（病例 / 问诊 / 答题不会被打断），
-     用户下次重新打开时自然使用新版本。
+   - 新版本只在后台安装并进入 waiting，绝不刷新/接管当前页面（病例 / 问诊 / 答题不会被打断），
+     等所有旧页面关闭后新 SW 才激活，用户下次重新打开时整套使用新版本。
    相对路径注册：在 https://wrltcm.pages.dev/ 根路径部署时 scope 解析为 '/'。 */
 (function () {
     if (!('serviceWorker' in navigator)) return;
@@ -233,9 +233,10 @@
         var data = event.data || {};
         if (data.type === 'PWA_VERSION') pwaLog('cache version:', data.version);
     });
-    // 新版本只接管之后的请求；不做任何 location.reload()。
+    // 仅记录控制器变化用于调试；没有任何 location.reload()，不主动刷新页面。
+    // 自然生命周期下，激活发生在旧客户端全部关闭之后，此事件通常出现在下次打开的新页面上。
     navigator.serviceWorker.addEventListener('controllerchange', function () {
-        pwaLog('新 Service Worker 已接管后续请求，当前页面保持不变');
+        pwaLog('Service Worker 控制器已变化（新页面使用新版本）');
     });
 
     window.addEventListener('load', function () {
@@ -256,7 +257,8 @@
                 next.addEventListener('statechange', function () {
                     if (next.state !== 'installed') return;
                     if (navigator.serviceWorker.controller) {
-                        pwaLog('update ready：新版本已在后台就绪，下次打开时生效（当前页面不刷新）');
+                        // 已存在控制器：新版本此刻进入 waiting，不接管本页，全部页面关闭后下次打开生效。
+                        pwaLog('新版本已安装并进入 waiting：当前页面继续使用旧版本，关闭后下次打开自动切换');
                     } else {
                         pwaLog('首次安装完成，离线能力已准备好');
                     }

@@ -10,14 +10,15 @@
  *      - 发布程序：只需修改下面的 CACHE_VERSION，浏览器发现新 sw.js 后自动安装
  *      - 发布病例：只改 JSON 即可，联网时用户直接拿到新病例，与 SW 版本无关
  *
- *   3. 绝不强制刷新正在使用的页面：
- *      skipWaiting / clients.claim 只让新版本接管「之后的请求」，
- *      当前页面已加载的 HTML/JS 继续运行，下次重新打开才使用新版本。
+ *   3. 绝不打断正在做题的页面 —— 走浏览器自然生命周期，不用 skipWaiting / clients.claim：
+ *      新 SW 安装后进入 waiting，旧 SW 继续控制当前页面（整套 v1 资源保持一致）；
+ *      等所有旧客户端关闭后，新 SW 才在 activate 中接管并清理旧缓存，
+ *      用户下一次打开时整套使用新版本。
  *
  * 发布新版本时只需修改 CACHE_VERSION（例如 tcm-v2026.10.01）。
  * ========================================================================== */
 
-const CACHE_VERSION = 'tcm-v2026.09.27';
+const CACHE_VERSION = 'tcm-v2026.09.28';
 
 // 版本化缓存：应用本体。升版本即换命名空间，旧缓存由 activate 清理。
 const APP_CACHE = CACHE_VERSION + '-app';
@@ -67,8 +68,8 @@ self.addEventListener('install', event => {
         await cache.addAll(CORE_ASSETS);
         log('预缓存完成', CACHE_VERSION);
     })());
-    // 新版本后台安装完成后直接进入激活候选，但不会刷新任何已打开的页面。
-    self.skipWaiting();
+    // 不调用 skipWaiting()：有旧 SW 控制页面时，新版本安装完进入 waiting，
+    // 直到所有旧客户端关闭后才自然激活，保证当前病例会话整套资源版本一致。
 });
 
 self.addEventListener('activate', event => {
@@ -82,7 +83,8 @@ self.addEventListener('activate', event => {
                 return caches.delete(name);
             })
         );
-        await self.clients.claim();
+        // 不调用 clients.claim()：新 SW 只控制激活之后打开的页面，
+        // 不接管任何仍在运行的旧客户端。
         log('已激活', CACHE_VERSION);
     })());
 });
