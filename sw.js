@@ -18,10 +18,14 @@
  * 发布新版本时只需修改 CACHE_VERSION（例如 tcm-v2026.10.01）。
  * ========================================================================== */
 
-const CACHE_VERSION = 'tcm-v2026.09.27-fix4';
+const CACHE_VERSION = 'tcm-v2026.09.28-fix3';
 
 // 版本化缓存：应用本体。升版本即换命名空间，旧缓存由 activate 清理。
 const APP_CACHE = CACHE_VERSION + '-app';
+// 首页 HTML 的稳定缓存 key：统一指向站点根。
+// 无论导航请求是 /、/index.html 还是带查询串，都只写入并读取这一份，
+// 避免缓存里出现多份无意义副本。
+const APP_HTML_KEY = new URL('./', self.location).href;
 // 稳定缓存：与程序版本无关，跨版本保留，避免每次发版都重新下载病例与图片。
 const CASES_CACHE = 'tcm-cases-data';
 const TONGUE_CACHE = 'tcm-tongue-img';
@@ -105,9 +109,11 @@ self.addEventListener('fetch', event => {
     if (url.origin !== self.location.origin) return; // 跨域（如表单提交）直接放行
     if (url.pathname === '/sw.js') return;           // SW 自身走浏览器重新验证（见 _headers）
 
-    // 1) 页面导航（HTML）：Network First，离线回退缓存入口。
+    // 1) 页面导航（HTML）：当前版本 Cache First。
+    // 当前 SW 控制期间，刷新永远命中当前 APP_CACHE 里的 HTML，与 JS/CSS 同版本；
+    // 只有缓存缺失（首次安装 / 缓存被清）才走网络并补写当前 APP_CACHE。
     if (req.mode === 'navigate') {
-        event.respondWith(networkFirstHtml(req));
+        event.respondWith(cacheFirstHtml(req));
         return;
     }
 
@@ -137,23 +143,23 @@ function isAppAsset(pathname) {
         || pathname === '/manifest.webmanifest';
 }
 
-// HTML：始终优先网络（保证发布后能拿到新页面），失败再用缓存保证离线可开。
-async function networkFirstHtml(req) {
-    try {
-        const fresh = await fetch(req);
-        if (fresh.ok) {
-            const cache = await caches.open(APP_CACHE);
-            cache.put('./', fresh.clone());
-        }
-        return fresh;
-    } catch (e) {
-        const cached = await caches.match('./', { cacheName: APP_CACHE, ignoreSearch: true });
-        if (cached) {
-            log('离线回退首页缓存');
-            return cached;
-        }
-        throw e;
+// HTML：当前版本 Cache First —— 保证「当前 SW 控制期间 HTML 与 JS/CSS 永远同版本」。
+// 原理：HTML 与 JS/CSS 存放在同一个 APP_CACHE（版本化命名空间）里，
+// 旧 SW v1 控制页面时刷新，命中 v1 APP_CACHE 里的 v1 HTML，
+// 不会去服务器拉 v2 HTML，从根上杜绝「v2 HTML + v1 JS/CSS」混用。
+// 缓存缺失（首次安装 / 缓存被清）时回退网络并补写当前 APP_CACHE；
+// 网络也失败时正常抛错（离线且无缓存，由浏览器给出标准错误页）。
+async function cacheFirstHtml(req) {
+    const cached = await caches.match(APP_HTML_KEY, { cacheName: APP_CACHE });
+    if (cached) return cached;
+
+    const fresh = await fetch(req);
+    if (fresh.ok) {
+        const cache = await caches.open(APP_CACHE);
+        // 统一写入站点根 key：/、/index.html、带查询串的导航都只生成一份 HTML 缓存。
+        cache.put(APP_HTML_KEY, fresh.clone());
     }
+    return fresh;
 }
 
 // 病例 JSON：联网用最新并顺手更新缓存；离线时返回旧缓存，没有旧缓存则网络错误（由 boot 呈现失败提示）。
