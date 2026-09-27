@@ -116,9 +116,11 @@ function initApp() {
     appContainer.innerHTML = `
         <div class="page active" id="pageHome">
             <section class="hero">
-                <h1 class="hero-title">中医辨证推演馆</h1>
-                <p class="hero-subtitle">你是一名接诊医生，通过望闻问切完成辨证。</p>
-                <p class="hero-desc">像门诊一样四诊，像海龟汤一样推理。</p>
+                <div class="hero-copy">
+                    <h1 class="hero-title">中医辨证推演馆</h1>
+                    <p class="hero-subtitle">你是一名接诊医生，通过望闻问切完成辨证。</p>
+                    <p class="hero-desc">像门诊一样四诊，像海龟汤一样推理。</p>
+                </div>
                 <div class="home-buttons">
                     <button class="btn btn--primary btn--lg" style="min-width:208px;" onclick="startChallenge()">开始接诊</button>
                     <div class="home-secondary">

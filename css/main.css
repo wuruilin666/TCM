@@ -691,21 +691,28 @@ textarea { height: auto !important; min-height: 112px; padding: 12px 14px !impor
     .answer-area { grid-template-columns: 1fr; }
     .me-stats { grid-template-columns: repeat(3, 1fr); }
 
-    /* 首页首屏垂直分区（仅移动端）：
-       不用 fixed / translateY，也不把整块 hero 数学居中。
-       .hero 成为占满首屏剩余高度的 flex 列，用两个弹性留白把空间分成三段：
-       标题组上方留白(1.5) → 标题/说明（视觉锚点，落在约 42%~48% 高度）
-       → 说明与 CTA 之间留白(1) → CTA 自然沉到下部。
-       留白按剩余高度按比例分配，矮屏自动收紧、高屏自动放宽，不会硬拆成上下两块。 */
+    /* 首页首屏垂直分区（仅移动端）：真正的「标题视觉区 + CTA 行动区」两块布局。
+       .hero 占满首屏剩余高度并成为 flex 列，两个直接子节点就是两个区域：
+         .hero-copy    标题 + 副标题 + 描述（第一视觉中心）
+         .home-buttons 开始接诊 / 关于（行动区）
+       标题区上方用响应式 padding 把大标题推到视觉中心偏下（不贴 Header，不硬编码机型）；
+       CTA 用 margin-top:auto 承接剩余高度自然下沉（非 fixed），
+       矮屏留白自动收紧、高屏自动放宽。
+       不使用 ::before/::after 撑空间：伪元素在 DOM 中位于全部子节点之后，
+       无法插入说明文字与 CTA 之间，只会形成「上下各一块空白、内容挤中间」。 */
     #pageHome .hero {
         flex: 1;
         display: flex;
         flex-direction: column;
+        min-height: 0;
     }
-    #pageHome .hero::before { content: ""; flex: 1.5; }
-    #pageHome .hero::after { content: ""; flex: 1; }
-    /* CTA 与说明的间距交给上方弹性留白，不再用固定 40px 把标题往上顶 */
-    #pageHome .home-buttons { margin-top: 0; }
+    #pageHome .hero-copy {
+        padding-top: clamp(56px, 25dvh, 250px);
+    }
+    #pageHome .home-buttons {
+        margin-top: auto;
+        padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    }
     /* iPhone 底部 Home Indicator 安全区：保证 footer 文字与 CTA 不被手势条遮挡 */
     .site-footer-inner { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
 }
