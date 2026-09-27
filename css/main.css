@@ -691,29 +691,28 @@ textarea { height: auto !important; min-height: 112px; padding: 12px 14px !impor
     .answer-area { grid-template-columns: 1fr; }
     .me-stats { grid-template-columns: repeat(3, 1fr); }
 
-    /* 首页首屏垂直分区（仅移动端）：真正的「标题视觉区 + CTA 行动区」两块布局。
-       .hero 占满首屏剩余高度并成为 flex 列，两个直接子节点就是两个区域：
+    /* 首页首屏垂直分区（仅移动端）：明确的「标题视觉区 + 独立行动区」两块布局。
+       .hero 占满首屏剩余高度并成为 flex 列，从顶部开始自然排布（flex-start），
+       两个直接子节点就是两个区域：
          .hero-copy    标题 + 副标题 + 描述（第一视觉中心）
-         .home-buttons 开始接诊 / 关于（行动区）
-       间距机制：justify-content:space-between 让两块在有剩余高度时自然拉开，
-       flex gap 提供「最小安全间距」——即使矮屏或浏览器工具栏压缩 dvh 导致
-       剩余高度不足，gap 也不会像 margin-top:auto 那样塌缩为 0（不足时页面
-       微微可滚，间距仍保住），高屏则由 space-between 继续放宽。
-       标题区上方用响应式 padding 把大标题定位在视觉中心偏下；不硬编码机型。
-       不使用 ::before/::after，不使用 margin-top:auto / fixed / absolute。 */
+         .home-buttons 开始接诊 / 关于（独立行动区）
+       间距机制：不依赖屏幕剩余高度分配，CTA 与说明区之间用显式的响应式
+       margin-top 建立页面级大留白（随 dvh 增长），远大于普通段落间距，
+       视觉上一眼区分两个区域；标题区上方用轻量 padding-top 让标题落在
+       首屏中部附近。不使用 space-between / margin-top:auto / gap，
+       不使用 ::before/::after，不使用 fixed / absolute。 */
     #pageHome .hero {
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
-        gap: clamp(40px, 8dvh, 88px);
+        justify-content: flex-start;
         min-height: 0;
     }
     #pageHome .hero-copy {
-        padding-top: clamp(56px, 22dvh, 210px);
+        padding-top: clamp(48px, 12dvh, 128px);
     }
     #pageHome .home-buttons {
-        margin-top: 0;
+        margin-top: clamp(100px, 18dvh, 180px);
         padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
     }
     /* iPhone 底部 Home Indicator 安全区：保证 footer 文字与 CTA 不被手势条遮挡 */
