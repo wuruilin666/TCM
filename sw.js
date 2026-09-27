@@ -18,7 +18,7 @@
  * 发布新版本时只需修改 CACHE_VERSION（例如 tcm-v2026.10.01）。
  * ========================================================================== */
 
-const CACHE_VERSION = 'tcm-v2026.09.27-fix3';
+const CACHE_VERSION = 'tcm-v2026.09.27-fix4';
 
 // 版本化缓存：应用本体。升版本即换命名空间，旧缓存由 activate 清理。
 const APP_CACHE = CACHE_VERSION + '-app';

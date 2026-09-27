@@ -691,29 +691,28 @@ textarea { height: auto !important; min-height: 112px; padding: 12px 14px !impor
     .answer-area { grid-template-columns: 1fr; }
     .me-stats { grid-template-columns: repeat(3, 1fr); }
 
-    /* 首页首屏垂直分区（仅移动端）：明确的「标题视觉区 + 独立行动区」两块布局。
-       .hero 占满首屏剩余高度并成为 flex 列，从顶部开始自然排布（flex-start），
-       两个直接子节点就是两个区域：
-         .hero-copy    标题 + 副标题 + 描述（第一视觉中心）
-         .home-buttons 开始接诊 / 关于（独立行动区）
-       间距机制：不依赖屏幕剩余高度分配，CTA 与说明区之间用显式的响应式
-       margin-top 建立页面级大留白（随 dvh 增长），远大于普通段落间距，
-       视觉上一眼区分两个区域；标题区上方用轻量 padding-top 让标题落在
-       首屏中部附近。不使用 space-between / margin-top:auto / gap，
-       不使用 ::before/::after，不使用 fixed / absolute。 */
+    /* 首页首屏（仅移动端）：现代欢迎页式「一个完整内容组」。
+       .hero 是占满首屏剩余高度的 flex 列，justify-content:center 让
+       标题 → 说明 → 开始接诊 这一整组在首屏视觉中心处垂直居中（上方 header、
+       下方 footer 高度不对称，整组重心自然略偏下），不再拆成上下两个独立区域。
+       .hero-copy 不做 padding-top 人为推移；.home-buttons 只用 48~72px 的
+       响应式间距接在说明之后，形成「读完停顿一下再开始」的自然阅读路径。
+       不使用 space-between / margin-top:auto / flex gap 分区 / ::before/::after，
+       不使用 fixed / absolute。 */
     #pageHome .hero {
         flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: flex-start;
+        align-items: center;
+        justify-content: center;
         min-height: 0;
     }
     #pageHome .hero-copy {
-        padding-top: clamp(48px, 12dvh, 128px);
+        padding-top: 0;
     }
     #pageHome .home-buttons {
-        margin-top: clamp(100px, 18dvh, 180px);
-        padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        margin-top: clamp(48px, 7dvh, 72px);
+        padding-bottom: 0;
     }
     /* iPhone 底部 Home Indicator 安全区：保证 footer 文字与 CTA 不被手势条遮挡 */
     .site-footer-inner { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
