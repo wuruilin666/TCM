@@ -10,3 +10,12 @@
 
 /data/cases/*
   Cache-Control: public, max-age=300, must-revalidate
+
+# Service Worker 必须每次重新验证：否则新版本部署后浏览器可能一直拿旧 sw.js，
+# PWA 更新链路会整体失效。no-cache 不是不缓存，而是每次用条件请求校验（304 成本很低）。
+/sw.js
+  Cache-Control: no-cache
+
+# manifest 同理，名称 / 图标 / start_url 调整后应能被及时发现。
+/manifest.webmanifest
+  Cache-Control: no-cache

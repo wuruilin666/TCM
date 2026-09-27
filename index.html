@@ -13,6 +13,13 @@
     <title>中医辨证推演馆 - 海龟汤模式</title>
     <meta name="description" content="中医辨证推演馆，通过海龟汤模式进行四诊探案，学习中医辨证论治。">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='84' height='84' rx='8' fill='none' stroke='%239c2b1b' stroke-width='7'/%3E%3Ctext x='50' y='54' font-family='Songti SC,STSong,serif' font-size='52' fill='%239c2b1b' text-anchor='middle' dominant-baseline='central'%3E%E8%BE%A8%3C/text%3E%3C/svg%3E">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#f7f1e8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="推演馆">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
@@ -208,5 +215,59 @@
 <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;" onchange="if(this.files[0]) importProgress(this.files[0]); this.value='';">
 
 <script type="module" src="js/app.js"></script>
+<script>
+/* PWA Service Worker 注册 —— 纯增强能力，与应用启动（boot/loadAllCases）完全独立：
+   - 不支持 Service Worker 的浏览器（含微信内置浏览器多数版本）直接跳过，网站按普通网页运行；
+   - 注册失败只在 ?debug=1 时输出告警，不影响任何现有功能；
+   - 新版本只在后台安装，绝不刷新当前页面（病例 / 问诊 / 答题不会被打断），
+     用户下次重新打开时自然使用新版本。
+   相对路径注册：在 https://wrltcm.pages.dev/ 根路径部署时 scope 解析为 '/'。 */
+(function () {
+    if (!('serviceWorker' in navigator)) return;
+    var DEBUG = /[?&]debug\b/.test(location.search);
+    function pwaLog() {
+        if (DEBUG) console.log.apply(console, ['[PWA]'].concat([].slice.call(arguments)));
+    }
+
+    navigator.serviceWorker.addEventListener('message', function (event) {
+        var data = event.data || {};
+        if (data.type === 'PWA_VERSION') pwaLog('cache version:', data.version);
+    });
+    // 新版本只接管之后的请求；不做任何 location.reload()。
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+        pwaLog('新 Service Worker 已接管后续请求，当前页面保持不变');
+    });
+
+    window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js', { scope: './' }).then(function (reg) {
+            pwaLog('Service Worker registered, scope:', reg.scope);
+            function syncFlags(worker) {
+                if (!worker) return;
+                worker.postMessage({ type: 'SET_DEBUG', value: DEBUG });
+                worker.postMessage({ type: 'GET_VERSION' });
+            }
+            syncFlags(reg.active);
+            // 后台发现并安装新版本：仅记录调试日志，不提示、不刷新。
+            reg.addEventListener('updatefound', function () {
+                var next = reg.installing;
+                if (!next) return;
+                pwaLog('发现新版本，后台安装中…');
+                syncFlags(next);
+                next.addEventListener('statechange', function () {
+                    if (next.state !== 'installed') return;
+                    if (navigator.serviceWorker.controller) {
+                        pwaLog('update ready：新版本已在后台就绪，下次打开时生效（当前页面不刷新）');
+                    } else {
+                        pwaLog('首次安装完成，离线能力已准备好');
+                    }
+                });
+            });
+        }).catch(function (err) {
+            // 能力受限场景（微信 X5 内核、部分隐私模式等）静默降级为普通网页。
+            if (DEBUG) console.warn('[PWA] Service Worker 注册失败，不影响网站正常使用：', err);
+        });
+    });
+})();
+</script>
 </body>
 </html>
