@@ -690,4 +690,22 @@ textarea { height: auto !important; min-height: 112px; padding: 12px 14px !impor
     .top-nav .nav-link { padding: 0 8px; letter-spacing: 0.08em; }
     .answer-area { grid-template-columns: 1fr; }
     .me-stats { grid-template-columns: repeat(3, 1fr); }
+
+    /* 首页首屏垂直分区（仅移动端）：
+       不用 fixed / translateY，也不把整块 hero 数学居中。
+       .hero 成为占满首屏剩余高度的 flex 列，用两个弹性留白把空间分成三段：
+       标题组上方留白(1.5) → 标题/说明（视觉锚点，落在约 42%~48% 高度）
+       → 说明与 CTA 之间留白(1) → CTA 自然沉到下部。
+       留白按剩余高度按比例分配，矮屏自动收紧、高屏自动放宽，不会硬拆成上下两块。 */
+    #pageHome .hero {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    #pageHome .hero::before { content: ""; flex: 1.5; }
+    #pageHome .hero::after { content: ""; flex: 1; }
+    /* CTA 与说明的间距交给上方弹性留白，不再用固定 40px 把标题往上顶 */
+    #pageHome .home-buttons { margin-top: 0; }
+    /* iPhone 底部 Home Indicator 安全区：保证 footer 文字与 CTA 不被手势条遮挡 */
+    .site-footer-inner { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
 }
