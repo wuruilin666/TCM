@@ -1,0 +1,205 @@
+/* =====================================================================
+   岐思 QISI — 比赛展示页共享样式
+   视觉基调与原站「中医辨证推演馆」一致：宣纸 / 朱砂 / 暖棕 / 宋体 / 克制留白。
+   ===================================================================== */
+
+:root {
+    --paper: #f7f1e8;
+    --paper-raised: #fbf7f0;
+    --paper-sunken: #f1e9dc;
+    --ink: #3a2a22;
+    --ink-muted: #8a7468;
+    --ink-faint: #b7a496;
+    --cinnabar: #9c2b1b;
+    --cinnabar-deep: #7e2216;
+    --cinnabar-soft: rgba(156, 43, 27, 0.10);
+    --hairline: rgba(58, 42, 34, 0.12);
+    --shadow: 0 1px 2px -1px rgba(58, 42, 34, 0.08),
+        0 8px 24px -12px rgba(58, 42, 34, 0.12);
+    --font-heading: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
+    --font-body: "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; }
+
+body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper);
+    background-image:
+        radial-gradient(ellipse at 14% 6%, rgba(156, 43, 27, 0.05), transparent 44%),
+        radial-gradient(ellipse at 92% 90%, rgba(58, 42, 34, 0.04), transparent 46%);
+    min-height: 100dvh;
+    line-height: 1.7;
+    display: flex;
+    flex-direction: column;
+}
+
+h1, h2, h3 { font-family: var(--font-heading); font-weight: 600; text-wrap: balance; }
+p { text-wrap: pretty; }
+a { color: var(--cinnabar); text-decoration: none; }
+
+.wrap { width: 100%; max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+/* ---------- 顶栏 ---------- */
+.site-header {
+    position: relative; z-index: 10;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--paper);
+}
+.site-header-inner {
+    max-width: 960px; margin: 0 auto;
+    height: 64px; padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between;
+}
+.brand {
+    display: flex; align-items: center; gap: 12px;
+    color: var(--ink); text-decoration: none;
+}
+.brand-mark {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: var(--cinnabar); color: var(--paper);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-heading); font-size: 18px;
+}
+.brand-name {
+    font-family: var(--font-heading);
+    font-size: 15px; letter-spacing: 0.18em;
+}
+.top-nav { display: flex; align-items: center; gap: 6px; }
+.top-nav a {
+    font-size: 13px; letter-spacing: 0.06em; color: var(--ink-muted);
+    padding: 6px 10px; border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+}
+.top-nav a:hover { color: var(--ink); background: var(--paper-sunken); }
+.top-nav a.nav-cta {
+    color: var(--paper); background: var(--cinnabar);
+}
+.top-nav a.nav-cta:hover { background: var(--cinnabar-deep); color: var(--paper); }
+
+/* ---------- Hero ---------- */
+.hero { padding: clamp(48px, 9dvh, 92px) 0 clamp(40px, 7dvh, 72px); text-align: center; }
+.logo-stage {
+    width: 112px; height: 112px; margin: 0 auto 26px;
+    border-radius: 24px; overflow: hidden;
+    box-shadow: var(--shadow);
+    background: var(--paper-sunken);
+}
+.logo-stage img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.eyebrow {
+    font-size: 13px; letter-spacing: 0.24em; color: var(--cinnabar);
+    margin-bottom: 14px;
+}
+.project-name {
+    font-family: var(--font-heading); font-weight: 700;
+    font-size: clamp(40px, 8vw, 64px); letter-spacing: 0.08em;
+    color: var(--ink); line-height: 1.15;
+}
+.project-name .en { color: var(--cinnabar); font-size: 0.5em; letter-spacing: 0.28em; display: block; margin-top: 6px; }
+.tagline { margin-top: 16px; font-family: var(--font-heading); font-size: clamp(18px, 3.4vw, 24px); color: var(--cinnabar-deep); }
+.one-liner { margin-top: 14px; font-size: 15px; color: var(--ink-muted); max-width: 640px; margin-left: auto; margin-right: auto; }
+
+.hero-actions { margin-top: 30px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1px solid transparent; border-radius: 10px;
+    padding: 12px 26px; font-size: 15px; letter-spacing: 0.04em;
+    cursor: pointer; transition: transform 0.15s, background 0.15s, box-shadow 0.15s;
+    font-family: var(--font-body);
+}
+.btn--primary { background: var(--cinnabar); color: var(--paper); }
+.btn--primary:hover { background: var(--cinnabar-deep); transform: translateY(-1px); }
+.btn--outline { background: transparent; color: var(--cinnabar); border-color: var(--cinnabar); }
+.btn--outline:hover { background: var(--cinnabar-soft); }
+
+/* ---------- 通用区块 ---------- */
+section.block { padding: clamp(40px, 6dvh, 64px) 0; }
+section.block + section.block { border-top: 1px solid var(--hairline); }
+.section-head { text-align: center; margin-bottom: 36px; }
+.section-head .eyebrow { margin-bottom: 8px; }
+.section-title { font-size: clamp(26px, 4.4vw, 34px); color: var(--ink); }
+.section-desc { max-width: 680px; margin: 12px auto 0; font-size: 15px; color: var(--ink-muted); }
+
+/* 核心功能卡片 */
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+.card {
+    background: var(--paper-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 16px; padding: 24px 24px;
+    box-shadow: var(--shadow);
+}
+.card .num {
+    font-family: var(--font-heading); color: var(--cinnabar);
+    font-size: 14px; letter-spacing: 0.1em;
+}
+.card h3 { font-size: 18px; margin: 10px 0 8px; color: var(--ink); }
+.card p { font-size: 14px; color: var(--ink-muted); }
+
+/* AI 价值 —— 纵向 */ 
+.ai-list { display: flex; flex-direction: column; gap: 16px; max-width: 760px; margin: 0 auto; }
+.ai-item {
+    display: flex; gap: 18px; align-items: flex-start;
+    background: var(--paper-raised);
+    border: 1px solid var(--hairline); border-radius: 16px;
+    padding: 22px 24px; box-shadow: var(--shadow);
+}
+.ai-item .index {
+    flex: none; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--cinnabar-soft); color: var(--cinnabar);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-heading); font-size: 17px;
+}
+.ai-item h3 { font-size: 17px; color: var(--ink); margin-bottom: 6px; }
+.ai-item p { font-size: 14px; color: var(--ink-muted); }
+.ai-item ul { margin: 8px 0 0 18px; font-size: 14px; color: var(--ink-muted); }
+.ai-item ul li { margin: 4px 0; }
+
+/* 定位声明条 */
+.notice {
+    max-width: 760px; margin: 0 auto;
+    background: var(--paper-sunken);
+    border-left: 3px solid var(--cinnabar);
+    border-radius: 8px; padding: 16px 20px;
+    font-size: 14px; color: var(--ink-muted); text-align: left;
+}
+
+/* 数据来源页 */
+.asset-row { max-width: 760px; margin: 0 auto 18px; }
+.asset-row h3 { font-size: 17px; color: var(--ink); margin-bottom: 8px; }
+.asset-row p { font-size: 14px; color: var(--ink-muted); }
+.mono-link { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; word-break: break-all; }
+.source-card {
+    max-width: 760px; margin: 0 auto;
+    background: var(--paper-raised);
+    border: 1px solid var(--hairline); border-radius: 16px;
+    padding: 22px 24px; box-shadow: var(--shadow);
+}
+.source-card h3 { font-size: 17px; margin-bottom: 8px; }
+.source-card p { font-size: 14px; color: var(--ink-muted); }
+.copyright { margin-top: 12px; font-size: 13px; color: var(--ink-faint); }
+
+.section-foot { text-align: center; padding-top: 8px; }
+
+/* ---------- 页脚 ---------- */
+.site-footer {
+    border-top: 1px solid var(--hairline);
+    background: var(--paper);
+    padding: 28px 0;
+    margin-top: auto;
+}
+.site-footer-inner {
+    max-width: 960px; margin: 0 auto; padding: 0 20px;
+    text-align: center; font-size: 13px; color: var(--ink-muted);
+}
+.site-footer p + p { margin-top: 6px; }
+
+/* ---------- 响应式 ---------- */
+@media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr; }
+    .hero-actions { flex-direction: column; }
+    .hero-actions .btn { width: 100%; }
+    .top-nav a:not(.nav-cta) { display: none; }
+}
