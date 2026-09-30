@@ -1,0 +1,419 @@
+/* ===================== 应用入口（装配 / 导航 / 页面结构 / 全局事件） =====================
+ * 本模块是组合根（composition root）：
+ *   - 加载病例数据并驱动应用启动
+ *   - 生成页面结构（initApp）
+ *   - 页面导航与「我的」页统计
+ *   - 投稿表单
+ *   - 把各模块的公开接口注入到需要它们的地方（register*），并把内联 onclick 需要的函数挂到 window
+ *
+ * 不负责：病例规则、问诊匹配、答案判定、备份编码、学习记录读写实现。
+ * ================================================================================== */
+
+import { loadAllCases, getAllCases, diffOrder, diffMap } from './data.js';
+import {
+    getCompletedCases, markCaseCompleted, saveWrongCase, removeWrongCase,
+    getProgressSummary, clearAllProgress
+} from './storage/progress-storage.js';
+import {
+    exportProgress, importProgress, applyImportMode, confirmCoverImport, closeImportModal,
+    createProgressBackupCode, parseProgressBackupCode,
+    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart,
+    renderBackupChoice, saveBackupFile, openRestoreChoice, startCodeRestore, checkBackupCode,
+    triggerFileRestore, copyDiagnosticInfo, registerProgressChangeHandler
+} from './storage/backup-service.js';
+import {
+    startChallenge, resetGameUI, selectDifficulty, prevCase, nextCase,
+    exploreDiag, showOtherCheck, submitAnswer, viewAnswer, resetCurrentCase, showHistory,
+    openSimpleResultModal, closeSimpleResultModal, registerModalOpeners, registerNav,
+    registerProgressService, registerCaseSource
+} from './game.js';
+import { openInquiryModal, sendInquiry, closeInquiryModal } from './inquiry.js';
+import {
+    openInspectionModal, closeInspectionModal, inspectPrev, inspectNext, submitTongueJudgment
+} from './inspection.js';
+import {
+    openCaseBank, closeCaseBank, selectBankCategory, selectBankDiff, filterCaseBank,
+    challengeCaseFromBank, openRecords, closeRecords, clearRecords,
+    rechallengeCase, viewWrongCaseAnalysis, openCaseDetail, closeCaseDetail,
+    registerNav as registerBankNav
+} from './case-bank.js';
+
+/* ===================== 页面导航 ===================== */
+function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page' + name)?.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.querySelectorAll('.top-nav .nav-link').forEach(l => l.classList.remove('nav-active'));
+    const map = { Home: 'navHome', Game: 'navClinic', Bank: 'navBank', Me: 'navMe' };
+    const navId = map[name];
+    if (navId) document.getElementById(navId)?.classList.add('nav-active');
+    const widePages = ['Home', 'Me'];
+    const wide = widePages.includes(name);
+    ['siteHeaderInner', 'appContainer', 'siteFooterInner'].forEach(id => {
+        document.getElementById(id)?.classList.toggle('wide', wide);
+    });
+}
+function goHome() { showPage('Home'); }
+function showAbout() { showPage('About'); }
+function showMe() { renderMeStats(); showPage('Me'); }
+
+/* ===================== 「我的」页统计 ===================== */
+function renderMeStats() {
+    const { done, wrong, remaining, percent } = getProgressSummary(getAllCases().length);
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set('meStatDone', done);
+    set('meStatWrong', wrong);
+    set('meStatRemain', remaining);
+    set('meProgressPct', percent + '%');
+    set('meWrongCountBadge', wrong + ' 条');
+    const bar = document.getElementById('meProgressBar');
+    if (bar) bar.style.width = percent + '%';
+    const wrongEmpty = document.getElementById('meWrongEmpty');
+    const wrongAction = document.getElementById('meWrongAction');
+    const wrongBtn = document.getElementById('meWrongBtn');
+    if (wrongEmpty) wrongEmpty.style.display = wrong === 0 ? 'block' : 'none';
+    if (wrongAction) wrongAction.style.display = wrong === 0 ? 'none' : 'flex';
+    if (wrongBtn) wrongBtn.textContent = '打开错题本 · ' + wrong + ' 条';
+}
+
+function toggleMeDetail(id) {
+    document.getElementById(id)?.classList.toggle('open');
+}
+
+function toggleAnswerCard() {
+    const body = document.getElementById('answerBody');
+    const label = document.getElementById('answerToggleLabel');
+    const hint = document.getElementById('answerClosedHint');
+    if (!body) return;
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    if (label) label.textContent = open ? '展开' : '收起';
+    if (hint) hint.style.display = open ? 'block' : 'none';
+}
+
+function resetProgress() {
+    if (!confirm('确定要清空所有学习进度和错题吗？此操作不可恢复。')) return;
+    clearAllProgress();
+    renderMeStats();
+    alert('已重置全部本地学习数据。');
+}
+
+/* ===================== 页面结构 ===================== */
+function initApp() {
+    const appContainer = document.getElementById('appContainer');
+
+    // 关卡按钮由难度元数据生成，避免计数/文案在多处硬编码
+    const difficultyButtonsHtml = diffOrder.map(diff => `
+                    <button class="btn--difficulty" data-diff="${diff}" onclick="selectDifficulty('${diff}', this)">
+                        <div><div class="difficulty-name">${diffMap[diff].name}</div><div class="difficulty-blurb">${
+                            { basic: '证候较显，用来熟悉「读主诉 → 四诊 → 辨证」的节奏。',
+                              intermediate: '线索交叉，需要取舍，不再是单证对号入座。',
+                              advanced: '更接近真实门诊：信息不完全，判断要自己立住。' }[diff]
+                        }</div></div>
+                        <div class="difficulty-count" id="diffCount_${diff}">—</div>
+                    </button>`).join('');
+
+    appContainer.innerHTML = `
+        <div class="page active" id="pageHome">
+            <section class="hero">
+                <div class="hero-copy">
+                    <h1 class="hero-title">中医辨证推演馆</h1>
+                    <p class="hero-subtitle">你是一名接诊医生，通过望闻问切完成辨证。</p>
+                    <p class="hero-desc">像门诊一样四诊，像海龟汤一样推理。</p>
+                </div>
+                <div class="home-buttons">
+                    <button class="btn btn--primary btn--lg" style="min-width:208px;" onclick="startChallenge()">开始接诊</button>
+                    <div class="home-secondary">
+                        <a href="#" onclick="showAbout(); return false;">关于</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="page" id="pageGame">
+            <section id="difficultyPicker">
+                <p class="eyebrow">接诊</p>
+                <h1 class="page-title">选择关卡</h1>
+                <p class="page-sub">选好难度后，只会出现主诉。四诊要你自己点开，线索不会预先摆上桌。</p>
+                <div class="difficulty-list" id="difficultyBtns">${difficultyButtonsHtml}
+                </div>
+            </section>
+
+            <section id="caseWorkspace" style="display:none;">
+                <!-- 当前上下文：一行轻量文字 + 小按钮。它只是「我现在在哪」，视觉权重低于主诉与四诊 -->
+                <div class="case-topbar" id="caseTopbar">
+                    <button class="btn btn--ghost btn--sm" onclick="resetGameUI()">重选关卡</button>
+                    <span class="case-topbar-meta"><span class="case-topbar-diff" id="caseTopDiffName"></span><span class="case-topbar-counter" id="caseTopCounter"></span></span>
+                    <button class="btn btn--ghost btn--sm" onclick="resetCurrentCase()">重新探查</button>
+                </div>
+
+                <!-- 主诉 · 谜面：进入推理的第一核心信息，靠留白与极轻底边线划界，不做卡片 -->
+                <article class="chief-complaint" id="chiefComplaintCard">
+                    <div class="cc-head">
+                        <div class="eyebrow">主诉 · 谜面</div>
+                        <button class="btn btn--ghost btn--sm" id="historyBtn" style="display:none;" onclick="showHistory()">病史</button>
+                    </div>
+                    <p id="chiefComplaintText"></p>
+                    <div class="cc-foot">
+                        <button class="btn btn--ghost" id="prevCaseBtn" onclick="prevCase()" style="display:none;">‹ 上一例</button>
+                        <span id="caseCounter"></span>
+                        <button class="btn btn--ghost" id="nextCaseBtn" onclick="nextCase()" style="display:none;">下一例 ›</button>
+                    </div>
+                </article>
+
+                <!-- 四诊：四个可执行的检查动作，共用一个操作组（分割线成组，不做四张卡） -->
+                <div class="diag-section">
+                    <div class="diag-section-head">
+                        <h2>四诊</h2>
+                        <button class="btn btn--ghost btn--sm" id="btnOtherCheck" onclick="showOtherCheck()" style="display:none;">其他检查</button>
+                    </div>
+                    <p class="diag-hint" id="diagHint">先读主诉，再点四诊。未问到的，不会主动告诉你。</p>
+                    <div class="four-diagnosis" id="fourDiagBtns" style="display:none;">
+                        <button class="btn--diag" id="btnWang" onclick="exploreDiag('inspection')"><span class="diag-char">望</span><span class="diag-label">望诊</span><span class="diag-hint">舌象与神色</span></button>
+                        <button class="btn--diag" id="btnWen" onclick="exploreDiag('auscultation')"><span class="diag-char">闻</span><span class="diag-label">闻诊</span><span class="diag-hint">声息气味</span></button>
+                        <button class="btn--diag" id="btnAsk" onclick="exploreDiag('inquiry')"><span class="diag-char">问</span><span class="diag-label">问诊</span><span class="diag-hint">逐项追问</span></button>
+                        <button class="btn--diag" id="btnPulse" onclick="exploreDiag('pulse')"><span class="diag-char">切</span><span class="diag-label">切脉</span><span class="diag-hint">脉象按诊</span></button>
+                    </div>
+                </div>
+
+                <!-- 线索：四诊沉淀下来的证据。分组由 renderClues() 生成，这里只留一个连续区域 -->
+                <div class="clue-section" id="clueCollectionCard">
+                    <h2>线索</h2>
+                    <div class="clue-area" id="clueArea"></div>
+                </div>
+
+                <!-- 提交辨证：推理的终点。只保留「标题 → 字段 → 提交」三层，不复述用户已经知道的步骤 -->
+                <div class="answer-section" id="answerCard">
+                    <button class="answer-toggle" onclick="toggleAnswerCard()">
+                        <h2>提交辨证</h2>
+                        <span id="answerToggleLabel">展开</span>
+                    </button>
+                    <p class="answer-closed-hint" id="answerClosedHint">先探查至少一诊，再来立证。</p>
+                    <div class="answer-body" id="answerBody" style="display:none;">
+                        <div class="answer-area">
+                            <label class="answer-field" for="inputSyndrome"><span>证型</span><input type="text" id="inputSyndrome" placeholder="如肝郁脾虚"></label>
+                            <label class="answer-field" for="inputDisease"><span>病名</span><input type="text" id="inputDisease" placeholder="如胃脘痛"></label>
+                        </div>
+                        <div class="basis-area">
+                            <label class="basis-label" for="inputBasis">辨证依据</label>
+                            <textarea id="inputBasis" placeholder="结合主诉与四诊线索，写出你的辨证思路与主要依据。"></textarea>
+                        </div>
+                        <button class="btn btn--primary btn--block answer-submit" onclick="submitAnswer()">提交辨证</button>
+                    </div>
+                    <div id="answerFeedback"></div>
+                    <div id="fullAnalysisArea"></div>
+                </div>
+
+                <div class="case-workspace-foot">
+                    <button class="btn btn--ghost" onclick="goHome()">返回首页</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="page" id="pageBank">
+            <p class="eyebrow">题库</p>
+            <h1 class="page-title">病例题库</h1>
+            <p class="page-sub" id="bankCount"></p>
+            <div id="caseBankContent"></div>
+        </div>
+
+        <div class="page" id="pageAbout">
+            <p class="eyebrow">关于</p>
+            <h1 class="page-title">关于本馆</h1>
+            <section class="about-intro">
+                <p>中医辨证推演馆采用「海龟汤式」的线索解锁方式，把传统中医医案变成主动探索式的辨证训练。</p>
+                <p>玩家不会一开始就看到完整病例，而是作为接诊医生，通过望、闻、问、切逐步获取信息，最后独立完成辨证。</p>
+                <p class="muted">本站内容仅供中医学习与病例推演，不构成诊断、处方或医疗建议。如有身体不适，请及时前往正规医疗机构就诊。</p>
+            </section>
+            <section class="about-play">
+                <p class="eyebrow">玩法</p>
+                <h2>怎么玩</h2>
+                <ol>
+                    <li><span>一</span><div><h3>接诊</h3><p>从一句主诉开始，像坐诊一样面对一位陌生患者。</p></div></li>
+                    <li><span>二</span><div><h3>望闻问切</h3><p>主动挑出需要了解的信息，线索要靠四诊亲自采集。</p></div></li>
+                    <li><span>三</span><div><h3>辨证</h3><p>把收集到的四诊信息收束到一起，立住自己的辨证链。</p></div></li>
+                    <li><span>四</span><div><h3>揭晓</h3><p>提交辨证结果，再对照完整医案与解析，反思取舍。</p></div></li>
+                </ol>
+            </section>
+        </div>
+
+        <div class="page" id="pageMe">
+            <p class="eyebrow">我的</p>
+            <h1 class="page-title">个人学习案册</h1>
+            <p class="page-sub">这里汇总你的学习概况、错题与数据管理。换设备前，请先备份。</p>
+
+            <section class="me-section-card">
+                <div class="me-section-head">
+                    <h2>学习概况</h2>
+                    <span id="meProgressPct">0%</span>
+                </div>
+                <dl class="me-stats">
+                    <div class="me-stat"><dt>已完成</dt><dd id="meStatDone">0<small>例</small></dd></div>
+                    <div class="me-stat"><dt>错题</dt><dd id="meStatWrong">0<small>条</small></dd></div>
+                    <div class="me-stat"><dt>学习中</dt><dd id="meStatRemain">0<small>例</small></dd></div>
+                </dl>
+                <div class="me-progress"><div id="meProgressBar" style="width:0;"></div></div>
+            </section>
+
+            <section class="me-section-card">
+                <div class="me-section-head">
+                    <h2>我的错题</h2>
+                    <span id="meWrongCountBadge">0 条</span>
+                </div>
+                <p class="me-section-desc">复习你曾经辨证失误的病例，再次走一遍四诊线索。</p>
+                <div class="me-empty-state" id="meWrongEmpty" style="display:none;">
+                    <p>暂无错题</p>
+                    <p>先到「接诊」试一例，错了会记在这里。</p>
+                </div>
+                <div class="data-actions" id="meWrongAction" style="display:none;">
+                    <button class="btn btn--outline btn--sm" onclick="openRecords()" id="meWrongBtn">打开错题本</button>
+                </div>
+            </section>
+
+            <section class="me-section-card">
+                <h2>我的投稿</h2>
+                <p class="me-section-desc">分享你发现的优质病例，经过脱敏后投稿给本馆。</p>
+                <div class="data-actions">
+                    <button class="btn btn--outline btn--sm" onclick="openSubmissionModal()">投稿病例</button>
+                </div>
+            </section>
+
+            <section class="me-section-card">
+                <h2>学习数据</h2>
+                <p class="me-section-desc">学习记录只保存在当前浏览器。建议定期备份。</p>
+                <div class="data-actions">
+                    <button onclick="openBackupModal()">备份</button>
+                    <button onclick="openRestoreChoice()">恢复</button>
+                    <button onclick="resetProgress()">重置进度</button>
+                </div>
+                <p class="form-hint" style="margin-top:12px;font-size:13px;color:var(--text-muted);line-height:1.7;">学习记录只保存在当前浏览器，换设备或其他浏览器前建议先备份。</p>
+                <p id="dataStats" class="data-stats"></p>
+            </section>
+        </div>
+    `;
+
+    // 难度计数
+    const all = getAllCases();
+    const done = new Set(getCompletedCases());
+    for (const diff of diffOrder) {
+        const pool = all.filter(c => c.difficulty === diff);
+        const remain = pool.filter(c => !done.has(c.id)).length;
+        const el = document.getElementById('diffCount_' + diff);
+        if (el) el.textContent = remain + ' / ' + pool.length;
+    }
+    // 题库计数
+    const bc = document.getElementById('bankCount');
+    if (bc) bc.textContent = '共 ' + all.length + ' 则。点开即可按原关卡规则重诊。';
+
+    renderMeStats();
+    showPage('Home');
+}
+
+/* ===================== 投稿表单 ===================== */
+function openSubmissionModal() {
+    document.getElementById('submissionModal').style.display = 'flex';
+    document.getElementById('submissionFeedback').innerHTML = '';
+    document.getElementById('formNext').value = window.location.href.split('?')[0] + '?submitted=true';
+    document.getElementById('difficultyDisplay').textContent = '点击选择难度';
+    document.getElementById('subDifficulty').value = '';
+    document.getElementById('difficultyOptions').style.display = 'none';
+    document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
+}
+function closeSubmissionModal() { document.getElementById('submissionModal').style.display = 'none'; }
+
+function toggleDifficultyOptions() {
+    const options = document.getElementById('difficultyOptions');
+    options.style.display = options.style.display === 'none' ? 'block' : 'none';
+}
+function selectDifficultyOption(value, label, btn) {
+    document.getElementById('difficultyDisplay').textContent = label;
+    document.getElementById('subDifficulty').value = value;
+    document.getElementById('difficultyOptions').style.display = 'none';
+    document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
+    btn.classList.add('selected');
+}
+function validateSubmissionForm() {
+    const form = document.getElementById('submissionForm');
+    const feedback = document.getElementById('submissionFeedback');
+    const requiredFields = ['case_source', 'chief_complaint', 'past_history', 'inspection', 'auscultation', 'inquiry', 'pulse', 'analysis', 'syndrome', 'disease', 'western_diagnosis'];
+    for (const fieldName of requiredFields) {
+        const field = form.querySelector(`[name="${fieldName}"]`);
+        if (!field || !field.value.trim()) { feedback.innerHTML = `<div class="result-box fail">请填写所有必填字段。</div>`; field?.focus(); return false; }
+    }
+    const difficulty = form.querySelector('[name="difficulty"]');
+    if (!difficulty || !difficulty.value) { feedback.innerHTML = `<div class="result-box fail">请选择难度。</div>`; return false; }
+    const fileInput = document.getElementById('subTonguePhoto');
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (file.size > 10 * 1024 * 1024) { feedback.innerHTML = `<div class="result-box fail">舌象照片大小不能超过10MB，请压缩后重新上传。</div>`; return false; }
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { feedback.innerHTML = `<div class="result-box fail">仅支持 JPG、PNG 或 WebP 格式的舌象照片。</div>`; return false; }
+    }
+    if (!document.getElementById('submissionConsent').checked) { feedback.innerHTML = `<div class="result-box fail">请确认病例已脱敏并同意投稿数据处理方式。</div>`; return false; }
+    feedback.innerHTML = '';
+    return true;
+}
+
+/* ===================== 全局事件 ===================== */
+document.addEventListener('click', e => { if (e.target.classList.contains('modal-overlay')) e.target.style.display = 'none'; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); });
+window.addEventListener('load', function () {
+    if (window.location.search.includes('submitted=true')) {
+        if (history.replaceState) history.replaceState(null, '', window.location.pathname);
+        openSubmissionModal();
+        document.getElementById('submissionFeedback').innerHTML = '<div class="result-box success">病例提交成功！感谢您的投稿。</div>';
+    }
+});
+
+/* ===================== 模块装配 ===================== */
+// 注入游戏会话所需的外部能力，避免 Game 反向依赖 Storage / 题库 / 弹窗模块
+registerCaseSource(getAllCases);
+registerProgressService({
+    getCompletedIds: getCompletedCases,
+    markCompleted: markCaseCompleted,
+    saveWrong: saveWrongCase,
+    removeWrong: removeWrongCase
+});
+registerModalOpeners({ openInquiry: openInquiryModal, openInspection: openInspectionModal });
+registerNav({ showPage });
+registerBankNav({ showPage });
+// 学习数据发生变化时刷新界面（避免 Infrastructure 直接调用页面模块）
+registerProgressChangeHandler(() => {
+    renderMeStats();
+    if (document.getElementById('recordsModal')?.style.display === 'flex') openRecords();
+    if (document.getElementById('caseBankList')) filterCaseBank();
+});
+
+/* ===================== 暴露到 window（供内联 onclick 使用） ===================== */
+Object.assign(window, {
+    goHome, showAbout, showMe, renderMeStats, toggleMeDetail, toggleAnswerCard,
+    startChallenge, openCaseBank, openRecords,
+    openSubmissionModal, closeSubmissionModal, toggleDifficultyOptions, selectDifficultyOption, validateSubmissionForm,
+    selectDifficulty, showHistory, prevCase, nextCase, exploreDiag, showOtherCheck,
+    submitAnswer, viewAnswer, resetCurrentCase, resetGameUI,
+    openSimpleResultModal, closeSimpleResultModal,
+    sendInquiry, closeInquiryModal,
+    openInspectionModal, closeInspectionModal, inspectPrev, inspectNext, submitTongueJudgment,
+    closeCaseBank, filterCaseBank, selectBankCategory, selectBankDiff, challengeCaseFromBank,
+    closeRecords, clearRecords, rechallengeCase, viewWrongCaseAnalysis,
+    openCaseDetail, closeCaseDetail,
+    resetProgress, exportProgress, importProgress,
+    applyImportMode, confirmCoverImport, closeImportModal,
+    createProgressBackupCode, parseProgressBackupCode,
+    openBackupModal, closeBackupModal, showBackupCode, copyBackupCode, copyBackupPart,
+    renderBackupChoice, saveBackupFile,
+    openRestoreChoice, startCodeRestore, checkBackupCode, triggerFileRestore, copyDiagnosticInfo
+});
+
+/* ===================== 启动 ===================== */
+async function boot() {
+    const loading = document.getElementById('loadingIndicator');
+    try {
+        await loadAllCases();
+        initApp();
+    } catch (error) {
+        console.error('加载病例数据出错:', error);
+        if (loading) loading.innerHTML = '<div style="font-size:14px;color:var(--text-muted);">病例数据加载失败，请刷新重试</div>';
+    }
+}
+
+boot();
